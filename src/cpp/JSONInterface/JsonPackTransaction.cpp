@@ -64,7 +64,7 @@ Document JsonPackTransaction::transfer(const Document& params)
 	if (param_error.IsObject()) { return param_error; }
 
 	getStringParameter(params, "senderGroupAlias", senderGroupAlias);
-	getStringParameter(params, "recipientGroupAlias", recipientPubkey);
+	getStringParameter(params, "recipientGroupAlias", recipientGroupAlias);
 
 	auto mm = MemoryManager::getInstance();
 	auto senderPubkeyBin = DataTypeConverter::hexToBin(senderPubkey);
