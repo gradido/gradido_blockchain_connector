@@ -198,6 +198,71 @@ TEST_F(TestJsonPackTransaction, CrossGroupTransfer)
 		
 		i++;
 	}
-
 	
+}
+
+TEST_F(TestJsonPackTransaction, Creation)
+{
+	Document params(kObjectType);
+	auto alloc = params.GetAllocator();
+	params.AddMember("transactionType", "creation", alloc);
+	// int year, int month, int day
+	std::string memo = "AGE Oktober 2021";
+	Poco::DateTime created(2021, 11, 5, 10, 30, 10);
+	Poco::DateTime targetDate(2021, 10, 1);
+	params.AddMember("created", Value(Poco::DateTimeFormatter::format(created, "%Y-%m-%d %H:%M:%S").data(), alloc), alloc);
+	params.AddMember("targetDate", Value(Poco::DateTimeFormatter::format(targetDate, "%Y-%m-%d %H:%M:%S").data(), alloc), alloc);
+	params.AddMember("memo", Value(memo.data(), alloc), alloc);
+	params.AddMember("recipientPubkey", "eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd", alloc);
+	params.AddMember("amount", 10000000, alloc);
+
+	JsonPackTransaction jsonCall;
+	auto result = jsonCall.handle(params);
+
+	std::string state;
+	jsonCall.getStringParameter(result, "state", state);
+	if (state != "success") {
+		std::string msg;
+		std::string details;
+		jsonCall.getStringParameter(result, "msg", msg);
+		jsonCall.getStringParameter(result, "details", details);
+		std::clog << "msg: " << msg;
+		if (details.size()) {
+			std::clog << ", details: " << details;
+		}
+		std::clog << std::endl;
+	}
+	ASSERT_EQ(state, "success");
+
+	auto transactionsIt = result.FindMember("transactions");
+	ASSERT_TRUE(transactionsIt != result.MemberEnd());
+
+	ASSERT_TRUE(transactionsIt->value.IsArray());
+	auto transaction = transactionsIt->value.Begin();
+	ASSERT_FALSE(transaction->IsNull());
+	ASSERT_TRUE(transaction->HasMember("bodyBytesBase64"));
+	auto bodyBytesIt = transaction->FindMember("bodyBytesBase64");
+	ASSERT_TRUE(bodyBytesIt->value.IsString());
+
+	std::string base64BodyBytes = bodyBytesIt->value.GetString();
+
+	auto bodyBytes = DataTypeConverter::base64ToBin(base64BodyBytes);
+
+	proto::gradido::TransactionBody protoBody;
+	ASSERT_TRUE(protoBody.ParseFromString(std::string((const char*)bodyBytes->data(), bodyBytes->size())));
+	ASSERT_TRUE(protoBody.has_creation());
+	auto creation = protoBody.creation();
+	ASSERT_EQ(creation.recipiant().amount(), 10000000);
+	ASSERT_EQ(
+		DataTypeConverter::binToHex(creation.recipiant().pubkey()).substr(0, 64),
+		"eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd"
+	);
+	auto nowRead = DataTypeConverter::convertFromProtoTimestampSeconds(protoBody.created());
+	auto targetDateRead = DataTypeConverter::convertFromProtoTimestampSeconds(creation.target_date());
+	Poco::DateTime readDate(nowRead);
+	ASSERT_EQ(created.timestamp().epochTime(), nowRead.epochTime());
+	ASSERT_EQ(targetDate.timestamp().epochTime(), targetDateRead.epochTime());
+	ASSERT_EQ(memo, protoBody.memo());
+
+	MemoryManager::getInstance()->releaseMemory(bodyBytes);
 }
