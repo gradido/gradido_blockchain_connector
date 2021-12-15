@@ -45,10 +45,10 @@ namespace model {
 				return TRANSACTION_VALID_INVALID_PUBKEY;
 			}
 
-			if (mProtoMemberUpdate.member_update_type() != proto::gradido::GroupMemberUpdate::ADD_USER) {
+			/*if (mProtoMemberUpdate.member_update_type() != proto::gradido::GroupMemberUpdate::ADD_USER) {
 				addError(new Error(functionName, "user move not implemented yet!"));
 				return TRANSACTION_VALID_CODE_ERROR;
-			}
+			}*/
 			auto target_group = mProtoMemberUpdate.target_group();
 			if (target_group.size() && !isValidGroupAlias(target_group)) {
 				addError(new Error(functionName, "target group isn't valid group alias string "));

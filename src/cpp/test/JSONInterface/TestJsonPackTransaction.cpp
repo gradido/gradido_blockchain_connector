@@ -324,3 +324,82 @@ TEST_F(TestJsonPackTransaction, GroupAddMember)
 
 	MemoryManager::getInstance()->releaseMemory(bodyBytes);
 }
+
+
+TEST_F(TestJsonPackTransaction, GroupMoveMember)
+{
+	Document params(kObjectType);
+	auto alloc = params.GetAllocator();
+	params.AddMember("transactionType", "groupMemberUpdate", alloc);
+	Poco::DateTime now;
+	params.AddMember("created", Value(Poco::DateTimeFormatter::format(now, "%Y-%m-%d %H:%M:%S").data(), alloc), alloc);
+	params.AddMember("userRootPubkey", "131c7f68dd94b2be4c913400ff7ff4cdc03ac2bda99c2d29edcacb3b065c67e6", alloc);
+	params.AddMember("currentGroupAlias", "gdd1", alloc);
+	params.AddMember("newGroupAlias", "gdd2", alloc);
+
+	JsonPackTransaction jsonCall;
+	auto result = jsonCall.handle(params);
+
+	std::string state;
+	jsonCall.getStringParameter(result, "state", state);
+	if (state != "success") {
+		std::string msg;
+		std::string details;
+		jsonCall.getStringParameter(result, "msg", msg);
+		jsonCall.getStringParameter(result, "details", details);
+		std::clog << "msg: " << msg;
+		if (details.size()) {
+			std::clog << ", details: " << details;
+		}
+		std::clog << std::endl;
+	}
+	ASSERT_EQ(state, "success");
+
+	auto transactionsIt = result.FindMember("transactions");
+	ASSERT_TRUE(transactionsIt != result.MemberEnd());
+
+	ASSERT_TRUE(transactionsIt->value.IsArray());
+	int i = 0;
+	for (auto transactionIt = transactionsIt->value.Begin(); transactionIt != transactionsIt->value.End(); transactionIt++) {
+		ASSERT_FALSE(transactionIt->IsNull());
+		ASSERT_TRUE(transactionIt->HasMember("bodyBytesBase64"));
+		ASSERT_TRUE(transactionIt->HasMember("groupAlias"));
+		auto bodyBytesIt = transactionIt->FindMember("bodyBytesBase64");
+		auto groupAliasIt = transactionIt->FindMember("groupAlias");
+		ASSERT_TRUE(bodyBytesIt->value.IsString());
+		ASSERT_TRUE(groupAliasIt->value.IsString());
+
+		auto base64BodyBytes = bodyBytesIt->value.GetString();
+		auto groupAlias = groupAliasIt->value.GetString();
+
+		auto bodyBytes = DataTypeConverter::base64ToBin(base64BodyBytes);
+
+		proto::gradido::TransactionBody protoBody;
+		ASSERT_TRUE(protoBody.ParseFromString(std::string((const char*)bodyBytes->data(), bodyBytes->size())));
+		MemoryManager::getInstance()->releaseMemory(bodyBytes);
+
+		ASSERT_TRUE(protoBody.has_group_member_update());
+		auto group_member_update = protoBody.group_member_update();
+
+		ASSERT_EQ(
+			DataTypeConverter::binToHex(group_member_update.user_pubkey()).substr(0, 64),
+			"131c7f68dd94b2be4c913400ff7ff4cdc03ac2bda99c2d29edcacb3b065c67e6"
+		);
+
+
+		if (i == 0) {
+			ASSERT_EQ(groupAlias, std::string("gdd1"));
+			ASSERT_EQ(group_member_update.target_group(), std::string("gdd2"));
+		}
+		else if (i == 1) {
+			ASSERT_EQ(groupAlias, std::string("gdd2"));
+			ASSERT_EQ(group_member_update.target_group(), std::string("gdd1"));
+		}
+
+		auto nowRead = DataTypeConverter::convertFromProtoTimestampSeconds(protoBody.created());
+		Poco::DateTime readDate(nowRead);
+		ASSERT_EQ(now.timestamp().epochTime(), nowRead.epochTime());
+
+		i++;
+	}
+}
