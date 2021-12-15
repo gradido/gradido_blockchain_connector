@@ -1,0 +1,12 @@
+[submodule "dependencies/poco"]
+	path = dependencies/poco
+	url = https://github.com/pocoproject/poco.git
+[submodule "src/proto"]
+	path = src/proto
+	url = https://github.com/gradido/gradido_protocol.git
+[submodule "dependencies/protobuf"]
+	path = dependencies/protobuf
+	url = https://github.com/protocolbuffers/protobuf.git
+[submodule "dependencies/rapidjson"]
+	path = dependencies/rapidjson
+	url = https://github.com/Tencent/rapidjson.git
