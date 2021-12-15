@@ -23,6 +23,17 @@ void TestJsonPackTransaction::TearDown()
 	
 }
 
+const proto::gradido::CrossGroupTransfer TestJsonPackTransaction::getCrossGroupTransfer(const proto::gradido::GradidoTransfer& protoTransfer) const
+{
+	if (protoTransfer.has_inbound()) {
+		return protoTransfer.inbound();
+	}
+	else if (protoTransfer.has_outbound()) {
+		return protoTransfer.outbound();
+	}
+	throw std::runtime_error("invalid cross group transfer transaction");
+}
+
 /*
 {
 	"state": "success",
@@ -82,6 +93,16 @@ TEST_F(TestJsonPackTransaction, LocalTransfer)
 	proto::gradido::TransactionBody protoBody;
 	ASSERT_TRUE(protoBody.ParseFromString(std::string((const char*)bodyBytes->data(), bodyBytes->size())));
 	ASSERT_TRUE(protoBody.has_transfer());
+	auto transfer = protoBody.transfer();
+	ASSERT_EQ(transfer.local().sender().amount(), 1000000);
+	ASSERT_EQ(
+		DataTypeConverter::binToHex(transfer.local().sender().pubkey()).substr(0, 64),
+		"131c7f68dd94b2be4c913400ff7ff4cdc03ac2bda99c2d29edcacb3b065c67e6"
+	);
+	ASSERT_EQ(
+		DataTypeConverter::binToHex(transfer.local().recipiant()).substr(0, 64),
+		"eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd"
+	);
 	auto nowRead = DataTypeConverter::convertFromProtoTimestampSeconds(protoBody.created());
 	Poco::DateTime readDate(nowRead);
 	ASSERT_EQ(now.timestamp().epochTime(), nowRead.epochTime());
@@ -141,13 +162,6 @@ TEST_F(TestJsonPackTransaction, CrossGroupTransfer)
 		auto base64BodyBytes = bodyBytesIt->value.GetString();
 		auto groupAlias = groupAliasIt->value.GetString();
 
-		if (i == 0) {
-			ASSERT_EQ(groupAlias, std::string("gdd1"));
-		}
-		else if (i == 1) {
-			ASSERT_EQ(groupAlias, std::string("gdd2"));
-		}
-
 		auto bodyBytes = DataTypeConverter::base64ToBin(base64BodyBytes);
 
 		proto::gradido::TransactionBody protoBody;
@@ -155,6 +169,28 @@ TEST_F(TestJsonPackTransaction, CrossGroupTransfer)
 		MemoryManager::getInstance()->releaseMemory(bodyBytes);
 
 		ASSERT_TRUE(protoBody.has_transfer());
+		auto transfer = protoBody.transfer();
+		auto crossGroup = getCrossGroupTransfer(protoBody.transfer());
+
+		ASSERT_EQ(crossGroup.transfer().sender().amount() , 1000000);
+		ASSERT_EQ(
+			DataTypeConverter::binToHex(crossGroup.transfer().sender().pubkey()).substr(0,64),
+			"131c7f68dd94b2be4c913400ff7ff4cdc03ac2bda99c2d29edcacb3b065c67e6"
+		);
+		ASSERT_EQ(
+			DataTypeConverter::binToHex(crossGroup.transfer().recipiant()).substr(0,64),
+			"eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd"
+		);
+
+		if (i == 0) {
+			ASSERT_EQ(groupAlias, std::string("gdd1"));
+			ASSERT_EQ(crossGroup.other_group(), std::string("gdd2"));
+		}
+		else if (i == 1) {
+			ASSERT_EQ(groupAlias, std::string("gdd2"));
+			ASSERT_EQ(crossGroup.other_group(), std::string("gdd1"));
+		}
+
 		auto nowRead = DataTypeConverter::convertFromProtoTimestampSeconds(protoBody.created());
 		Poco::DateTime readDate(nowRead);
 		ASSERT_EQ(now.timestamp().epochTime(), nowRead.epochTime());
