@@ -6,8 +6,8 @@
 
 namespace model {
 	namespace gradido {
-		GroupMemberUpdate::GroupMemberUpdate(const std::string& memo, const proto::gradido::GroupMemberUpdate &protoGroupMemberUpdate)
-			: TransactionBase(memo), mProtoMemberUpdate(protoGroupMemberUpdate)
+		GroupMemberUpdate::GroupMemberUpdate(const proto::gradido::GroupMemberUpdate &protoGroupMemberUpdate)
+			: TransactionBase(""), mProtoMemberUpdate(protoGroupMemberUpdate)
 		{
 
 		}

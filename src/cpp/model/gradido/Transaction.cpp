@@ -36,29 +36,59 @@ namespace model {
 			
 		}
 
-		Poco::AutoPtr<Transaction> Transaction::createGroupMemberUpdate(
-			const MemoryBin* rootPublicKey,
-			const std::string& groupAlias
+		Poco::AutoPtr<Transaction> Transaction::createGroupMemberUpdateAdd(
+			const MemoryBin* rootPublicKey
 		)
 		{
-			if (!rootPublicKey || !groupAlias.size()) {
+			if (!rootPublicKey) {
 				return nullptr;
 			}
 
-			auto body = TransactionBody::create(
-				"",
-				rootPublicKey,
-				proto::gradido::GroupMemberUpdate_MemberUpdateType_ADD_USER,
-				groupAlias
-			);
+			auto body = TransactionBody::create(rootPublicKey);
 			Poco::AutoPtr<Transaction> result = new Transaction(body);
 			
 			return result;
 		}
 
+		std::array<Poco::AutoPtr<Transaction>, 2> Transaction::createGroupMemberUpdateMove(
+			MemoryBin* userRootPublic,
+			const std::string& currentGroupAlias,
+			const std::string& newGroupAlias)
+		{
+			Poco::AutoPtr<Transaction> outboundTransaction;
+			Poco::AutoPtr<Transaction> inboundTransaction;
+
+
+			if (!userRootPublic || !currentGroupAlias.size() || !newGroupAlias.size()) {
+				return { outboundTransaction, inboundTransaction };
+			}
+
+			Poco::Timestamp now;
+
+			for (int i = 0; i < 2; i++) {
+				proto::gradido::GroupMemberUpdate_MemberUpdateType type = proto::gradido::GroupMemberUpdate_MemberUpdateType_MOVE_USER_INBOUND;
+				std::string groupAlias = currentGroupAlias;
+				if (1 == i) {
+					type = proto::gradido::GroupMemberUpdate_MemberUpdateType_MOVE_USER_OUTBOUND;
+					groupAlias = newGroupAlias;
+				}
+				Poco::AutoPtr<TransactionBody> body = TransactionBody::create(userRootPublic, type, groupAlias, now);
+				Poco::AutoPtr<Transaction> transaction(new Transaction(body));
+
+				if (0 == i) {
+					inboundTransaction = transaction;
+				}
+				else if (1 == i) {
+					outboundTransaction = transaction;
+				}
+			}
+
+			return { outboundTransaction, inboundTransaction };
+		}
+
 		Poco::AutoPtr<Transaction> Transaction::createCreation(
 			const MemoryBin* recipientPubkey,
-			Poco::UInt32 amount,
+			Poco::Int64 amount,
 			Poco::DateTime targetDate,
 			const std::string& memo
 		)
@@ -75,7 +105,7 @@ namespace model {
 		Poco::AutoPtr<Transaction> Transaction::createTransferLocal(
 			const MemoryBin* senderPublicKey,
 			const MemoryBin* recipientPubkey,
-			Poco::UInt32 amount,
+			Poco::Int64 amount,
 			const std::string& memo
 		)
 		{
@@ -93,12 +123,12 @@ namespace model {
 			return transaction;
 		}
 
-		Poco::AutoPtr<Transaction> Transaction::createTransferCrossGroup(
+		std::array<Poco::AutoPtr<Transaction>, 2> Transaction::createTransferCrossGroup(
 			const MemoryBin* senderPublicKey,
 			const MemoryBin* recipientPubkey,
 			const std::string& senderGroupAlias,
 			const std::string& recipientGroupAlias,
-			Poco::UInt32 amount,
+			Poco::Int64 amount,
 			const std::string& memo)
 		{
 			Poco::AutoPtr<Transaction> outboundTransaction;
@@ -106,7 +136,7 @@ namespace model {
 
 
 			if (!senderPublicKey || !recipientPubkey || !amount || !senderGroupAlias.size() || !recipientGroupAlias.size()) {
-				return outboundTransaction;
+				return { outboundTransaction, inboundTransaction };
 			}
 
 			Poco::Timestamp now;
@@ -131,7 +161,7 @@ namespace model {
 			}
 
 			
-			return outboundTransaction;
+			return { outboundTransaction, inboundTransaction };
 		}
 		
 		TransactionValidation Transaction::validate()

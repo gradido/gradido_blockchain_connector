@@ -239,6 +239,22 @@ Document JsonRequestHandler::getBoolParameter(const rapidjson::Document& params,
 	return Document();
 }
 
+Document JsonRequestHandler::getInt64Parameter(const rapidjson::Document& params, const char* fieldName, Poco::Int64& iParameter)
+{
+	Value::ConstMemberIterator itr = params.FindMember(fieldName);
+	std::string message = fieldName;
+	if (itr == params.MemberEnd()) {
+		message += " not found";
+		return stateError(message.data());
+	}
+	if (!itr->value.IsInt64()) {
+		message = "invalid " + message;
+		return stateError(message.data());
+	}
+	iParameter = itr->value.GetInt64();
+	return Document();
+}
+
 Document JsonRequestHandler::getUIntParameter(const Document& params, const char* fieldName, unsigned int& iParameter)
 {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);

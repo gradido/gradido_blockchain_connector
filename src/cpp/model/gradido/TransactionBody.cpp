@@ -13,6 +13,12 @@ namespace model {
 			DataTypeConverter::convertToProtoTimestampSeconds(Poco::Timestamp(), created);
 		}
 
+		void TransactionBody::setCreated(Poco::DateTime created)
+		{
+			auto protoCreated = mTransactionBody.mutable_created();
+			DataTypeConverter::convertToProtoTimestampSeconds(created.timestamp(), protoCreated);
+		}
+
 		TransactionBody::~TransactionBody()
 		{
 			lock("TransactionBody::~TransactionBody");
@@ -23,14 +29,29 @@ namespace model {
 			unlock();
 		}
 
-		Poco::AutoPtr<TransactionBody> TransactionBody::create(
-			const std::string& memo,
-			const MemoryBin* rootPublicKey,
-			proto::gradido::GroupMemberUpdate_MemberUpdateType type,
-			const std::string& targetGroupAlias)
+		Poco::AutoPtr<TransactionBody> TransactionBody::create(const MemoryBin* rootPublicKey)
 		{
 			Poco::AutoPtr<TransactionBody> obj = new TransactionBody;
-			obj->mTransactionBody.set_memo(memo);
+			auto group_member_update = obj->mTransactionBody.mutable_group_member_update();
+
+			group_member_update->set_user_pubkey(rootPublicKey->data(), rootPublicKey->size());
+			group_member_update->set_member_update_type(proto::gradido::GroupMemberUpdate_MemberUpdateType_ADD_USER);
+
+			obj->mType = TRANSACTION_GROUP_MEMBER_UPDATE;
+			obj->mTransactionSpecific = new GroupMemberUpdate(obj->mTransactionBody.group_member_update());
+			obj->mTransactionSpecific->prepare();
+
+			return obj;
+		}
+
+		Poco::AutoPtr<TransactionBody> TransactionBody::create(
+			const MemoryBin* rootPublicKey,
+			proto::gradido::GroupMemberUpdate_MemberUpdateType type,
+			const std::string& targetGroupAlias,
+			Poco::Timestamp pairedTransactionId /*= Poco::Timestamp()*/
+		)
+		{
+			Poco::AutoPtr<TransactionBody> obj = new TransactionBody;
 			auto group_member_update = obj->mTransactionBody.mutable_group_member_update();
 
 			group_member_update->set_user_pubkey(rootPublicKey->data(), rootPublicKey->size());
@@ -38,7 +59,7 @@ namespace model {
 			group_member_update->set_target_group(targetGroupAlias);
 
 			obj->mType = TRANSACTION_GROUP_MEMBER_UPDATE;
-			obj->mTransactionSpecific = new GroupMemberUpdate(memo, obj->mTransactionBody.group_member_update());
+			obj->mTransactionSpecific = new GroupMemberUpdate(obj->mTransactionBody.group_member_update());
 			obj->mTransactionSpecific->prepare();
 
 			return obj;
@@ -149,7 +170,7 @@ namespace model {
 			}
 			else if (obj->mTransactionBody.has_group_member_update()) {
 				obj->mType = TRANSACTION_GROUP_MEMBER_UPDATE;
-				obj->mTransactionSpecific = new model::gradido::GroupMemberUpdate(obj->mTransactionBody.memo(), obj->mTransactionBody.group_member_update());
+				obj->mTransactionSpecific = new model::gradido::GroupMemberUpdate(obj->mTransactionBody.group_member_update());
 			}
 			obj->mTransactionSpecific->prepare();
 			return obj;

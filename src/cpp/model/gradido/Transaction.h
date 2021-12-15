@@ -11,7 +11,7 @@
 
 #include "proto/gradido/GradidoTransaction.pb.h"
 #include "TransactionBody.h"
-
+#include <array>
 
 namespace model {
 	namespace gradido {
@@ -25,31 +25,36 @@ namespace model {
 
 			// create group add member transaction
 			// groupMemberUpdate
-			static Poco::AutoPtr<Transaction> createGroupMemberUpdate(
-				const MemoryBin* rootPublicKey,
-				const std::string& groupAlias
+			static Poco::AutoPtr<Transaction> createGroupMemberUpdateAdd(
+				const MemoryBin* rootPublicKey
+			);
+
+			static std::array<Poco::AutoPtr<Transaction>, 2> createGroupMemberUpdateMove(
+				MemoryBin* userRootPublic,
+				const std::string& currentGroupAlias,
+				const std::string& newGroupAlias
 			);
 			//! \brief transfer
 			//! \return
 			static Poco::AutoPtr<Transaction> createTransferLocal(
 				const MemoryBin* senderPublicKey,
 				const MemoryBin* recipientPubkey,
-				Poco::UInt32 amount,
+				Poco::Int64 amount,
 				const std::string& memo
 			);
-			static Poco::AutoPtr<Transaction> createTransferCrossGroup(
+			static std::array<Poco::AutoPtr<Transaction>, 2> createTransferCrossGroup(
 				const MemoryBin* senderPublicKey,
 				const MemoryBin* recipientPubkey,
 				const std::string& senderGroupAlias,
 				const std::string& recipientGroupAlias,
-				Poco::UInt32 amount,
+				Poco::Int64 amount,
 				const std::string& memo
 			);
 
 			//! \brief creation transaction
 			static Poco::AutoPtr<Transaction> createCreation(
 				const MemoryBin* recipientPubkey,
-				Poco::UInt32 amount,
+				Poco::Int64 amount,
 				Poco::DateTime targetDate,
 				const std::string& memo);
 

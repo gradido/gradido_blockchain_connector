@@ -25,12 +25,15 @@ namespace model {
 		public:
 			~TransactionBody();
 
+			void setCreated(Poco::DateTime created);
+
 			//! \brief GroupMemberUpdate Transaction
+			static Poco::AutoPtr<TransactionBody> create(const MemoryBin* rootPublicKey);
 			static Poco::AutoPtr<TransactionBody> create(
-				const std::string& memo,
 				const MemoryBin* rootPublicKey,
 				proto::gradido::GroupMemberUpdate_MemberUpdateType type,
-				const std::string& targetGroupAlias
+				const std::string& targetGroupAlias,
+				Poco::Timestamp pairedTransactionId = Poco::Timestamp()
 			);
 
 			// generic transfer creation, inbound, outbound and local

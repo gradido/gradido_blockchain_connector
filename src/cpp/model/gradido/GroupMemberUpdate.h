@@ -10,7 +10,7 @@ namespace model {
 		class GroupMemberUpdate : public TransactionBase
 		{
 		public:
-			GroupMemberUpdate(const std::string& memo, const proto::gradido::GroupMemberUpdate &protoGroupMemberUpdate);
+			GroupMemberUpdate(const proto::gradido::GroupMemberUpdate &protoGroupMemberUpdate);
 			~GroupMemberUpdate();
 			int prepare();
 			TransactionValidation validate();
