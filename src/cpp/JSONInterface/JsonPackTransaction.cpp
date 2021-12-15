@@ -8,11 +8,11 @@ using namespace rapidjson;
 
 Document JsonPackTransaction::handle(const Document& params)
 {	
-	std::string transaction_type, memo;
-	auto paramError = getStringParameter(params, "transaction_type", transaction_type);
+	std::string transactionType;
+	auto paramError = getStringParameter(params, "transactionType", transactionType);
 	if (paramError.IsObject()) { return paramError; }
 
-	getStringParameter(params, "memo", memo);	
+	getStringParameter(params, "memo", mMemo);	
 
 	std::string created_string;
 	paramError = getStringParameter(params, "created", created_string);
@@ -25,13 +25,13 @@ Document JsonPackTransaction::handle(const Document& params)
 		return stateError("cannot parse created", ex.what());
 	}
 	
-	if (transaction_type == "transfer") {
+	if (transactionType == "transfer") {
 		return transfer(params);
 	}
-	else if (transaction_type == "creation") {
+	else if (transactionType == "creation") {
 		return creation(params);
 	}
-	else if (transaction_type == "groupMemberUpdate") {
+	else if (transactionType == "groupMemberUpdate") {
 		return groupMemberUpdate(params);
 	}
 
