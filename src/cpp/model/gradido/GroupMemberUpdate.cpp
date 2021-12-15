@@ -50,7 +50,7 @@ namespace model {
 				return TRANSACTION_VALID_CODE_ERROR;
 			}
 			auto target_group = mProtoMemberUpdate.target_group();
-			if (!isValidGroupAlias(target_group)) {
+			if (target_group.size() && !isValidGroupAlias(target_group)) {
 				addError(new Error(functionName, "target group isn't valid group alias string "));
 				return TRANSACTION_VALID_INVALID_GROUP_ALIAS;
 			}
