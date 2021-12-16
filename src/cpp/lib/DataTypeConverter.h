@@ -34,6 +34,7 @@ namespace DataTypeConverter {
 
 	MemoryBin* hexToBin(const std::string& hexString);
 	MemoryBin* base64ToBin(const std::string& base64String, int variant = sodium_base64_VARIANT_ORIGINAL);
+	std::string base64ToBinString(const std::string& base64String, int variant = sodium_base64_VARIANT_ORIGINAL);
 
 
 	std::string binToBase64(const unsigned char* data, size_t size, int variant = sodium_base64_VARIANT_ORIGINAL);

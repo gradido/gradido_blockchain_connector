@@ -191,6 +191,41 @@ namespace model {
 			return result;
 
 		}
+		bool Transaction::addSign(const MemoryBin* publicKey, const MemoryBin* signature) 
+		{
+			auto bodyBytes = mProtoTransaction.body_bytes();
+			const char* function_name = "Transaction::addSign";
+			if (crypto_sign_verify_detached(*signature, (const unsigned char*)bodyBytes.data(), bodyBytes.size(), *publicKey) != 0) {
+				// Incorrect signature! 
+				addError(new Error(function_name, "sign verify failed"));
+				return false;
+			}
+			auto signatureMap = mProtoTransaction.mutable_sig_map();
+			auto signaturePairs = signatureMap->mutable_sigpair();
+			
+			// check if pubkey already exist
+			for (auto it = signaturePairs->begin(); it != signaturePairs->end(); it++)
+			{
+				if (it->pubkey().size() != crypto_sign_PUBLICKEYBYTES) {
+					addError(new Error(function_name, "error signature pubkey hasn't expected size!"));
+					return false;
+				}
+				if (0 == memcmp(*publicKey, it->pubkey().data(), crypto_sign_PUBLICKEYBYTES)) {
+					addError(new Error(function_name, "error, pubkey has signed already"));
+					return false;
+				}
+			}
+
+			auto sigPair = signatureMap->add_sigpair();
+			auto pubkeyBytes = sigPair->mutable_pubkey();
+			*pubkeyBytes = std::string((const char*)publicKey->data(), publicKey->size());
+
+			auto sigBytes = sigPair->mutable_signature();
+			*sigBytes = std::string((const char*)signature->data(), crypto_sign_BYTES);
+			return true;
+
+		}
+
 		bool Transaction::hasSigned(const MemoryBin* userPublicKey)
 		{
 			static const char* function_name = "Transaction::hasSigned";
@@ -330,7 +365,7 @@ namespace model {
 			std::string index = "GRADIDO." + groupAlias;
 			std::string message = transaction_hex;
 			
-			auto message_id = ServerConfig::g_IotaRequestHandler->sendMessage(DataTypeConverter::binToHex(index), message, this);
+			mIotaMessageId = ServerConfig::g_IotaRequestHandler->sendMessage(DataTypeConverter::binToHex(index), message, this);
 			return 1;
 		}
 

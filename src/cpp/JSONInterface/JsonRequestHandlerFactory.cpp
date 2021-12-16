@@ -4,6 +4,8 @@
 #include "Poco/Net/HTTPServerRequest.h"
 #include "Poco/DateTimeFormatter.h"
 
+#include "JsonPackTransaction.h"
+#include "JsonSendTransactionIota.h"
 #include "JsonUnknown.h"
 
 
@@ -44,7 +46,10 @@ Poco::Net::HTTPRequestHandler* JsonRequestHandlerFactory::createRequestHandler(c
 
 	
 	if (url_first_part == "/packTransaction") {
-		//return new JsonSignTransaction;
+		return new JsonPackTransaction;
+	}
+	else if (url_first_part == "/sendTransactionIota") {
+		return new JsonSendTransactionIota;
 	}
 	
 

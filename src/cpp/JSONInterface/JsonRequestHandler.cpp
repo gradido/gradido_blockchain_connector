@@ -286,7 +286,7 @@ Document JsonRequestHandler::getUInt64Parameter(const Document& params, const ch
 	iParameter = itr->value.GetUint64();
 	return Document();
 }
-Document JsonRequestHandler::getStringParameter(const Document& params, const char* fieldName, std::string& strParameter)
+Document JsonRequestHandler::getStringParameter(const Value& params, const char* fieldName, std::string& strParameter)
 {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;

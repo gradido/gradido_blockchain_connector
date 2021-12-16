@@ -198,6 +198,14 @@ namespace DataTypeConverter
 		return bin;
 	}
 
+	std::string base64ToBinString(const std::string& base64String, int variant/* = sodium_base64_VARIANT_ORIGINAL*/)
+	{
+		auto bin = base64ToBin(base64String, variant);
+		std::string result((const char*)bin->data(), bin->size());
+		MemoryManager::getInstance()->releaseMemory(bin);
+		return result;
+	}
+
 
 
 

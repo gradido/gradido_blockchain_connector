@@ -28,7 +28,7 @@ public:
 	static rapidjson::Document getBoolParameter(const rapidjson::Document& params, const char* fieldName, bool& bParameter);
 	static rapidjson::Document getInt64Parameter(const rapidjson::Document& params, const char* fieldName, Poco::Int64& iParameter);
 	static rapidjson::Document getUInt64Parameter(const rapidjson::Document& params, const char* fieldName, Poco::UInt64& iParameter);
-	static rapidjson::Document getStringParameter(const rapidjson::Document& params, const char* fieldName, std::string& strParameter);
+	static rapidjson::Document getStringParameter(const rapidjson::Value& params, const char* fieldName, std::string& strParameter);
 	static rapidjson::Document getStringIntParameter(const rapidjson::Document& params, const char* fieldName, std::string& strParameter, int& iParameter);
 	static rapidjson::Document checkArrayParameter(const rapidjson::Document& params, const char* fieldName);
 	static rapidjson::Document checkObjectParameter(const rapidjson::Document& params, const char* fieldName);

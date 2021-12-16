@@ -68,6 +68,8 @@ namespace model {
 
 			//! \brief get current body bytes from proto transaction and save it into db
 
+			bool addSign(const MemoryBin* publicKey, const MemoryBin* signature);
+
 			//! \return true if user must sign it and hasn't yet
 			bool mustSign(const MemoryBin* userPublicKey);
 			//! return true if user can sign transaction and hasn't yet
@@ -87,6 +89,8 @@ namespace model {
 
 			const proto::gradido::GradidoTransaction& getProtoTransaction() { return mProtoTransaction; }
 
+			inline const std::string& getIotaMessageId() { return mIotaMessageId; }
+
 		protected:
 
 			int runSendTransactionIota(const std::string& transaction_hex, const std::string& groupAlias);
@@ -95,6 +99,7 @@ namespace model {
 
 			Poco::AutoPtr<TransactionBody> mTransactionBody;
 			proto::gradido::GradidoTransaction mProtoTransaction;
+			std::string mIotaMessageId;
 		};
 
 	}
