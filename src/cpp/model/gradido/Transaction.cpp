@@ -193,8 +193,14 @@ namespace model {
 		}
 		bool Transaction::addSign(const MemoryBin* publicKey, const MemoryBin* signature) 
 		{
-			auto bodyBytes = mProtoTransaction.body_bytes();
 			const char* function_name = "Transaction::addSign";
+
+			if (!publicKey || !signature) {
+				addError(new Error(function_name, "publicKey or signature are zero pointer"));
+				return false;
+			}
+			auto bodyBytes = mProtoTransaction.body_bytes();
+			
 			if (crypto_sign_verify_detached(*signature, (const unsigned char*)bodyBytes.data(), bodyBytes.size(), *publicKey) != 0) {
 				// Incorrect signature! 
 				addError(new Error(function_name, "sign verify failed"));

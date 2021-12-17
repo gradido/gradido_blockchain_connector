@@ -131,8 +131,6 @@ Poco::SharedPtr<Poco::Net::HTTPClientSession> IotaRequest::createClientSession(N
 		return nullptr;
 	}
 	try {
-		Profiler iotaRequestTime;
-
 		Poco::SharedPtr<Poco::Net::HTTPClientSession> clientSession;
 		if (mServerPort == 443) {
 			clientSession = new Poco::Net::HTTPSClientSession(mServerHost, mServerPort, ServerConfig::g_SSL_CLient_Context);

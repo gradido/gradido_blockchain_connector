@@ -94,6 +94,7 @@ FILE(GLOB PROTO_GRADIDO "build/proto/gradido/*.cc" "build/proto/gradido/*.h")
 # used only for test project 
 FILE(GLOB TEST "src/cpp/test/*.cpp" "src/cpp/test/*.h")
 FILE(GLOB TEST_JSON_INTERFACE "src/cpp/test/JSONInterface/*.cpp" "src/cpp/test/JSONInterface/*.h")
+FILE(GLOB TEST_LIB "src/cpp/test/lib/*.cpp" "src/cpp/test/lib/*.h")
 
 SET(LOCAL_SRCS 
 	${MAIN} 
@@ -103,7 +104,7 @@ SET(LOCAL_SRCS
 	${PROTO_GRADIDO} 
 )
 SET(LOCAL_TEST_SRC
-	${TEST} ${TEST_MODEL} ${TEST_JSON_INTERFACE}
+	${TEST} ${TEST_MODEL} ${TEST_JSON_INTERFACE} ${TEST_LIB}
 )
 aux_source_directory("src/cpp" LOCAL_SRCS)
 
@@ -116,6 +117,7 @@ if(MSVC)
 	source_group("lib" FILES ${LIB_SRC})
 	source_group("Json-Interface" FILES ${JSONInterface})	
 	source_group("Test\\Json-Interface" FILES ${TEST_JSON_INTERFACE})
+	source_group("Test\\lib" FILES ${TEST_LIB})
 	source_group("Test" FILES ${TEST})
 endif()
 

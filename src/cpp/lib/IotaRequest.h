@@ -10,12 +10,11 @@ class IotaRequest
 public:
 	IotaRequest(const std::string& serverHost, int serverPort, const std::string& urlPath);
 	~IotaRequest();	
-
-	
+		
 	//! \return messageId as hex string
 	std::string sendMessage(const std::string& indexHex, const std::string& messageHex, NotificationList* errorReciver);
 
-	Poco::SharedPtr<Poco::Net::HTTPClientSession> createClientSession(NotificationList* errorReciver);
+	virtual Poco::SharedPtr<Poco::Net::HTTPClientSession> createClientSession(NotificationList* errorReciver);
 
 protected:
 
