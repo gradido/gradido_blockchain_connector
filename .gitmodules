@@ -10,3 +10,6 @@
 [submodule "dependencies/rapidjson"]
 	path = dependencies/rapidjson
 	url = https://github.com/Tencent/rapidjson.git
+[submodule "dependencies/cmake-modules"]
+	path = dependencies/cmake-modules
+	url = https://github.com/viaduck/cmake-modules.git

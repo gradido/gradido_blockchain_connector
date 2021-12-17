@@ -63,10 +63,8 @@ TEST_F(TestJsonSendTransactionIota, SendValidTransaction)
 	params.AddMember("groupAlias", "gdd1", alloc);
 
 	Value entry(kObjectType);
-	auto pubkeyHex = DataTypeConverter::binToHex(public_key);
-	auto signatureHex = DataTypeConverter::binToHex(sign);
-	entry.AddMember("pubkey", Value(pubkeyHex.data(), alloc), alloc);
-	entry.AddMember("signature", Value(signatureHex.data(), alloc), alloc);
+	entry.AddMember("pubkey", Value(public_key->convertToHex().data(), alloc), alloc);
+	entry.AddMember("signature", Value(sign->convertToHex().data(), alloc), alloc);
 	signaturePairs.PushBack(entry, alloc);
 
 	params.AddMember("signaturePairs", signaturePairs, alloc);

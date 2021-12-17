@@ -11,7 +11,6 @@
 #include "sodium.h"
 #include "../SingletonManager/MemoryManager.h"
 #include "DataTypeConverter.h"
-#include "Warning.h"
 
 #include "ServerConfig.h"
 
@@ -165,21 +164,6 @@ JsonRequestReturn JsonRequest::request(const char* methodName)
 					}
 				}
 				return JSON_REQUEST_RETURN_ERROR;
-			}
-			else if (stateString == "success") {
-				auto it = resultJson.FindMember("warnings");
-				if (it != resultJson.MemberEnd()) {
-					const Value& warnings = it->value;
-					for (auto it = warnings.MemberBegin(); it != warnings.MemberEnd(); it++) {
-						if (!it->name.IsString() || !it->value.IsString()) {
-							continue;
-						}
-						std::string name(it->name.GetString(), it->name.GetStringLength());
-						std::string value(it->value.GetString(), it->value.GetStringLength());
-
-						addWarning(new Warning(name, value));
-					}
-				}
 			}
 		}
 	}
