@@ -4,6 +4,7 @@
 #include "JSONInterface/JsonPackTransaction.h"
 #include "lib/DataTypeConverter.h"
 #include "TestJsonPackTransaction.h"
+#include "TestJsonHelper.h"
 
 #include "Poco/DateTimeFormatter.h"
 #include "proto/gradido/TransactionBody.pb.h"
@@ -15,12 +16,27 @@ using namespace rapidjson;
 
 void TestJsonPackTransaction::SetUp()
 {
-	
+			
 }
 
 void TestJsonPackTransaction::TearDown()
 {
 	
+}
+
+rapidjson::Document TestJsonPackTransaction::simpleTransfer(Poco::DateTime created)
+{
+	Document params(kObjectType);
+	auto alloc = params.GetAllocator();
+	params.AddMember("transactionType", "transfer", alloc);
+	
+	std::string memo = "Danke fuer deine Hilfe!";
+	params.AddMember("created", Value(Poco::DateTimeFormatter::format(created, "%Y-%m-%d %H:%M:%S").data(), alloc), alloc);
+	params.AddMember("memo", Value(memo.data(), alloc), alloc);
+	params.AddMember("senderPubkey", "131c7f68dd94b2be4c913400ff7ff4cdc03ac2bda99c2d29edcacb3b065c67e6", alloc);
+	params.AddMember("recipientPubkey", "eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd", alloc);
+	params.AddMember("amount", 1000000, alloc);
+	return params;
 }
 
 const proto::gradido::CrossGroupTransfer TestJsonPackTransaction::getCrossGroupTransfer(const proto::gradido::GradidoTransfer& protoTransfer) const
@@ -47,33 +63,13 @@ const proto::gradido::CrossGroupTransfer TestJsonPackTransaction::getCrossGroupT
 
 TEST_F(TestJsonPackTransaction, LocalTransfer)
 {
-	Document params(kObjectType);
-	auto alloc = params.GetAllocator();
-	params.AddMember("transactionType", "transfer", alloc);
 	Poco::DateTime now;
-	std::string memo = "Danke fuer deine Hilfe!";
-	params.AddMember("created", Value(Poco::DateTimeFormatter::format(now, "%Y-%m-%d %H:%M:%S").data(), alloc), alloc);
-	params.AddMember("memo", Value(memo.data(), alloc), alloc);
-	params.AddMember("senderPubkey", "131c7f68dd94b2be4c913400ff7ff4cdc03ac2bda99c2d29edcacb3b065c67e6", alloc);
-	params.AddMember("recipientPubkey", "eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd", alloc);
-	params.AddMember("amount", 1000000, alloc);
-	
 	JsonPackTransaction jsonCall;
-	auto result = jsonCall.handle(params);
+	auto result = jsonCall.handle(simpleTransfer(now));
 
 	std::string state;
 	jsonCall.getStringParameter(result, "state", state);
-	if (state != "success") {
-		std::string msg;
-		std::string details;
-		jsonCall.getStringParameter(result, "msg", msg);
-		jsonCall.getStringParameter(result, "details", details);
-		std::clog << "msg: " << msg;
-		if (details.size()) {
-			std::clog << ", details: " << details;
-		}
-		std::clog << std::endl;
-	}
+	testHelper::logErrorDetails(result);
 	ASSERT_EQ(state, "success");
 
 	auto transactionsIt = result.FindMember("transactions");
@@ -106,11 +102,30 @@ TEST_F(TestJsonPackTransaction, LocalTransfer)
 	auto nowRead = DataTypeConverter::convertFromProtoTimestampSeconds(protoBody.created());
 	Poco::DateTime readDate(nowRead);
 	ASSERT_EQ(now.timestamp().epochTime(), nowRead.epochTime());
-	ASSERT_EQ(memo, protoBody.memo());
+	ASSERT_EQ("Danke fuer deine Hilfe!", protoBody.memo());
 
 	MemoryManager::getInstance()->releaseMemory(bodyBytes);
 }
 
+TEST_F(TestJsonPackTransaction, LocalTransferMissingMemo)
+{
+	Poco::DateTime now;
+	JsonPackTransaction jsonCall;
+	auto params = simpleTransfer(now);
+	params.RemoveMember("memo");
+	auto result = jsonCall.handle(params);
+	auto message = testHelper::stringify(result);
+	printf("%s\n", message.data());
+
+	std::string state, msg;	
+	jsonCall.getStringParameter(result, "state", state);	
+	jsonCall.getStringParameter(result, "msg", msg);
+		
+	ASSERT_EQ(state, "error");
+	ASSERT_EQ(msg, "invalid transaction");
+
+	testHelper::checkDetails(result, { "TransactionTransfer::validate: memo is not set or not in expected range [5;150]\n" });
+}
 
 TEST_F(TestJsonPackTransaction, CrossGroupTransfer)
 {
