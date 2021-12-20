@@ -16,6 +16,8 @@ set(INSTALL_PLUGINDIR "bin")
 include_directories(
 	"dependencies" 
 	"dependencies/rapidjson/include"
+	"dependencies/protobuf/src"
+	"dependencies/protobuf/third_party/googletest/googletest/include"
 	"build"
 	"build/proto"
 	"build/http_pages"
@@ -24,7 +26,7 @@ include_directories(
 
 IF(UNIX)
 	include_directories(
-#		"dependencies/poco/Crypto/include" 
+		"dependencies/poco/Crypto/include" 
 #		"dependencies/poco/Data/include" 
 		"dependencies/poco/Util/include" 
 		"dependencies/poco/Foundation/include"
@@ -35,6 +37,11 @@ IF(UNIX)
 ENDIF()
 
 ############################## find protobuf  #########################################
+add_subdirectory("dependencies/protobuf/third_party/googletest")
+if(UNIX) 
+	SET(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE) 
+endif()
+
 add_subdirectory(dependencies/protobuf/cmake)
 
 ############################## parse protobuf files ###################################
@@ -121,8 +128,7 @@ if(MSVC)
 	source_group("Test" FILES ${TEST})
 endif()
 
-include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-conan_basic_setup()
+
 
 add_executable(GradidoBlockchainConnector ${LOCAL_SRCS})
 
@@ -135,7 +141,7 @@ IF(UNIX)
 	SET(ENABLE_PAGECOMPILER_FILE2PAGE OFF CACHE BOOL "" FORCE)
 	add_subdirectory("dependencies/poco")
 
-	set(POCO_LIBS PocoFoundation PocoUtil PocoNet PocoNetSSL)
+	set(POCO_LIBS Poco::Foundation Poco::Util Poco::Net Poco::NetSSL)
 ENDIF()
 
 
@@ -143,6 +149,9 @@ ENDIF()
 
 
 if(WIN32)
+	include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+	conan_basic_setup()
+
 	target_link_libraries(GradidoBlockchainConnector libprotobuf ${CONAN_LIBS})
 else() # unix
 	target_link_libraries(GradidoBlockchainConnector ${POCO_LIBS} sodium libprotobuf)
@@ -211,6 +220,9 @@ endif()
 
 project(GradidoBlockchainConnectorTest C CXX)
 #_TEST_BUILD
+#find_package(GTest CONFIG REQUIRED)
+#add_subdirectory("dependencies/protobuf/third_party/googletest")
+
 
 add_executable(GradidoBlockchainConnectorTest ${LOCAL_SRCS} ${LOCAL_TEST_SRC})
 target_compile_definitions(GradidoBlockchainConnectorTest PUBLIC "_TEST_BUILD")
@@ -218,7 +230,13 @@ target_compile_definitions(GradidoBlockchainConnectorTest PUBLIC "_TEST_BUILD")
 if(WIN32)
 	target_link_libraries(GradidoBlockchainConnectorTest ${CONAN_LIBS} libprotobuf)
 else()
-	target_link_libraries(GradidoBlockchainConnectorTest ${POCO_LIBS} sodium gtest)
+#	include(FetchContent)
+#	FetchContent_Declare(
+#	googletest
+#	URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
+#	)
+#	FetchContent_MakeAvailable(googletest)
+	target_link_libraries(GradidoBlockchainConnectorTest ${POCO_LIBS} sodium gtest libprotobuf)
 endif()
 
 add_test(NAME main COMMAND GradidoBlockchainConnectorTest)

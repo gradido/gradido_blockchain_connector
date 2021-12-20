@@ -21,10 +21,6 @@ NotificationList::~NotificationList()
 		mErrorStack.pop();
 	}
 
-	while (mWarningStack.size() > 0) {
-		delete mWarningStack.top();
-		mWarningStack.pop();
-	}
 }
 
 void NotificationList::addError(Notification* error, bool log/* = true */)
@@ -38,14 +34,6 @@ void NotificationList::addError(Notification* error, bool log/* = true */)
 	mErrorStack.push(error);
 }
 
-void NotificationList::addWarning(Warning* warning, bool log/* = true*/)
-{
-	if (log) {
-		std::string dateTimeString = Poco::DateTimeFormatter::format(Poco::DateTime(), "%d.%m.%y %H:%M:%S");
-		mLogging.warning("%s [NotificationList::addWarning] %s", dateTimeString, warning->getString(false));
-	}
-	mWarningStack.push(warning);
-}
 
 void NotificationList::addNotification(Notification* notification)
 {
@@ -66,19 +54,6 @@ Notification* NotificationList::getLastError()
 	return error;
 }
 
-Warning* NotificationList::getLastWarning()
-{
-	if (mWarningStack.size() == 0) {
-		return nullptr;
-	}
-
-	Warning* warning = mWarningStack.top();
-	if (warning) {
-		mWarningStack.pop();
-	}
-
-	return warning;
-}
 
 void NotificationList::clearErrors()
 {
@@ -103,16 +78,6 @@ int NotificationList::getErrors(NotificationList* send)
 	return iCount;
 }
 
-int NotificationList::getWarnings(NotificationList* send)
-{
-	Warning* warning = nullptr;
-	int iCount = 0;
-	while (warning = send->getLastWarning()) {
-		addWarning(warning, false);
-		iCount++;
-	}
-	return iCount;
-}
 
 void NotificationList::printErrors()
 {
@@ -152,33 +117,6 @@ rapidjson::Value NotificationList::getErrorsArray(rapidjson::Document::Allocator
 	return value;
 }
 
-std::vector<std::string> NotificationList::getWarningsArray()
-{
-	std::vector<std::string> result;
-	result.reserve(mWarningStack.size());
-
-	while (mWarningStack.size() > 0) {
-		auto warning = mWarningStack.top();
-		mWarningStack.pop();
-		//result->add(error->getString());
-		result.push_back(warning->getString());
-		delete warning;
-	}
-	return result;
-}
-
-rapidjson::Value NotificationList::getWarningsArray(rapidjson::Document::AllocatorType& alloc)
-{
-	rapidjson::Value value;
-	value.SetArray();
-	while (mWarningStack.size() > 0) {
-		auto warning = mWarningStack.top();
-		mWarningStack.pop();
-		value.PushBack(rapidjson::Value(warning->getString().data(), alloc), alloc);
-		delete warning;
-	}
-	return value;
-}
 
 std::string NotificationList::getErrorsHtml()
 {

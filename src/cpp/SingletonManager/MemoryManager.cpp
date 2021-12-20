@@ -1,5 +1,6 @@
 #include "MemoryManager.h"
 #include "sodium.h"
+#include <memory.h>
 
 #define _DEFAULT_PAGE_SIZE 10
 

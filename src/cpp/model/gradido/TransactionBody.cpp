@@ -198,7 +198,7 @@ namespace model {
 		{
 			Poco::ScopedLock<Poco::Mutex> _lock(mWorkMutex);
 			if (mTransactionBody.IsInitialized()) {
-				auto size = mTransactionBody.ByteSize();
+				auto size = mTransactionBody.ByteSizeLong();
 				//auto bodyBytesSize = MemoryManager::getInstance()->getFreeMemory(mProtoCreation.ByteSizeLong());
 				std::string resultString(size, 0);
 				if (!mTransactionBody.SerializeToString(&resultString)) {
