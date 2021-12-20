@@ -24,7 +24,7 @@ void TestJsonPackTransaction::TearDown()
 	
 }
 
-rapidjson::Document TestJsonPackTransaction::simpleTransfer(Poco::DateTime created)
+Document TestJsonPackTransaction::simpleTransfer(Poco::DateTime created)
 {
 	Document params(kObjectType);
 	auto alloc = params.GetAllocator();
@@ -36,6 +36,33 @@ rapidjson::Document TestJsonPackTransaction::simpleTransfer(Poco::DateTime creat
 	params.AddMember("senderPubkey", "131c7f68dd94b2be4c913400ff7ff4cdc03ac2bda99c2d29edcacb3b065c67e6", alloc);
 	params.AddMember("recipientPubkey", "eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd", alloc);
 	params.AddMember("amount", 1000000, alloc);
+
+	return params;
+}
+
+Document TestJsonPackTransaction::crossGroupTransfer(Poco::DateTime created)
+{
+	auto params = simpleTransfer(created);
+	auto alloc = params.GetAllocator();
+	params.AddMember("senderGroupAlias", "gdd1", alloc);
+	params.AddMember("recipientGroupAlias", "gdd2", alloc);
+
+	return params;
+}
+
+Document TestJsonPackTransaction::simpleCreation(Poco::DateTime now, Poco::DateTime targetDate)
+{
+	Document params(kObjectType);
+	auto alloc = params.GetAllocator();
+	params.AddMember("transactionType", "creation", alloc);
+	// int year, int month, int day
+	std::string memo = "AGE Oktober 2021";
+	params.AddMember("created", Value(Poco::DateTimeFormatter::format(now, "%Y-%m-%d %H:%M:%S").data(), alloc), alloc);
+	params.AddMember("targetDate", Value(Poco::DateTimeFormatter::format(targetDate, "%Y-%m-%d %H:%M:%S").data(), alloc), alloc);
+	params.AddMember("memo", Value(memo.data(), alloc), alloc);
+	params.AddMember("recipientPubkey", "eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd", alloc);
+	params.AddMember("amount", 10000000, alloc);
+
 	return params;
 }
 
@@ -114,9 +141,7 @@ TEST_F(TestJsonPackTransaction, LocalTransferMissingMemo)
 	auto params = simpleTransfer(now);
 	params.RemoveMember("memo");
 	auto result = jsonCall.handle(params);
-	auto message = testHelper::stringify(result);
-	printf("%s\n", message.data());
-
+	
 	std::string state, msg;	
 	jsonCall.getStringParameter(result, "state", state);	
 	jsonCall.getStringParameter(result, "msg", msg);
@@ -127,37 +152,198 @@ TEST_F(TestJsonPackTransaction, LocalTransferMissingMemo)
 	testHelper::checkDetails(result, { "TransactionTransfer::validate: memo is not set or not in expected range [5;150]\n" });
 }
 
+TEST_F(TestJsonPackTransaction, LocalTransferMissingCreated)
+{
+	Poco::DateTime now;
+	JsonPackTransaction jsonCall;
+	auto params = simpleTransfer(now);
+	params.RemoveMember("created");
+	auto result = jsonCall.handle(params);
+
+	std::string state, msg;
+	jsonCall.getStringParameter(result, "state", state);
+	jsonCall.getStringParameter(result, "msg", msg);
+
+	ASSERT_EQ(state, "error");
+	ASSERT_EQ(msg, "created not found");	
+}
+
+TEST_F(TestJsonPackTransaction, LocalTransferMissingTransactionType)
+{
+	Poco::DateTime now;
+	JsonPackTransaction jsonCall;
+	auto params = simpleTransfer(now);
+	params.RemoveMember("transactionType");
+	auto result = jsonCall.handle(params);
+
+	std::string state, msg;
+	jsonCall.getStringParameter(result, "state", state);
+	jsonCall.getStringParameter(result, "msg", msg);
+
+	ASSERT_EQ(state, "error");
+	ASSERT_EQ(msg, "transactionType not found");
+}
+
+TEST_F(TestJsonPackTransaction, LocalTransferMissingSenderPubkey)
+{
+	Poco::DateTime now;
+	JsonPackTransaction jsonCall;
+	auto params = simpleTransfer(now);
+	params.RemoveMember("senderPubkey");
+	auto result = jsonCall.handle(params);
+
+	std::string state, msg;
+	jsonCall.getStringParameter(result, "state", state);
+	jsonCall.getStringParameter(result, "msg", msg);
+
+	ASSERT_EQ(state, "error");
+	ASSERT_EQ(msg, "senderPubkey not found");
+}
+
+TEST_F(TestJsonPackTransaction, LocalTransferEmptySenderPubkey)
+{
+	Poco::DateTime now;
+	JsonPackTransaction jsonCall;
+	auto params = simpleTransfer(now);
+	params.RemoveMember("senderPubkey");
+	params.AddMember("senderPubkey", "", params.GetAllocator()); 
+	auto result = jsonCall.handle(params);
+
+	std::string state, msg;
+	jsonCall.getStringParameter(result, "state", state);
+	jsonCall.getStringParameter(result, "msg", msg);
+
+	ASSERT_EQ(state, "error");
+	ASSERT_EQ(msg, "invalid transaction");
+	testHelper::checkDetails(result, { "TransactionTransfer::validate: invalid size of sender pubkey\n" });
+}
+
+TEST_F(TestJsonPackTransaction, LocalTransferMissingRecipientPubkey)
+{
+	Poco::DateTime now;
+	JsonPackTransaction jsonCall;
+	auto params = simpleTransfer(now);
+	params.RemoveMember("recipientPubkey");
+	auto result = jsonCall.handle(params);
+
+	std::string state, msg;
+	jsonCall.getStringParameter(result, "state", state);
+	jsonCall.getStringParameter(result, "msg", msg);
+
+	ASSERT_EQ(state, "error");
+	ASSERT_EQ(msg, "recipientPubkey not found");
+}
+
+
+TEST_F(TestJsonPackTransaction, LocalTransferEmptyRecipientPubkey)
+{
+	Poco::DateTime now;
+	JsonPackTransaction jsonCall;
+	auto params = simpleTransfer(now);
+	params.RemoveMember("recipientPubkey");
+	params.AddMember("recipientPubkey", "", params.GetAllocator());
+	auto result = jsonCall.handle(params);
+
+	std::string state, msg;
+	jsonCall.getStringParameter(result, "state", state);
+	jsonCall.getStringParameter(result, "msg", msg);
+
+	ASSERT_EQ(state, "error");
+	ASSERT_EQ(msg, "invalid transaction");
+	testHelper::checkDetails(result, { "TransactionTransfer::validate: invalid size of recipient pubkey\n" });
+}
+
+TEST_F(TestJsonPackTransaction, LocalTransferSameSenderAndRecipientPubkey)
+{
+	Poco::DateTime now;
+	JsonPackTransaction jsonCall;
+	auto params = simpleTransfer(now);
+	auto alloc = params.GetAllocator();
+	params.RemoveMember("recipientPubkey");
+	auto senderPubkeyIt = params.FindMember("senderPubkey");
+	ASSERT_NE(senderPubkeyIt, params.MemberEnd());
+	params.AddMember("recipientPubkey", Value(senderPubkeyIt->value.GetString(), alloc), params.GetAllocator());
+	auto result = jsonCall.handle(params);
+
+	std::string state, msg;
+	jsonCall.getStringParameter(result, "state", state);
+	jsonCall.getStringParameter(result, "msg", msg);
+
+	ASSERT_EQ(state, "error");
+	ASSERT_EQ(msg, "invalid transaction");
+	testHelper::checkDetails(result, { "TransactionTransfer::validate: sender and recipient are the same\n" });
+}
+
+TEST_F(TestJsonPackTransaction, LocalTransferMissingAmount)
+{
+	Poco::DateTime now;
+	JsonPackTransaction jsonCall;
+	auto params = simpleTransfer(now);
+	params.RemoveMember("amount");
+	auto result = jsonCall.handle(params);
+
+	std::string state, msg;
+	jsonCall.getStringParameter(result, "state", state);
+	jsonCall.getStringParameter(result, "msg", msg);
+
+	ASSERT_EQ(state, "error");
+	ASSERT_EQ(msg, "amount not found");
+
+}
+
+TEST_F(TestJsonPackTransaction, LocalTransferNegativeAmount)
+{
+	Poco::DateTime now;
+	JsonPackTransaction jsonCall;
+	auto params = simpleTransfer(now);
+	auto alloc = params.GetAllocator();
+	params.RemoveMember("amount");
+	params.AddMember("amount", -100, alloc);
+	auto result = jsonCall.handle(params);
+
+	std::string state, msg;
+	jsonCall.getStringParameter(result, "state", state);
+	jsonCall.getStringParameter(result, "msg", msg);
+
+	ASSERT_EQ(state, "error");
+	ASSERT_EQ(msg, "invalid transaction");
+
+	testHelper::checkDetails(result, { "TransactionTransfer::validate: negative amount\n" });
+}
+
+TEST_F(TestJsonPackTransaction, LocalTransferZeroAmount)
+{
+	Poco::DateTime now;
+	JsonPackTransaction jsonCall;
+	auto params = simpleTransfer(now);
+	auto alloc = params.GetAllocator();
+	params.RemoveMember("amount");
+	params.AddMember("amount", 0, alloc);
+	auto result = jsonCall.handle(params);
+
+	std::string state, msg;
+	jsonCall.getStringParameter(result, "state", state);
+	jsonCall.getStringParameter(result, "msg", msg);
+
+	ASSERT_EQ(state, "error");
+	ASSERT_EQ(msg, "invalid transaction");
+
+	testHelper::checkDetails(result, { "TransactionTransfer::validate: amount is empty\n" });
+}
+
+
+
 TEST_F(TestJsonPackTransaction, CrossGroupTransfer)
 {
-	Document params(kObjectType);
-	auto alloc = params.GetAllocator();
-	params.AddMember("transactionType", "transfer", alloc);
 	Poco::DateTime now;
-	std::string memo = "Danke fuer deine Hilfe!";
-	params.AddMember("created", Value(Poco::DateTimeFormatter::format(now, "%Y-%m-%d %H:%M:%S").data(), alloc), alloc);
-	params.AddMember("memo", Value(memo.data(), alloc), alloc);
-	params.AddMember("senderPubkey", "131c7f68dd94b2be4c913400ff7ff4cdc03ac2bda99c2d29edcacb3b065c67e6", alloc);
-	params.AddMember("recipientPubkey", "eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd", alloc);
-	params.AddMember("amount", 1000000, alloc);
-	params.AddMember("senderGroupAlias", "gdd1", alloc);
-	params.AddMember("recipientGroupAlias", "gdd2", alloc);
+	auto params = crossGroupTransfer(now);
 
 	JsonPackTransaction jsonCall;
 	auto result = jsonCall.handle(params);
 
 	std::string state;
 	jsonCall.getStringParameter(result, "state", state);
-	if (state != "success") {
-		std::string msg;
-		std::string details;
-		jsonCall.getStringParameter(result, "msg", msg);
-		jsonCall.getStringParameter(result, "details", details);
-		std::clog << "msg: " << msg;
-		if (details.size()) {
-			std::clog << ", details: " << details;
-		}
-		std::clog << std::endl;
-	}
+	testHelper::logErrorDetails(result);
 	ASSERT_EQ(state, "success");
 
 	auto transactionsIt = result.FindMember("transactions");
@@ -182,7 +368,7 @@ TEST_F(TestJsonPackTransaction, CrossGroupTransfer)
 		proto::gradido::TransactionBody protoBody;
 		ASSERT_TRUE(protoBody.ParseFromString(std::string((const char*)bodyBytes->data(), bodyBytes->size())));
 		MemoryManager::getInstance()->releaseMemory(bodyBytes);
-
+	
 		ASSERT_TRUE(protoBody.has_transfer());
 		auto transfer = protoBody.transfer();
 		auto crossGroup = getCrossGroupTransfer(protoBody.transfer());
@@ -209,44 +395,26 @@ TEST_F(TestJsonPackTransaction, CrossGroupTransfer)
 		auto nowRead = DataTypeConverter::convertFromProtoTimestampSeconds(protoBody.created());
 		Poco::DateTime readDate(nowRead);
 		ASSERT_EQ(now.timestamp().epochTime(), nowRead.epochTime());
-		ASSERT_EQ(memo, protoBody.memo());
+		ASSERT_EQ("Danke fuer deine Hilfe!", protoBody.memo());
 		
 		i++;
 	}
 	
 }
 
+
 TEST_F(TestJsonPackTransaction, Creation)
 {
-	Document params(kObjectType);
-	auto alloc = params.GetAllocator();
-	params.AddMember("transactionType", "creation", alloc);
-	// int year, int month, int day
-	std::string memo = "AGE Oktober 2021";
-	Poco::DateTime created(2021, 11, 5, 10, 30, 10);
-	Poco::DateTime targetDate(2021, 10, 1);
-	params.AddMember("created", Value(Poco::DateTimeFormatter::format(created, "%Y-%m-%d %H:%M:%S").data(), alloc), alloc);
-	params.AddMember("targetDate", Value(Poco::DateTimeFormatter::format(targetDate, "%Y-%m-%d %H:%M:%S").data(), alloc), alloc);
-	params.AddMember("memo", Value(memo.data(), alloc), alloc);
-	params.AddMember("recipientPubkey", "eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd", alloc);
-	params.AddMember("amount", 10000000, alloc);
-
+	Poco::DateTime now;
+	Poco::DateTime targetDate = testHelper::subtractMonthFromDate(now, 2);
+	auto params = simpleCreation(now, targetDate);
+	
 	JsonPackTransaction jsonCall;
 	auto result = jsonCall.handle(params);
 
 	std::string state;
 	jsonCall.getStringParameter(result, "state", state);
-	if (state != "success") {
-		std::string msg;
-		std::string details;
-		jsonCall.getStringParameter(result, "msg", msg);
-		jsonCall.getStringParameter(result, "details", details);
-		std::clog << "msg: " << msg;
-		if (details.size()) {
-			std::clog << ", details: " << details;
-		}
-		std::clog << std::endl;
-	}
+	testHelper::logErrorDetails(result);
 	ASSERT_EQ(state, "success");
 
 	auto transactionsIt = result.FindMember("transactions");
@@ -275,13 +443,94 @@ TEST_F(TestJsonPackTransaction, Creation)
 	auto nowRead = DataTypeConverter::convertFromProtoTimestampSeconds(protoBody.created());
 	auto targetDateRead = DataTypeConverter::convertFromProtoTimestampSeconds(creation.target_date());
 	Poco::DateTime readDate(nowRead);
-	ASSERT_EQ(created.timestamp().epochTime(), nowRead.epochTime());
+	std::string memo = "AGE Oktober 2021";	
+
+	ASSERT_EQ(now.timestamp().epochTime(), nowRead.epochTime());
 	ASSERT_EQ(targetDate.timestamp().epochTime(), targetDateRead.epochTime());
 	ASSERT_EQ(memo, protoBody.memo());
 
 	MemoryManager::getInstance()->releaseMemory(bodyBytes);
 }
 
+TEST_F(TestJsonPackTransaction, CreationToHighAmount)
+{
+	Poco::DateTime now;
+	auto params = simpleCreation(now, testHelper::subtractMonthFromDate(now, 2));
+	auto alloc = params.GetAllocator();
+	params.RemoveMember("amount");
+	params.AddMember("amount", 100000000, alloc);
+
+	JsonPackTransaction jsonCall;
+	auto result = jsonCall.handle(params);
+
+	std::string state, msg;
+	jsonCall.getStringParameter(result, "state", state);
+	jsonCall.getStringParameter(result, "msg", msg);
+
+	ASSERT_EQ(state, "error");
+	ASSERT_EQ(msg, "invalid transaction");
+
+	testHelper::checkDetails(result, { "TransactionCreation::validate: creation amount to high, max 1000 per month\n" });
+
+}
+
+TEST_F(TestJsonPackTransaction, CreationToLowAmount)
+{
+	Poco::DateTime now;
+	auto params = simpleCreation(now, testHelper::subtractMonthFromDate(now, 2));
+	auto alloc = params.GetAllocator();
+	params.RemoveMember("amount");
+	params.AddMember("amount", 1, alloc);
+
+	JsonPackTransaction jsonCall;
+	auto result = jsonCall.handle(params);
+
+	std::string state, msg;
+	jsonCall.getStringParameter(result, "state", state);
+	jsonCall.getStringParameter(result, "msg", msg);
+
+	ASSERT_EQ(state, "error");
+	ASSERT_EQ(msg, "invalid transaction");
+
+	testHelper::checkDetails(result, { "TransactionCreation::validate: creation amount to low, min 1 GDD\n" });
+
+}
+
+TEST_F(TestJsonPackTransaction, CreationPast2Months)
+{
+	Poco::DateTime now;
+	auto params = simpleCreation(now, testHelper::subtractMonthFromDate(now, 3));
+	auto alloc = params.GetAllocator();
+		
+	JsonPackTransaction jsonCall;
+	auto result = jsonCall.handle(params);
+
+	std::string state, msg;
+	jsonCall.getStringParameter(result, "state", state);
+	jsonCall.getStringParameter(result, "msg", msg);
+
+	ASSERT_EQ(state, "error");
+	ASSERT_EQ(msg, "invalid transaction");
+
+	testHelper::checkDetails(result, { "TransactionCreation::validate: year is the same, target date month is more than 2 month in past\n" });
+}
+
+TEST_F(TestJsonPackTransaction, CreationFuture)
+{
+	Poco::DateTime now;
+	auto params = simpleCreation(now, testHelper::addMonthToDate(now, 1));
+	auto alloc = params.GetAllocator();
+	
+	JsonPackTransaction jsonCall;
+	auto result = jsonCall.handle(params);
+
+	std::string state, msg;
+	jsonCall.getStringParameter(result, "state", state);
+	jsonCall.getStringParameter(result, "msg", msg);
+
+	ASSERT_EQ(state, "error");
+	ASSERT_EQ(msg, "invalid transaction");
+}
 
 TEST_F(TestJsonPackTransaction, GroupAddMember)
 {

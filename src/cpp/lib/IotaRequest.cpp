@@ -108,7 +108,10 @@ std::string IotaRequest::sendMessage(const std::string& indexHex, const std::str
 	Writer<StringBuffer> writer(buffer);
 	requestJson.Accept(writer);
 	auto requestString = std::string(buffer.GetString(), buffer.GetSize());
-	printf("request: %s\n", requestString.data());
+
+	// TODO: request response log
+	//printf("request: %s\n", requestString.data());
+
 	request_stream << requestString;
 
 	Poco::Net::HTTPResponse response;
@@ -153,7 +156,10 @@ Document IotaRequest::parseResponse(std::istream& responseStream, NotificationLi
 	for (std::string line; std::getline(responseStream, line); ) {
 		responseStringStream << line << std::endl;
 	}
-	printf("response:\n%s\n", responseStringStream.str().data());
+	
+	// TODO: request response log
+	//printf("response:\n%s\n", responseStringStream.str().data());
+
 
 	Document result;
 	// extract parameter from request

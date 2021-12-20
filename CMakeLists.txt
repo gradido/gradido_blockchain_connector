@@ -37,8 +37,9 @@ IF(UNIX)
 ENDIF()
 
 ############################## find protobuf  #########################################
-add_subdirectory("dependencies/protobuf/third_party/googletest")
+
 if(UNIX) 
+	add_subdirectory("dependencies/protobuf/third_party/googletest")
 	SET(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE) 
 endif()
 

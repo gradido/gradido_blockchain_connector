@@ -53,4 +53,33 @@ namespace testHelper {
 			ASSERT_TRUE(found);
 		}
 	}
+	Poco::DateTime subtractMonthFromDate(Poco::DateTime date, int subMonth)
+	{
+		int targetMonth = date.month() - subMonth;
+		int targetYear = date.year();
+		if (targetMonth < 1) {
+			targetYear--;
+			targetMonth += 12;
+		}
+		return Poco::DateTime(
+			targetYear, targetMonth, 
+			date.day(), date.hour(), date.minute(),
+			date.second(), date.millisecond(), date.microsecond()
+		);
+	}
+
+	Poco::DateTime addMonthToDate(Poco::DateTime date, int addMonth)
+	{
+		int targetMonth = date.month() + addMonth;
+		int targetYear = date.year();
+		if (targetMonth > 12) {
+			targetYear++;
+			targetMonth -= 12;
+		}
+		return Poco::DateTime(
+			targetYear, targetMonth,
+			date.day(), date.hour(), date.minute(),
+			date.second(), date.millisecond(), date.microsecond()
+		);
+	}
 }

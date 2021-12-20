@@ -69,7 +69,7 @@ namespace model {
 			const std::string& memo,
 			const MemoryBin* senderPublicKey,
 			const MemoryBin* recipiantPublicKey,
-			Poco::UInt32 amount,
+			Poco::Int64 amount,
 			TransactionTransferType transferType,
 			const std::string groupAlias/* = ""*/,
 			Poco::Timestamp pairedTransactionId/* = Poco::Timestamp()*/)
@@ -124,7 +124,7 @@ namespace model {
 		Poco::AutoPtr<TransactionBody> TransactionBody::create(
 			const std::string& memo,
 			const MemoryBin* recipiantPublicKey,
-			Poco::UInt32 amount,
+			Poco::Int64 amount,
 			Poco::DateTime targetDate
 		)
 		{

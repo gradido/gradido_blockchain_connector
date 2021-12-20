@@ -112,7 +112,7 @@ namespace model {
 			Poco::AutoPtr<Transaction> transaction;
 			Poco::AutoPtr<TransactionBody> transaction_body;
 
-			if (!senderPublicKey || !recipientPubkey || !amount) {
+			if (!senderPublicKey || !recipientPubkey) {
 				return transaction;
 			}
 

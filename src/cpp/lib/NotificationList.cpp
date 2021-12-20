@@ -25,12 +25,12 @@ NotificationList::~NotificationList()
 
 void NotificationList::addError(Notification* error, bool log/* = true */)
 {
-
+#ifndef _TEST_BUILD
 	if (log) {
 		std::string dateTimeString = Poco::DateTimeFormatter::format(Poco::DateTime(), "%d.%m.%y %H:%M:%S");
 		mLogging.error("%s [NotificationList::addError] %s", dateTimeString, error->getString(false));
-
 	}
+#endif
 	mErrorStack.push(error);
 }
 

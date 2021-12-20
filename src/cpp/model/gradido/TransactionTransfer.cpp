@@ -109,7 +109,7 @@ namespace model {
 				return TRANSACTION_VALID_INVALID_AMOUNT;
 			}
 			if (receiver_pubkey->size() != crypto_sign_PUBLICKEYBYTES) {
-				addError(new Error(function_name, "invalid size of receiver pubkey"));
+				addError(new Error(function_name, "invalid size of recipient pubkey"));
 				return TRANSACTION_VALID_INVALID_PUBKEY;
 			}
 			if (sender->pubkey().size() != crypto_sign_PUBLICKEYBYTES) {
@@ -117,7 +117,7 @@ namespace model {
 				return TRANSACTION_VALID_INVALID_PUBKEY;
 			}
 			if (0 == memcmp(sender->pubkey().data(), receiver_pubkey->data(), crypto_sign_PUBLICKEYBYTES)) {
-				addError(new Error(function_name, "sender and receiver are the same"));
+				addError(new Error(function_name, "sender and recipient are the same"));
 				return TRANSACTION_VALID_INVALID_PUBKEY;
 			}
 			if (mMemo.size() < 5 || mMemo.size() > 150) {
