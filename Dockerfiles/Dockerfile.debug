@@ -1,0 +1,33 @@
+
+#########################################################################################################
+# Prepare debug 
+#########################################################################################################
+FROM gradido/login_dependencies:gcc9-debug-3.1 as prepare_debug
+
+ENV DOCKER_WORKDIR="/code"
+WORKDIR ${DOCKER_WORKDIR}
+
+RUN echo '/usr/local/lib' >> /etc/ld.so.conf && ldconfig
+
+COPY ./CMakeLists.txt.lib ./CMakeLists.txt
+COPY ./dependencies/rapidjson ./dependencies/rapidjson
+RUN ln -s /usr/local/googletest ./googletest
+COPY ./src ./src
+
+	
+#########################################################################################################
+# Build debug 
+#########################################################################################################
+FROM prepare_debug as debug
+
+ENV DOCKER_WORKDIR="/code"
+WORKDIR ${DOCKER_WORKDIR}
+
+RUN mkdir build && \
+	cd build && \
+	cmake -DCMAKE_BUILD_TYPE=Debug ..
+
+RUN mkdir ~/.gradido && cd ~/.gradido && wget --no-check-certificate https://curl.se/ca/cacert.pem
+
+CMD cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug && make -j$(nproc) GradidoBlockchainConnector && ./bin/GradidoBlockchainConnector
+
