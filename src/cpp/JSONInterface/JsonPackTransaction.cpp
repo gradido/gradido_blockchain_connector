@@ -201,6 +201,7 @@ Document JsonPackTransaction::resultBase64Transactions(std::vector<TransactionGr
 			std::string base64 = DataTypeConverter::binToBase64(transactionBody->getBodyBytes());
 			if (base64 != "<uninitalized>") {
 				entry.AddMember("bodyBytesBase64", Value(base64.data(), alloc), alloc);
+				printf("body bytes hex: %s\n", DataTypeConverter::binToHex(transactionBody->getBodyBytes()).data());
 			}
 			else {
 				return stateError("invalid body bytes");

@@ -63,6 +63,7 @@ namespace model {
 			static const char function_name[] = "TransactionCreation::validate";
 			auto target_date = Poco::DateTime(DataTypeConverter::convertFromProtoTimestampSeconds(mProtoCreation.target_date()));
 			auto now = Poco::DateTime();
+			auto mm = MemoryManager::getInstance();
 			//  2021-09-01 02:00:00 | 2021-12-04 01:22:14
 			if (target_date.year() == now.year()) 
 			{
@@ -103,13 +104,16 @@ namespace model {
 				return TRANSACTION_VALID_CREATION_OUT_OF_BORDER;
 			}
 			
-
 			if (mProtoCreation.recipiant().pubkey().size() != crypto_sign_PUBLICKEYBYTES) {
-				addError(new Error(function_name, "receiver pubkey has invalid size"));
+				addError(new Error(function_name, "recipiant pubkey has invalid size"));
 				return TRANSACTION_VALID_INVALID_PUBKEY;
 			}			
-
-			// TODO: check creation amount from last 3 month from node server
+			auto empty = mm->getFreeMemory(crypto_sign_PUBLICKEYBYTES);
+			memset(*empty, 0, crypto_sign_PUBLICKEYBYTES);
+			if (0 == memcmp(mProtoCreation.recipiant().pubkey().data(), *empty, crypto_sign_PUBLICKEYBYTES)) {
+				addError(new Error(function_name, "recipiant pubkey is zero"));
+				return TRANSACTION_VALID_INVALID_PUBKEY;
+			}
 			
 			return TRANSACTION_VALID_OK;
 		}

@@ -100,6 +100,7 @@ namespace model {
 
 			static const char function_name[] = "TransactionTransfer::validate";
 			auto amount = sender->amount();
+			auto mm = MemoryManager::getInstance();
 			if (0 == amount) {
 				addError(new Error(function_name, "amount is empty"));
 				return TRANSACTION_VALID_INVALID_AMOUNT;
@@ -120,6 +121,17 @@ namespace model {
 				addError(new Error(function_name, "sender and recipient are the same"));
 				return TRANSACTION_VALID_INVALID_PUBKEY;
 			}
+			auto empty = mm->getFreeMemory(crypto_sign_PUBLICKEYBYTES);
+			memset(*empty, 0, crypto_sign_PUBLICKEYBYTES);
+			if (0 == memcmp(sender->pubkey().data(), *empty, crypto_sign_PUBLICKEYBYTES)) {
+				addError(new Error(function_name, "sender pubkey is zero"));
+				return TRANSACTION_VALID_INVALID_PUBKEY;
+			}
+			if (0 == memcmp(receiver_pubkey->data(), *empty, crypto_sign_PUBLICKEYBYTES)) {
+				addError(new Error(function_name, "recipiant pubkey is zero"));
+				return TRANSACTION_VALID_INVALID_PUBKEY;
+			}
+			mm->releaseMemory(empty);
 			if (mMemo.size() < 5 || mMemo.size() > 150) {
 				addError(new Error(function_name, "memo is not set or not in expected range [5;150]"));
 				return TRANSACTION_VALID_INVALID_MEMO;

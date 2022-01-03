@@ -218,6 +218,29 @@ TEST_F(TestJsonPackTransaction, LocalTransferEmptySenderPubkey)
 	testHelper::checkDetails(result, { "TransactionTransfer::validate: invalid size of sender pubkey\n" });
 }
 
+TEST_F(TestJsonPackTransaction, LocalTransferZeroSenderPubkey)
+{
+	Poco::DateTime now;
+	JsonPackTransaction jsonCall;
+	auto mm = MemoryManager::getInstance();
+	auto params = simpleTransfer(now);
+	auto alloc = params.GetAllocator();
+	params.RemoveMember("senderPubkey");
+	auto emptyPubkey = mm->getFreeMemory(32);
+	memset(*emptyPubkey, 0, 32);
+	params.AddMember("senderPubkey", Value(DataTypeConverter::binToHex(emptyPubkey).data(), alloc), alloc);
+	mm->releaseMemory(emptyPubkey);
+	auto result = jsonCall.handle(params);
+
+	std::string state, msg;
+	jsonCall.getStringParameter(result, "state", state);
+	jsonCall.getStringParameter(result, "msg", msg);
+
+	ASSERT_EQ(state, "error");
+	ASSERT_EQ(msg, "invalid transaction");
+	testHelper::checkDetails(result, { "TransactionTransfer::validate: sender pubkey is zero\n" });
+}
+
 TEST_F(TestJsonPackTransaction, LocalTransferMissingRecipientPubkey)
 {
 	Poco::DateTime now;
@@ -251,6 +274,29 @@ TEST_F(TestJsonPackTransaction, LocalTransferEmptyRecipientPubkey)
 	ASSERT_EQ(state, "error");
 	ASSERT_EQ(msg, "invalid transaction");
 	testHelper::checkDetails(result, { "TransactionTransfer::validate: invalid size of recipient pubkey\n" });
+}
+
+TEST_F(TestJsonPackTransaction, LocalTransferZeroRecipientPubkey)
+{
+	Poco::DateTime now;
+	JsonPackTransaction jsonCall;
+	auto mm = MemoryManager::getInstance();
+	auto params = simpleTransfer(now);
+	auto alloc = params.GetAllocator();
+	params.RemoveMember("recipientPubkey");
+	auto emptyPubkey = mm->getFreeMemory(32);
+	memset(*emptyPubkey, 0, 32);
+	params.AddMember("recipientPubkey", Value(DataTypeConverter::binToHex(emptyPubkey).data(), alloc), alloc);
+	mm->releaseMemory(emptyPubkey);
+	auto result = jsonCall.handle(params);
+
+	std::string state, msg;
+	jsonCall.getStringParameter(result, "state", state);
+	jsonCall.getStringParameter(result, "msg", msg);
+
+	ASSERT_EQ(state, "error");
+	ASSERT_EQ(msg, "invalid transaction");
+	testHelper::checkDetails(result, { "TransactionTransfer::validate: recipiant pubkey is zero\n" });
 }
 
 TEST_F(TestJsonPackTransaction, LocalTransferSameSenderAndRecipientPubkey)
@@ -499,7 +545,8 @@ TEST_F(TestJsonPackTransaction, CreationToLowAmount)
 TEST_F(TestJsonPackTransaction, CreationPast2Months)
 {
 	Poco::DateTime now;
-	auto params = simpleCreation(now, testHelper::subtractMonthFromDate(now, 3));
+	auto targetDate = testHelper::subtractMonthFromDate(now, 3);
+	auto params = simpleCreation(now, targetDate);
 	auto alloc = params.GetAllocator();
 		
 	JsonPackTransaction jsonCall;
@@ -511,8 +558,12 @@ TEST_F(TestJsonPackTransaction, CreationPast2Months)
 
 	ASSERT_EQ(state, "error");
 	ASSERT_EQ(msg, "invalid transaction");
-
-	testHelper::checkDetails(result, { "TransactionCreation::validate: year is the same, target date month is more than 2 month in past\n" });
+	if (now.year() == targetDate.year()) {
+		testHelper::checkDetails(result, { "TransactionCreation::validate: year is the same, target date month is more than 2 month in past\n" });
+	}
+	else if (now.year() > targetDate.year()) {
+		testHelper::checkDetails(result, { "TransactionCreation::validate: target date is more than 2 month in past\n" });
+	}
 }
 
 TEST_F(TestJsonPackTransaction, CreationFuture)
@@ -521,6 +572,30 @@ TEST_F(TestJsonPackTransaction, CreationFuture)
 	auto params = simpleCreation(now, testHelper::addMonthToDate(now, 1));
 	auto alloc = params.GetAllocator();
 	
+	JsonPackTransaction jsonCall;
+	auto result = jsonCall.handle(params);
+
+	std::string state, msg;
+	jsonCall.getStringParameter(result, "state", state);
+	jsonCall.getStringParameter(result, "msg", msg);
+
+	ASSERT_EQ(state, "error");
+	ASSERT_EQ(msg, "invalid transaction");
+}
+
+TEST_F(TestJsonPackTransaction, CreationZeroPubkey)
+{
+	Poco::DateTime now;
+	auto mm = MemoryManager::getInstance();
+	auto params = simpleCreation(now, testHelper::subtractMonthFromDate(now, 2));
+	auto alloc = params.GetAllocator();
+
+	params.RemoveMember("recipientPubkey");
+	auto emptyPubkey = mm->getFreeMemory(32);
+	memset(*emptyPubkey, 0, 32);
+	params.AddMember("recipientPubkey", Value(DataTypeConverter::binToHex(emptyPubkey).data(), alloc), alloc);
+	mm->releaseMemory(emptyPubkey);
+
 	JsonPackTransaction jsonCall;
 	auto result = jsonCall.handle(params);
 

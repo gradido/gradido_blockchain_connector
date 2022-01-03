@@ -203,6 +203,9 @@ namespace model {
 			
 			if (crypto_sign_verify_detached(*signature, (const unsigned char*)bodyBytes.data(), bodyBytes.size(), *publicKey) != 0) {
 				// Incorrect signature! 
+				printf("body bytes hex: %s\n", DataTypeConverter::binToHex(bodyBytes).data());
+				printf("signature hex: %s\n", DataTypeConverter::binToHex(signature).data());
+				printf("public key hex: %s\n", DataTypeConverter::binToHex(publicKey).data());
 				addError(new Error(function_name, "sign verify failed"));
 				return false;
 			}
