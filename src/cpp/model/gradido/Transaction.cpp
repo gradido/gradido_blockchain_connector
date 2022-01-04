@@ -375,6 +375,9 @@ namespace model {
 			std::string message = transaction_hex;
 			
 			mIotaMessageId = ServerConfig::g_IotaRequestHandler->sendMessage(DataTypeConverter::binToHex(index), message, this);
+			if (mIotaMessageId == "") {
+				return -2;
+			}
 			return 1;
 		}
 

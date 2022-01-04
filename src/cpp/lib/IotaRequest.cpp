@@ -38,7 +38,8 @@ std::vector<std::string> IotaRequest::getTips(Poco::SharedPtr<Poco::Net::HTTPCli
 	Poco::Net::HTTPResponse response;
 	auto json = parseResponse(clientSession->receiveResponse(response), errorReciver);
 	std::vector<std::string> parentIds;
-	try {
+	if(json.HasMember("data") && json["data"].HasMember("tipMessageIds")) 
+	{
 		Value& data = json["data"];
 		auto tips = data["tipMessageIds"].GetArray();
 		parentIds.reserve(tips.Size());
@@ -46,8 +47,12 @@ std::vector<std::string> IotaRequest::getTips(Poco::SharedPtr<Poco::Net::HTTPCli
 			parentIds.push_back(it->GetString());
 		}
 	}
-	catch (std::exception& ex) {
-		errorReciver->addError(new ParamError(functionName, "error iota response format changed", ex.what()));
+	else {
+		StringBuffer buffer;
+		Writer<StringBuffer> writer(buffer);
+		json.Accept(writer);
+		auto responseString = std::string(buffer.GetString(), buffer.GetSize());
+		errorReciver->addError(new ParamError(functionName, "error iota response format changed", responseString));
 	}
 	return parentIds;
 }
@@ -116,15 +121,18 @@ std::string IotaRequest::sendMessage(const std::string& indexHex, const std::str
 
 	Poco::Net::HTTPResponse response;
 	auto json = parseResponse(clientSession->receiveResponse(response), errorReciver);
-	try {
-		Value& data = json["data"];
-		return data["messageId"].GetString();
-	}
-	catch (std::exception& ex) {
-		errorReciver->addError(new ParamError(functionName, "iota response for post message has changed", ex.what()));
-	}
 
-	return "";
+	if (json.HasMember("data") && json["data"].HasMember("messageId")) {
+		return json["data"]["messageId"].GetString();
+	}
+	else {
+		StringBuffer buffer;
+		Writer<StringBuffer> writer(buffer);
+		json.Accept(writer);
+		auto responseString = std::string(buffer.GetString(), buffer.GetSize());
+		errorReciver->addError(new ParamError(functionName, "iota response for post message has changed", responseString));
+		return "";
+	}
 }
 
 Poco::SharedPtr<Poco::Net::HTTPClientSession> IotaRequest::createClientSession(NotificationList* errorReciver)
@@ -158,7 +166,7 @@ Document IotaRequest::parseResponse(std::istream& responseStream, NotificationLi
 	}
 	
 	// TODO: request response log
-	//printf("response:\n%s\n", responseStringStream.str().data());
+	printf("response:\n%s\n", responseStringStream.str().data());
 
 
 	Document result;
