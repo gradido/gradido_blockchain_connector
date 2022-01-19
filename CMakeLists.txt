@@ -34,7 +34,12 @@ IF(UNIX)
 		"dependencies/poco/Net/include"
 		"dependencies/poco/NetSSL_OpenSSL/include"
 	)
+ELSE()
+	include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+	conan_basic_setup()
 ENDIF()
+
+
 
 ############################## find protobuf  #########################################
 
@@ -150,9 +155,6 @@ ENDIF()
 
 
 if(WIN32)
-	include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-	conan_basic_setup()
-
 	target_link_libraries(GradidoBlockchainConnector libprotobuf ${CONAN_LIBS})
 else() # unix
 	target_link_libraries(GradidoBlockchainConnector ${POCO_LIBS} sodium libprotobuf)
