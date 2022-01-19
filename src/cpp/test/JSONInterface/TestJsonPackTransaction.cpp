@@ -448,6 +448,26 @@ TEST_F(TestJsonPackTransaction, CrossGroupTransfer)
 	
 }
 
+TEST_F(TestJsonPackTransaction, CrossGroupTransferSameGroups)
+{
+	Poco::DateTime now;
+	auto params = crossGroupTransfer(now);
+
+	auto alloc = params.GetAllocator();
+	params.RemoveMember("recipientGroupAlias");
+	params.AddMember("recipientGroupAlias", "gdd1", alloc);
+
+	JsonPackTransaction jsonCall;
+	auto result = jsonCall.handle(params);
+
+	std::string state, msg;
+	jsonCall.getStringParameter(result, "state", state);
+	
+	ASSERT_EQ(state, "success");
+	auto transactionsIt = result.FindMember("transactions");
+	ASSERT_EQ(transactionsIt->value.Size(), 1);
+}
+
 
 TEST_F(TestJsonPackTransaction, Creation)
 {

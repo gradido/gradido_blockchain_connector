@@ -71,7 +71,7 @@ Document JsonPackTransaction::transfer(const Document& params)
 	auto recipientPubkeyBin = DataTypeConverter::hexToBin(recipientPubkey);
 
 	std::vector<TransactionGroupAlias> transactions;
-	if (senderGroupAlias.size() && recipientGroupAlias.size()) {
+	if (senderGroupAlias.size() && recipientGroupAlias.size() && senderGroupAlias != recipientGroupAlias) {
 		auto transactionArray = model::gradido::Transaction::createTransferCrossGroup(
 			senderPubkeyBin,
 			recipientPubkeyBin,
