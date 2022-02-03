@@ -1,6 +1,8 @@
 #include "JsonSendTransactionIota.h"
-#include "model/gradido/Transaction.h"
+#include "model/protobufWrapper/GradidoTransaction.h"
 #include "lib/DataTypeConverter.h"
+
+#include "ServerConfig.h"
 
 using namespace rapidjson;
 
@@ -35,9 +37,10 @@ Document JsonSendTransactionIota::handle(const Document& params)
 	}
 	
 	auto transactionBody = model::gradido::TransactionBody::load(DataTypeConverter::base64ToBinString(bodyBytesBase64String));
-	Poco::AutoPtr<model::gradido::Transaction> transaction(new model::gradido::Transaction(transactionBody));
+	std::unique_ptr<model::gradido::GradidoTransaction> transaction(new model::gradido::GradidoTransaction(transactionBody));
 	auto mm = MemoryManager::getInstance();
 
+	
 	for (auto it = signaturePairsIt->value.Begin(); it != signaturePairsIt->value.End(); it++) {
 		std::string pubkeyHexString, signatureHexString;
 		paramError = getStringParameter(*it, "pubkey", pubkeyHexString);
@@ -48,9 +51,13 @@ Document JsonSendTransactionIota::handle(const Document& params)
 
 		auto pubkeyBin = DataTypeConverter::hexToBin(pubkeyHexString);
 		auto signatureBin = DataTypeConverter::hexToBin(signatureHexString);
-		auto result = transaction->addSign(pubkeyBin, signatureBin);
-		if (!result) {
-			return stateError("error adding signature", transaction);
+		try {
+			transaction->addSign(pubkeyBin, signatureBin);
+		}
+		catch (...) {
+			mm->releaseMemory(pubkeyBin);
+			mm->releaseMemory(signatureBin);
+			throw;
 		}
 		mm->releaseMemory(pubkeyBin);
 		mm->releaseMemory(signatureBin);
@@ -58,11 +65,19 @@ Document JsonSendTransactionIota::handle(const Document& params)
 	if (transaction->getSignCount() < transactionBody->getTransactionBase()->getMinSignatureCount()) {
 		return stateError("missing signatures");
 	}
-	if (1 != transaction->runSendTransaction(groupAlias)) {
-		return stateError("error sending transaction", transaction);
-	}
+
+	// send transaction to iota
+	auto raw_message = transaction->getSerialized();
+
+	// finale to hex for iota
+	auto hex_message = DataTypeConverter::binToHex(std::move(raw_message));
+
+	std::string index = "GRADIDO." + groupAlias;
+
+	auto message_id = ServerConfig::g_IotaRequestHandler->sendMessage(DataTypeConverter::binToHex(index), *hex_message);
+	
 	auto response = stateSuccess();
 	auto alloc = response.GetAllocator();
-	response.AddMember("iotaMessageId", Value(transaction->getIotaMessageId().data(), alloc), alloc);
+	response.AddMember("iotaMessageId", Value(message_id.data(), message_id.size(), alloc), alloc);
 	return response;
 }

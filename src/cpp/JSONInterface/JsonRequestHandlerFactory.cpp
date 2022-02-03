@@ -8,6 +8,8 @@
 #include "JsonSendTransactionIota.h"
 #include "JsonUnknown.h"
 
+#include <sstream>
+
 
 JsonRequestHandlerFactory::JsonRequestHandlerFactory()
 	: mRemoveGETParameters("^/([a-zA-Z0-9_-]*)"), mLogging(Poco::Logger::get("requestLog"))
