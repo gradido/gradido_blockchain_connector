@@ -16,6 +16,9 @@ set(INSTALL_PLUGINDIR "bin")
 include_directories(
 	"dependencies" 
 	"dependencies/rapidjson/include"
+	"dependencies/gradido_blockchain/src/cpp"
+	"dependencies/gradido_blockchain/build/proto"
+	"dependencies/protobuf/src"
 	"build"
 	"src/cpp"
 )
@@ -35,7 +38,7 @@ ENDIF()
 ############################## bind source files ###################################
 
 FILE(GLOB JSONInterface "src/cpp/JSONInterface/*.h" "src/cpp/JSONInterface/*.cpp")
-FILE(GLOB SINGLETON_MANAGER "src/cpp/SingletonManager/*.h" "src/cpp/SingletonManager/*.cpp")
+
 FILE(GLOB MAIN "src/cpp/*.cpp" "src/cpp/*.c"  "src/cpp/*.h")
 
 # used only for test project 
@@ -44,7 +47,7 @@ FILE(GLOB TEST_JSON_INTERFACE "src/cpp/test/JSONInterface/*.cpp" "src/cpp/test/J
 FILE(GLOB TEST_LIB "src/cpp/test/lib/*.cpp" "src/cpp/test/lib/*.h")
 
 SET(LOCAL_SRCS 
-	${MAIN} 
+	${MAIN}
 	${JSONInterface} 
 )
 SET(LOCAL_TEST_SRC
@@ -82,6 +85,7 @@ ENDIF()
 
 
 if(WIN32)
+MESSAGE(${CMAKE_BINARY_DIR})
 	include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 	conan_basic_setup()
 

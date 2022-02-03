@@ -1,9 +1,6 @@
 #include "GradidoBlockchainConnector.h"
 #include <sodium.h>
 
-#include "proto/gradido/TransactionBody.pb.h"
-
-
 #include "lib/Profiler.h"
 #include "ServerConfig.h"
 
@@ -15,7 +12,6 @@
 
 int main(int argc, char** argv)
 {
-	GOOGLE_PROTOBUF_VERIFY_VERSION;
 	if (sodium_init() < 0) {
 		/* panic! the library couldn't be initialized, it is not safe to use */
 		printf("error initializing sodium, early exit\n");

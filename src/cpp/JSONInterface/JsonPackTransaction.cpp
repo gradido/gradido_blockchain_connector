@@ -1,8 +1,7 @@
 #include "JsonPackTransaction.h"
 
-#include "../lib/DataTypeConverter.h"
-
-#include "../model/gradido/Transaction.h"
+#include "lib/DataTypeConverter.h"
+#include "http/RequestExceptions.h"
 
 using namespace rapidjson;
 
@@ -31,8 +30,8 @@ Document JsonPackTransaction::handle(const Document& params)
 	else if (transactionType == "creation") {
 		return creation(params);
 	}
-	else if (transactionType == "groupMemberUpdate") {
-		return groupMemberUpdate(params);
+	else if (transactionType == "registerAddress") {
+		return registerAddress(params);
 	}
 
 	return stateError("transaction_type unknown");
@@ -44,15 +43,18 @@ Document JsonPackTransaction::transfer(const Document& params)
 	/*
 	* 
 	{
+		"created":"2021-01-10 10:00:00",
 		"senderPubkey":"131c7f68dd94b2be4c913400ff7ff4cdc03ac2bda99c2d29edcacb3b065c67e6",
 		"recipientPubkey":"eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd",
 		"amount": 1000000,
+		"coinColor": "ffffffff",
 		"senderGroupAlias": "gdd1",
 		"recipientGroupAlias":"gdd2"
 	}
 	*/
 	std::string senderPubkey, recipientPubkey, senderGroupAlias, recipientGroupAlias;
 	Poco::Int64 amount = 0;
+	Poco::UInt32 coinColor = 0;
 
 	auto paramError = getStringParameter(params, "senderPubkey", senderPubkey);
 	if (paramError.IsObject()) { return paramError; }
@@ -63,6 +65,7 @@ Document JsonPackTransaction::transfer(const Document& params)
 	auto param_error = getInt64Parameter(params, "amount", amount);
 	if (param_error.IsObject()) { return param_error; }
 
+
 	getStringParameter(params, "senderGroupAlias", senderGroupAlias);
 	getStringParameter(params, "recipientGroupAlias", recipientGroupAlias);
 
@@ -71,21 +74,21 @@ Document JsonPackTransaction::transfer(const Document& params)
 	auto recipientPubkeyBin = DataTypeConverter::hexToBin(recipientPubkey);
 
 	std::vector<TransactionGroupAlias> transactions;
+	auto baseTransaction = TransactionFactory::createTransactionTransfer(
+		senderPubkeyBin,
+		amount,
+		readCoinColor(params),
+		recipientPubkeyBin
+	);
+
 	if (senderGroupAlias.size() && recipientGroupAlias.size()) {
-		auto transactionArray = model::gradido::Transaction::createTransferCrossGroup(
-			senderPubkeyBin,
-			recipientPubkeyBin,
-			senderGroupAlias, 
-			recipientGroupAlias,
-			amount,
-			mMemo
-		);
-		transactions.push_back({ transactionArray[0], senderGroupAlias }); // outbound
-		transactions.push_back({ transactionArray[1], recipientGroupAlias }); // inbound
+		CrossGroupTransactionBuilder builder(std::move(baseTransaction));
+
+		transactions.push_back({ builder.createOutboundTransaction(recipientGroupAlias).release(), senderGroupAlias }); // outbound
+		transactions.push_back({ builder.createInboundTransaction(senderGroupAlias).release(), recipientGroupAlias }); // inbound
 	}
 	else {
-		auto transaction = model::gradido::Transaction::createTransferLocal(senderPubkeyBin, recipientPubkeyBin, amount, mMemo);
-		transactions.push_back({ transaction, "" });
+		transactions.push_back({ baseTransaction.release(), "" });
 	}
 
 	mm->releaseMemory(senderPubkeyBin);
@@ -104,6 +107,7 @@ Document JsonPackTransaction::creation(const Document& params)
 		"memo": "AGE September 2021",
 		"recipientPubkey":"eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd",
 		"amount": 10000000,
+		"coinColor": "ffffffff",
 		"targetDate": "2021-09-01 01:00:00",
 	}
 	*/
@@ -117,7 +121,7 @@ Document JsonPackTransaction::creation(const Document& params)
 	paramError = getInt64Parameter(params, "amount", amount);
 	if (paramError.IsObject()) { return paramError; }
 
-	std::string targetDateString;
+	std::string targetDateString, createdString;
 	paramError = getStringParameter(params, "targetDate", targetDateString);
 	if (paramError.IsObject()) { return paramError; }
 	int timezoneDifferential = 0;
@@ -126,54 +130,93 @@ Document JsonPackTransaction::creation(const Document& params)
 	}
 	catch (Poco::Exception& ex) {
 		return stateError("cannot parse targetDate", ex.what());
-	}
+	}	
 
 	auto mm = MemoryManager::getInstance();
 	auto recipientPubkeyBin = DataTypeConverter::hexToBin(recipientPubkey);
 
 	std::vector<TransactionGroupAlias> transactions;
-	transactions.push_back({ model::gradido::Transaction::createCreation(recipientPubkeyBin, amount, targetDate, mMemo), "" });
-	mm->releaseMemory(recipientPubkeyBin);
+	try {
+		auto creation = TransactionFactory::createTransactionCreation(recipientPubkeyBin, amount, readCoinColor(params), targetDate);
+
+		transactions.push_back({ creation.release(), "" });
+	}
+	catch (...) {
+		mm->releaseMemory(recipientPubkeyBin);
+		throw;
+	}
 
 	return resultBase64Transactions(transactions);
 
 }
-Document JsonPackTransaction::groupMemberUpdate(const Document& params)
+Document JsonPackTransaction::registerAddress(const Document& params)
 {
+	
 	/*
+	* addressType: human | project | subaccount
+	* nameHash: optional, for finding on blockchain by name without need for asking community server
+	* subaccountPubkey: optional, only set for address type SUBACCOUNT
 	*
 	{
-		"transactionType": "groupMemberUpdate",
+		"transactionType": "registerAddress",
 		"created":"2021-01-10 10:00:00",
 		"userRootPubkey":"eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd",
+		"addressType":"human",			
+		"nameHash":"",
+		"subaccountPubkey":"",
 		"currentGroupAlias": "gdd1",
 		"newGroupAlias":"gdd2"
 	}
 	*/
-	std::string userRootPubkey;
+	std::string userRootPubkeyHex, addressTypeString, nameHashHex, subaccountPubkeyHex;
 	std::string currentGroupAlias, newGroupAlias;
 
-	auto paramError = getStringParameter(params, "userRootPubkey", userRootPubkey);
+	getStringParameter(params, "userRootPubkey", userRootPubkeyHex);
+	auto paramError = getStringParameter(params, "addressType", addressTypeString);
 	if (paramError.IsObject()) { return paramError; }
+	auto addressType = model::gradido::RegisterAddress::getAddressTypeFromString(addressTypeString);
+	getStringParameter(params, "nameHash", nameHashHex);
+	getStringParameter(params, "subaccountPubkey", subaccountPubkeyHex);
+		
+	if (!userRootPubkeyHex.size() && !subaccountPubkeyHex.size()) {
+		return stateError("userRootPubkey or subaccountPubkey must be given");
+	}
 
 	getStringParameter(params, "currentGroupAlias", currentGroupAlias);
 	getStringParameter(params, "newGroupAlias", newGroupAlias);
 
 	auto mm = MemoryManager::getInstance();
-
-	auto userRootPubkeyBin = DataTypeConverter::hexToBin(userRootPubkey);
+	MemoryBin* userRootPubkey = nullptr;
+	MemoryBin* nameHash = nullptr;
+	MemoryBin* subaccountPubkey = nullptr;
 
 	std::vector<TransactionGroupAlias> transactions;
-	if (currentGroupAlias.size() && newGroupAlias.size()) {
-		auto transactionArray = model::gradido::Transaction::createGroupMemberUpdateMove(userRootPubkeyBin, currentGroupAlias, newGroupAlias);
-		transactions.push_back({ transactionArray[0], currentGroupAlias }); // outbound
-		transactions.push_back({ transactionArray[1], newGroupAlias }); // inbound
-	}
-	else {
-		transactions.push_back({ model::gradido::Transaction::createGroupMemberUpdateAdd(userRootPubkeyBin), "" });
-	}
-	mm->releaseMemory(userRootPubkeyBin);
+	try {
 
+		if (userRootPubkeyHex.size()) { userRootPubkey = DataTypeConverter::hexToBin(userRootPubkeyHex); }
+		if (nameHashHex.size()) { nameHash = DataTypeConverter::hexToBin(nameHashHex); }
+		if (subaccountPubkeyHex.size()) { subaccountPubkey = DataTypeConverter::hexToBin(subaccountPubkeyHex); }
+
+		auto baseTransaction = TransactionFactory::createRegisterAddress(userRootPubkey, addressType, nameHash, subaccountPubkey);		
+
+		if (currentGroupAlias.size() && newGroupAlias.size()) {
+			CrossGroupTransactionBuilder builder(std::move(baseTransaction));
+
+			transactions.push_back({ builder.createOutboundTransaction(newGroupAlias).release(), currentGroupAlias }); // outbound
+			transactions.push_back({ builder.createInboundTransaction(currentGroupAlias).release(), newGroupAlias }); // inbound
+		}
+		else {
+			transactions.push_back({ baseTransaction.release(), "" });
+		}
+	}
+	catch (...) {
+		if (userRootPubkey) { mm->releaseMemory(userRootPubkey); }
+		if (nameHash) { mm->releaseMemory(nameHash); }
+		if (subaccountPubkey) { mm->releaseMemory(subaccountPubkey); }
+		throw;
+	}
+
+	
 	return resultBase64Transactions(transactions);
 
 }
@@ -184,13 +227,13 @@ Document JsonPackTransaction::resultBase64Transactions(std::vector<TransactionGr
 	Value transactionsJsonArray(kArrayType);
 	auto result = stateSuccess();
 	auto alloc = result.GetAllocator();
-
 	for (auto it = transactions.begin(); it != transactions.end(); it++) {
+		it->first->setMemo(mMemo).setCreated(mCreated);
+
 		auto transactionBody = it->first->getTransactionBody();
-		transactionBody->setCreated(mCreated);
-		auto result = transactionBody->getTransactionBase()->validate();
-		if (result != model::gradido::TRANSACTION_VALID_OK) {
-			return stateError("invalid transaction", transactionBody->getTransactionBase());
+
+		if(!transactionBody->getTransactionBase()->validate()) {
+			return stateError("invalid transaction", it->first->toJson());
 		}
 		Value entry(kObjectType);
 		
@@ -198,13 +241,9 @@ Document JsonPackTransaction::resultBase64Transactions(std::vector<TransactionGr
 			entry.AddMember("groupAlias", Value(it->second.data(), alloc), alloc);
 		}
 		try {
-			std::string base64 = DataTypeConverter::binToBase64(transactionBody->getBodyBytes());
-			if (base64 != "<uninitalized>") {
-				entry.AddMember("bodyBytesBase64", Value(base64.data(), alloc), alloc);
-			}
-			else {
-				return stateError("invalid body bytes");
-			}
+			auto base64 = DataTypeConverter::binToBase64(transactionBody->getBodyBytes());
+			entry.AddMember("bodyBytesBase64", Value(base64->data(), base64->size(), alloc), alloc);
+			
 			transactionsJsonArray.PushBack(entry, alloc);
 		}
 		catch (Poco::Exception& ex) {
@@ -214,4 +253,26 @@ Document JsonPackTransaction::resultBase64Transactions(std::vector<TransactionGr
 	
 	result.AddMember("transactions", transactionsJsonArray, alloc);
 	return result;
+}
+
+uint32_t JsonPackTransaction::readCoinColor(const rapidjson::Document& params)
+{
+	auto coinColor = params.FindMember("coinColor");
+	if (coinColor == params.MemberEnd()) {
+		return 0;
+	}
+	if (coinColor->value.IsString()) {
+		std::string coinColorString = coinColor->value.GetString();
+		auto coinColorBin = DataTypeConverter::hexToBin(coinColorString);
+		if (!coinColorBin || coinColorBin->size() != sizeof(uint32_t)) {
+			throw HandleRequestException("coinColor isn't a valid hex string");
+		}
+		uint32_t result;
+		memcpy(&result, *coinColorBin, sizeof(uint32_t));
+		return result;		
+	}
+	else if (coinColor->value.IsUint()) {
+		return coinColor->value.GetUint();
+	} 
+	throw HandleRequestException("coinColor has unknown type");
 }

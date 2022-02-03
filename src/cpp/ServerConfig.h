@@ -9,7 +9,7 @@
 
 #include "SingletonManager/MemoryManager.h"
 
-#include "lib/IotaRequest.h"
+#include "http/IotaRequest.h"
 
 #define DISABLE_EMAIL
 

@@ -1,7 +1,7 @@
 #ifndef __JSON_INTERFACE_JSON_UNKNOWN_
 #define __JSON_INTERFACE_JSON_UNKNOWN_
 
-#include "JsonRequestHandler.h"
+#include "http/JsonRequestHandler.h"
 
 class JsonUnknown : public JsonRequestHandler
 {

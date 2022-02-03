@@ -7,7 +7,7 @@ MockIotaRequest::MockIotaRequest()
 
 }
 
-Poco::SharedPtr<Poco::Net::HTTPClientSession> MockIotaRequest::createClientSession(NotificationList* errorReciver)
+Poco::SharedPtr<Poco::Net::HTTPClientSession> MockIotaRequest::createClientSession()
 {
 	Poco::SharedPtr<Poco::Net::HTTPClientSession> mockedClientSession(new MockIotaHttpClientSession);
 	return mockedClientSession;	
