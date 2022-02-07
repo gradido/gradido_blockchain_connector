@@ -64,9 +64,33 @@ if(MSVC)
 endif()
 
 
+if(WIN32)
+#	MESSAGE("Poco Setup: ${CMAKE_BINARY_DIR}")
+	include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+	conan_basic_setup()
+	#message("conan lib debugs earlier: ${CONAN_LIBS_DEBUG}")
+endif()
+
+add_subdirectory("dependencies/gradido_blockchain")
 
 add_executable(GradidoBlockchainConnector ${LOCAL_SRCS})
-add_subdirectory("dependencies/gradido_blockchain")
+
+if(WIN32)
+	#MESSAGE("Poco Setup: ${CMAKE_BINARY_DIR}")
+#	include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+#	conan_basic_setup()
+	#link_directories(
+	#	${CONAN_LIB_DIRS_POCO}
+	#	${CONAN_LIB_DIRS_LIBSODIUM}
+	#)
+	#link_directories(${CONAN_LIB_DIRS})
+	#message("poco lib dir from conan: ${CONAN_LIB_DIRS_POCO}") 
+	#message("libsodium lib dir from conan: ${CONAN_LIB_DIRS_LIBSODIUM}")
+	#message("conan lib debugs: ${CONAN_LIBS_DEBUG}")
+	#message("conan build modules path: ${CONAN_BUILD_MODULES_PATHS}")
+	target_link_libraries(GradidoBlockchainConnector ${CONAN_LIBS})
+endif()
+
 target_link_libraries(GradidoBlockchainConnector $<TARGET_OBJECTS:GradidoBlockchain>)
 ############################## config and add poco ###################################
 #SET(SOME_EXPAT_OPTION OFF CACHE BOOL "Use some expat option")
@@ -80,24 +104,19 @@ IF(UNIX)
 	set(POCO_LIBS Poco::Foundation Poco::Util Poco::Net Poco::NetSSL)
 ENDIF()
 
+############################## find protobuf  #########################################
+#add_subdirectory(dependencies/protobuf/cmake)
+target_link_libraries(GradidoBlockchainConnector libprotobuf)
 
 ############################## build gradido blockchain connector ###################################
 
 
-if(WIN32)
-MESSAGE(${CMAKE_BINARY_DIR})
-	include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-	conan_basic_setup()
-
-	target_link_libraries(GradidoBlockchainConnector ${CONAN_LIBS})
-else() # unix
-	target_link_libraries(GradidoBlockchainConnector ${POCO_LIBS})
-endif()
 
 # install 
 if(UNIX)
-install(TARGETS GradidoBlockchainConnector RUNTIME DESTINATION /usr/local/bin)
-endif(UNIX)
+	target_link_libraries(GradidoBlockchainConnector ${POCO_LIBS})
+	install(TARGETS GradidoBlockchainConnector RUNTIME DESTINATION /usr/local/bin)
+endif()
 
 #  ----------------------    Test -----------------------------------------
 
