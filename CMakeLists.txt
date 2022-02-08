@@ -114,7 +114,7 @@ target_link_libraries(GradidoBlockchainConnector libprotobuf)
 
 # install 
 if(UNIX)
-	target_link_libraries(GradidoBlockchainConnector ${POCO_LIBS})
+	target_link_libraries(GradidoBlockchainConnector ${POCO_LIBS} sodium)
 	install(TARGETS GradidoBlockchainConnector RUNTIME DESTINATION /usr/local/bin)
 endif()
 
