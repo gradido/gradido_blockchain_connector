@@ -4,6 +4,7 @@
 #include "JSONInterface/JsonPackTransaction.h"
 #include "gradido_blockchain/lib/DataTypeConverter.h"
 #include "gradido_blockchain/GradidoBlockchainException.h"
+#include "gradido_blockchain/model/protobufWrapper/TransactionValidationExceptions.h"
 #include "TestJsonPackTransaction.h"
 #include "TestJsonHelper.h"
 
@@ -128,16 +129,12 @@ TEST_F(TestJsonPackTransaction, LocalTransferMissingMemo)
 	JsonPackTransaction jsonCall;
 	auto params = simpleTransfer(now);
 	params.RemoveMember("memo");
-	auto result = jsonCall.handle(params);
-	
-	std::string state, msg;	
-	jsonCall.getStringParameter(result, "state", state);	
-	jsonCall.getStringParameter(result, "msg", msg);
-		
-	ASSERT_EQ(state, "error");
-	ASSERT_EQ(msg, "invalid transaction");
-
-	testHelper::checkDetails(result, { "TransactionTransfer::validate: memo is not set or not in expected range [5;150]\n" });
+	try {
+		jsonCall.handle(params);
+	}
+	catch (model::gradido::TransactionValidationInvalidInputException& ex) {
+		ASSERT_EQ(ex.getFullString(), "not in expected range [5;350] with memo: string");
+	}
 }
 
 TEST_F(TestJsonPackTransaction, LocalTransferMissingCreated)
@@ -195,15 +192,12 @@ TEST_F(TestJsonPackTransaction, LocalTransferEmptySenderPubkey)
 	auto params = simpleTransfer(now);
 	params.RemoveMember("senderPubkey");
 	params.AddMember("senderPubkey", "", params.GetAllocator()); 
-	auto result = jsonCall.handle(params);
-
-	std::string state, msg;
-	jsonCall.getStringParameter(result, "state", state);
-	jsonCall.getStringParameter(result, "msg", msg);
-
-	ASSERT_EQ(state, "error");
-	ASSERT_EQ(msg, "invalid transaction");
-	testHelper::checkDetails(result, { "TransactionTransfer::validate: invalid size of sender pubkey\n" });
+	try {
+		auto result = jsonCall.handle(params);
+	}
+	catch(model::gradido::TransactionValidationInvalidInputException& ex) {
+		ASSERT_EQ(ex.getFullString(), "invalid size with sender: public key");
+	}	
 }
 
 TEST_F(TestJsonPackTransaction, LocalTransferMissingRecipientPubkey)
@@ -230,15 +224,12 @@ TEST_F(TestJsonPackTransaction, LocalTransferEmptyRecipientPubkey)
 	auto params = simpleTransfer(now);
 	params.RemoveMember("recipientPubkey");
 	params.AddMember("recipientPubkey", "", params.GetAllocator());
-	auto result = jsonCall.handle(params);
-
-	std::string state, msg;
-	jsonCall.getStringParameter(result, "state", state);
-	jsonCall.getStringParameter(result, "msg", msg);
-
-	ASSERT_EQ(state, "error");
-	ASSERT_EQ(msg, "invalid transaction");
-	testHelper::checkDetails(result, { "TransactionTransfer::validate: invalid size of recipient pubkey\n" });
+	try {
+		auto result = jsonCall.handle(params);
+	}
+	catch (model::gradido::TransactionValidationInvalidInputException& ex) {
+		ASSERT_EQ(ex.getFullString(), "invalid size with recipient: public key");
+	}
 }
 
 TEST_F(TestJsonPackTransaction, LocalTransferSameSenderAndRecipientPubkey)
@@ -251,15 +242,13 @@ TEST_F(TestJsonPackTransaction, LocalTransferSameSenderAndRecipientPubkey)
 	auto senderPubkeyIt = params.FindMember("senderPubkey");
 	ASSERT_NE(senderPubkeyIt, params.MemberEnd());
 	params.AddMember("recipientPubkey", Value(senderPubkeyIt->value.GetString(), alloc), params.GetAllocator());
-	auto result = jsonCall.handle(params);
 
-	std::string state, msg;
-	jsonCall.getStringParameter(result, "state", state);
-	jsonCall.getStringParameter(result, "msg", msg);
-
-	ASSERT_EQ(state, "error");
-	ASSERT_EQ(msg, "invalid transaction");
-	testHelper::checkDetails(result, { "TransactionTransfer::validate: sender and recipient are the same\n" });
+	try {
+		auto result = jsonCall.handle(params);
+	}
+	catch (model::gradido::TransactionValidationException& ex) {
+		ASSERT_EQ(ex.getFullString(), "sender and recipient are the same");
+	}	
 }
 
 TEST_F(TestJsonPackTransaction, LocalTransferMissingAmount)
@@ -287,16 +276,12 @@ TEST_F(TestJsonPackTransaction, LocalTransferNegativeAmount)
 	auto alloc = params.GetAllocator();
 	params.RemoveMember("amount");
 	params.AddMember("amount", -100, alloc);
-	auto result = jsonCall.handle(params);
-
-	std::string state, msg;
-	jsonCall.getStringParameter(result, "state", state);
-	jsonCall.getStringParameter(result, "msg", msg);
-
-	ASSERT_EQ(state, "error");
-	ASSERT_EQ(msg, "invalid transaction");
-
-	testHelper::checkDetails(result, { "TransactionTransfer::validate: negative amount\n" });
+	try {
+		auto result = jsonCall.handle(params);
+	}
+	catch (model::gradido::TransactionValidationInvalidInputException& ex) {
+		ASSERT_EQ(ex.getFullString(), "negative amount with amount: integer");
+	}
 }
 
 TEST_F(TestJsonPackTransaction, LocalTransferZeroAmount)
@@ -307,16 +292,12 @@ TEST_F(TestJsonPackTransaction, LocalTransferZeroAmount)
 	auto alloc = params.GetAllocator();
 	params.RemoveMember("amount");
 	params.AddMember("amount", 0, alloc);
-	auto result = jsonCall.handle(params);
-
-	std::string state, msg;
-	jsonCall.getStringParameter(result, "state", state);
-	jsonCall.getStringParameter(result, "msg", msg);
-
-	ASSERT_EQ(state, "error");
-	ASSERT_EQ(msg, "invalid transaction");
-
-	testHelper::checkDetails(result, { "TransactionTransfer::validate: amount is empty\n" });
+	try {
+		auto result = jsonCall.handle(params);
+	}
+	catch (model::gradido::TransactionValidationInvalidInputException& ex) {
+		ASSERT_EQ(ex.getFullString(), "amount is empty with amount: integer");
+	}	
 }
 
 
@@ -448,17 +429,12 @@ TEST_F(TestJsonPackTransaction, CreationToHighAmount)
 	params.AddMember("amount", 100000000, alloc);
 
 	JsonPackTransaction jsonCall;
-	auto result = jsonCall.handle(params);
-
-	std::string state, msg;
-	jsonCall.getStringParameter(result, "state", state);
-	jsonCall.getStringParameter(result, "msg", msg);
-
-	ASSERT_EQ(state, "error");
-	ASSERT_EQ(msg, "invalid transaction");
-
-	testHelper::checkDetails(result, { "TransactionCreation::validate: creation amount to high, max 1000 per month\n" });
-
+	try {
+		auto result = jsonCall.handle(params);
+	}
+	catch (model::gradido::TransactionValidationInvalidInputException& ex) {
+		ASSERT_EQ(ex.getFullString(), "creation amount to high, max 1000 per month with amount: integer");
+	}
 }
 
 TEST_F(TestJsonPackTransaction, CreationToLowAmount)
@@ -470,17 +446,12 @@ TEST_F(TestJsonPackTransaction, CreationToLowAmount)
 	params.AddMember("amount", 1, alloc);
 
 	JsonPackTransaction jsonCall;
-	auto result = jsonCall.handle(params);
-
-	std::string state, msg;
-	jsonCall.getStringParameter(result, "state", state);
-	jsonCall.getStringParameter(result, "msg", msg);
-
-	ASSERT_EQ(state, "error");
-	ASSERT_EQ(msg, "invalid transaction");
-
-	testHelper::checkDetails(result, { "TransactionCreation::validate: creation amount to low, min 1 GDD\n" });
-
+	try {
+		auto result = jsonCall.handle(params);
+	}
+	catch (model::gradido::TransactionValidationInvalidInputException& ex) {
+		ASSERT_EQ(ex.getFullString(), "creation amount to low, min 1 GDD with amount: integer");
+	}
 }
 
 TEST_F(TestJsonPackTransaction, CreationPast2Months)
@@ -490,16 +461,12 @@ TEST_F(TestJsonPackTransaction, CreationPast2Months)
 	auto alloc = params.GetAllocator();
 		
 	JsonPackTransaction jsonCall;
-	auto result = jsonCall.handle(params);
-
-	std::string state, msg;
-	jsonCall.getStringParameter(result, "state", state);
-	jsonCall.getStringParameter(result, "msg", msg);
-
-	ASSERT_EQ(state, "error");
-	ASSERT_EQ(msg, "invalid transaction");
-
-	testHelper::checkDetails(result, { "TransactionCreation::validate: year is the same, target date month is more than 2 month in past\n" });
+	try {
+		auto result = jsonCall.handle(params);
+	}
+	catch (model::gradido::TransactionValidationInvalidInputException& ex) {
+		ASSERT_EQ(ex.getFullString(), "target date is more than 2 month in past with target_date: date time");
+	}
 }
 
 TEST_F(TestJsonPackTransaction, CreationFuture)
@@ -509,14 +476,13 @@ TEST_F(TestJsonPackTransaction, CreationFuture)
 	auto alloc = params.GetAllocator();
 	
 	JsonPackTransaction jsonCall;
-	auto result = jsonCall.handle(params);
+	try {
+		auto result = jsonCall.handle(params);
+	}
+	catch (model::gradido::TransactionValidationInvalidInputException& ex) {
+		ASSERT_EQ(ex.getFullString(), "year is the same, target date month is in future with target_date: date time");
+	}
 
-	std::string state, msg;
-	jsonCall.getStringParameter(result, "state", state);
-	jsonCall.getStringParameter(result, "msg", msg);
-
-	ASSERT_EQ(state, "error");
-	ASSERT_EQ(msg, "invalid transaction");
 }
 
 TEST_F(TestJsonPackTransaction, RegisterAddress)
@@ -524,6 +490,7 @@ TEST_F(TestJsonPackTransaction, RegisterAddress)
 	Document params(kObjectType);
 	auto alloc = params.GetAllocator();
 	params.AddMember("transactionType", "registerAddress", alloc);
+	params.AddMember("addressType", "HUMAN", alloc);
 	Poco::DateTime now;
 	params.AddMember("created", Value(Poco::DateTimeFormatter::format(now, "%Y-%m-%d %H:%M:%S").data(), alloc), alloc);
 	params.AddMember("userRootPubkey", "131c7f68dd94b2be4c913400ff7ff4cdc03ac2bda99c2d29edcacb3b065c67e6", alloc);
@@ -582,6 +549,7 @@ TEST_F(TestJsonPackTransaction, GroupMoveMember)
 	Document params(kObjectType);
 	auto alloc = params.GetAllocator();
 	params.AddMember("transactionType", "registerAddress", alloc);
+	params.AddMember("addressType", "HUMAN", alloc);
 	Poco::DateTime now;
 	params.AddMember("created", Value(Poco::DateTimeFormatter::format(now, "%Y-%m-%d %H:%M:%S").data(), alloc), alloc);
 	params.AddMember("userRootPubkey", "131c7f68dd94b2be4c913400ff7ff4cdc03ac2bda99c2d29edcacb3b065c67e6", alloc);

@@ -232,7 +232,7 @@ Document JsonPackTransaction::resultBase64Transactions(std::vector<TransactionGr
 
 		auto transactionBody = it->first->getTransactionBody();
 
-		if(!transactionBody->getTransactionBase()->validate()) {
+		if(!it->first->validate()) {
 			return stateError("invalid transaction", it->first->toJson());
 		}
 		Value entry(kObjectType);
