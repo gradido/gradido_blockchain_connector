@@ -1,7 +1,7 @@
 #include "MockIotaHttpClientSession.h"
 
-#include "SingletonManager/MemoryManager.h"
-#include "lib/DataTypeConverter.h"
+#include "gradido_blockchain/MemoryManager.h"
+#include "gradido_blockchain/lib/DataTypeConverter.h"
 
 #include <sodium.h>
 
@@ -26,7 +26,7 @@ std::ostream& MockIotaHttpClientSession::sendRequest(Poco::Net::HTTPRequest& req
 
 	Value data(kObjectType);
 	
-	auto randomMessageId = mm->getFreeMemory(32);
+	auto randomMessageId = mm->getMemory(32);
 	if (uri == "tips") {
 		/*
 		http://api.lb-0.h.chrysalis-devnet.iota.cafe/api/v1/tips

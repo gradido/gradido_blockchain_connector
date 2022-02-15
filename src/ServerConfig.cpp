@@ -1,5 +1,5 @@
 #include "ServerConfig.h"
-#include "lib/DataTypeConverter.h"
+#include "gradido_blockchain/lib/DataTypeConverter.h"
 #include "sodium.h"
 
 

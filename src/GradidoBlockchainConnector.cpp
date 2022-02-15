@@ -2,7 +2,7 @@
 #include "ServerConfig.h"
 #include "JSONInterface/JsonRequestHandlerFactory.h"
 
-#include "lib/Profiler.h"
+#include "gradido_blockchain/lib/Profiler.h"
 
 #include "Poco/Util/HelpFormatter.h"
 #include "Poco/Net/ServerSocket.h"

@@ -7,9 +7,9 @@
 #include "Poco/Types.h"
 #include "Poco/Util/Timer.h"
 
-#include "SingletonManager/MemoryManager.h"
+#include "gradido_blockchain/MemoryManager.h"
 
-#include "http/IotaRequest.h"
+#include "gradido_blockchain/http/IotaRequest.h"
 
 #define DISABLE_EMAIL
 

@@ -5,6 +5,7 @@
 
 #include "Poco/Util/PropertyFileConfiguration.h"
 #include "Poco/Util/LayeredConfiguration.h"
+#include "Poco/Logger.h"
 #include "Poco/Environment.h"
 #include "Poco/Path.h"
 #include "Poco/AsyncChannel.h"
@@ -13,7 +14,7 @@
 #include "Poco/ConsoleChannel.h"
 #include "Poco/SplitterChannel.h"
 
-#include "../lib/Profiler.h"
+#include "gradido_blockchain/lib/Profiler.h"
 #include "ServerConfig.h"
 
 

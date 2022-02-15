@@ -13,7 +13,6 @@ protected:
 	void SetUp() override;
 	void TearDown() override;
 
-	const proto::gradido::CrossGroupTransfer getCrossGroupTransfer(const proto::gradido::GradidoTransfer& protoTransfer) const;
 
 	// predefined transactions 
 	/*

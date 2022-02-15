@@ -1,7 +1,7 @@
 #ifndef __GRADIDO_BLOCKCHAIN_CONNECTOR_TEST_LIB_MOCK_IOTA_REQUEST_H
 #define __GRADIDO_BLOCKCHAIN_CONNECTOR_TEST_LIB_MOCK_IOTA_REQUEST_H
 
-#include "http/IotaRequest.h"
+#include "gradido_blockchain/http/IotaRequest.h"
 #include "MockIotaHttpClientSession.h"
 
 class MockIotaRequest : public IotaRequest

@@ -2,12 +2,13 @@
 #include "gtest/gtest.h"
 
 #include "JSONInterface/JsonPackTransaction.h"
-#include "lib/DataTypeConverter.h"
+#include "gradido_blockchain/lib/DataTypeConverter.h"
+#include "gradido_blockchain/GradidoBlockchainException.h"
 #include "TestJsonPackTransaction.h"
 #include "TestJsonHelper.h"
 
 #include "Poco/DateTimeFormatter.h"
-#include "proto/gradido/TransactionBody.pb.h"
+//#include "proto/gradido/TransactionBody.pb.h"
 
 #include "rapidjson/document.h"
 
@@ -66,33 +67,14 @@ Document TestJsonPackTransaction::simpleCreation(Poco::DateTime now, Poco::DateT
 	return params;
 }
 
-const proto::gradido::CrossGroupTransfer TestJsonPackTransaction::getCrossGroupTransfer(const proto::gradido::GradidoTransfer& protoTransfer) const
-{
-	if (protoTransfer.has_inbound()) {
-		return protoTransfer.inbound();
-	}
-	else if (protoTransfer.has_outbound()) {
-		return protoTransfer.outbound();
-	}
-	throw std::runtime_error("invalid cross group transfer transaction");
-}
-
-/*
-{
-	"state": "success",
-	"transactions": [
-		{
-			"bodyBytesBase64": "ChdEYW5rZSBmw7xyIGRlaW5lIEhpbGZlIRIGCKCg6/8FMkwKSgomCiATHH9o3ZSyvkyRNAD/f/TNwDrCvamcLSntyss7Blxn5hCAiXoSIO/3pKRA6xD6bVrl7kfWMkDFXqPhly6YFcCUEeJasJ/d"
-		}
-	]
-}
-*/
 
 TEST_F(TestJsonPackTransaction, LocalTransfer)
 {
 	Poco::DateTime now;
 	JsonPackTransaction jsonCall;
-	auto result = jsonCall.handle(simpleTransfer(now));
+	try {
+		auto result = jsonCall.handle(simpleTransfer(now));
+	
 
 	std::string state;
 	jsonCall.getStringParameter(result, "state", state);
@@ -117,13 +99,13 @@ TEST_F(TestJsonPackTransaction, LocalTransfer)
 	ASSERT_TRUE(protoBody.ParseFromString(std::string((const char*)bodyBytes->data(), bodyBytes->size())));
 	ASSERT_TRUE(protoBody.has_transfer());
 	auto transfer = protoBody.transfer();
-	ASSERT_EQ(transfer.local().sender().amount(), 1000000);
+	ASSERT_EQ(transfer.sender().amount(), 1000000);
 	ASSERT_EQ(
-		DataTypeConverter::binToHex(transfer.local().sender().pubkey()).substr(0, 64),
+		DataTypeConverter::binToHex(transfer.sender().pubkey()).substr(0, 64),
 		"131c7f68dd94b2be4c913400ff7ff4cdc03ac2bda99c2d29edcacb3b065c67e6"
 	);
 	ASSERT_EQ(
-		DataTypeConverter::binToHex(transfer.local().recipiant()).substr(0, 64),
+		DataTypeConverter::binToHex(transfer.recipient()).substr(0, 64),
 		"eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd"
 	);
 	auto nowRead = DataTypeConverter::convertFromProtoTimestampSeconds(protoBody.created());
@@ -132,6 +114,12 @@ TEST_F(TestJsonPackTransaction, LocalTransfer)
 	ASSERT_EQ("Danke fuer deine Hilfe!", protoBody.memo());
 
 	MemoryManager::getInstance()->releaseMemory(bodyBytes);
+
+	}
+	catch (GradidoBlockchainException& ex) {
+		int zahl = 0;
+
+	}
 }
 
 TEST_F(TestJsonPackTransaction, LocalTransferMissingMemo)
@@ -371,25 +359,24 @@ TEST_F(TestJsonPackTransaction, CrossGroupTransfer)
 	
 		ASSERT_TRUE(protoBody.has_transfer());
 		auto transfer = protoBody.transfer();
-		auto crossGroup = getCrossGroupTransfer(protoBody.transfer());
 
-		ASSERT_EQ(crossGroup.transfer().sender().amount() , 1000000);
+		ASSERT_EQ(transfer.sender().amount() , 1000000);
 		ASSERT_EQ(
-			DataTypeConverter::binToHex(crossGroup.transfer().sender().pubkey()).substr(0,64),
+			DataTypeConverter::binToHex(transfer.sender().pubkey()).substr(0,64),
 			"131c7f68dd94b2be4c913400ff7ff4cdc03ac2bda99c2d29edcacb3b065c67e6"
 		);
 		ASSERT_EQ(
-			DataTypeConverter::binToHex(crossGroup.transfer().recipiant()).substr(0,64),
+			DataTypeConverter::binToHex(transfer.recipient()).substr(0,64),
 			"eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd"
 		);
 
 		if (i == 0) {
 			ASSERT_EQ(groupAlias, std::string("gdd1"));
-			ASSERT_EQ(crossGroup.other_group(), std::string("gdd2"));
+			ASSERT_EQ(protoBody.other_group(), std::string("gdd2"));
 		}
 		else if (i == 1) {
 			ASSERT_EQ(groupAlias, std::string("gdd2"));
-			ASSERT_EQ(crossGroup.other_group(), std::string("gdd1"));
+			ASSERT_EQ(protoBody.other_group(), std::string("gdd1"));
 		}
 
 		auto nowRead = DataTypeConverter::convertFromProtoTimestampSeconds(protoBody.created());
@@ -435,9 +422,9 @@ TEST_F(TestJsonPackTransaction, Creation)
 	ASSERT_TRUE(protoBody.ParseFromString(std::string((const char*)bodyBytes->data(), bodyBytes->size())));
 	ASSERT_TRUE(protoBody.has_creation());
 	auto creation = protoBody.creation();
-	ASSERT_EQ(creation.recipiant().amount(), 10000000);
+	ASSERT_EQ(creation.recipient().amount(), 10000000);
 	ASSERT_EQ(
-		DataTypeConverter::binToHex(creation.recipiant().pubkey()).substr(0, 64),
+		DataTypeConverter::binToHex(creation.recipient().pubkey()).substr(0, 64),
 		"eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd"
 	);
 	auto nowRead = DataTypeConverter::convertFromProtoTimestampSeconds(protoBody.created());
@@ -532,11 +519,11 @@ TEST_F(TestJsonPackTransaction, CreationFuture)
 	ASSERT_EQ(msg, "invalid transaction");
 }
 
-TEST_F(TestJsonPackTransaction, GroupAddMember)
+TEST_F(TestJsonPackTransaction, RegisterAddress)
 {
 	Document params(kObjectType);
 	auto alloc = params.GetAllocator();
-	params.AddMember("transactionType", "groupMemberUpdate", alloc);
+	params.AddMember("transactionType", "registerAddress", alloc);
 	Poco::DateTime now;
 	params.AddMember("created", Value(Poco::DateTimeFormatter::format(now, "%Y-%m-%d %H:%M:%S").data(), alloc), alloc);
 	params.AddMember("userRootPubkey", "131c7f68dd94b2be4c913400ff7ff4cdc03ac2bda99c2d29edcacb3b065c67e6", alloc);
@@ -575,10 +562,10 @@ TEST_F(TestJsonPackTransaction, GroupAddMember)
 
 	proto::gradido::TransactionBody protoBody;
 	ASSERT_TRUE(protoBody.ParseFromString(std::string((const char*)bodyBytes->data(), bodyBytes->size())));
-	ASSERT_TRUE(protoBody.has_group_member_update());
-	auto group_member_update = protoBody.group_member_update();
+	ASSERT_TRUE(protoBody.has_register_address());
+	auto register_address = protoBody.register_address();
 	ASSERT_EQ(
-		DataTypeConverter::binToHex(group_member_update.user_pubkey()).substr(0, 64),
+		DataTypeConverter::binToHex(register_address.user_pubkey()).substr(0, 64),
 		"131c7f68dd94b2be4c913400ff7ff4cdc03ac2bda99c2d29edcacb3b065c67e6"
 	);
 	
@@ -594,7 +581,7 @@ TEST_F(TestJsonPackTransaction, GroupMoveMember)
 {
 	Document params(kObjectType);
 	auto alloc = params.GetAllocator();
-	params.AddMember("transactionType", "groupMemberUpdate", alloc);
+	params.AddMember("transactionType", "registerAddress", alloc);
 	Poco::DateTime now;
 	params.AddMember("created", Value(Poco::DateTimeFormatter::format(now, "%Y-%m-%d %H:%M:%S").data(), alloc), alloc);
 	params.AddMember("userRootPubkey", "131c7f68dd94b2be4c913400ff7ff4cdc03ac2bda99c2d29edcacb3b065c67e6", alloc);
@@ -642,22 +629,22 @@ TEST_F(TestJsonPackTransaction, GroupMoveMember)
 		ASSERT_TRUE(protoBody.ParseFromString(std::string((const char*)bodyBytes->data(), bodyBytes->size())));
 		MemoryManager::getInstance()->releaseMemory(bodyBytes);
 
-		ASSERT_TRUE(protoBody.has_group_member_update());
-		auto group_member_update = protoBody.group_member_update();
+		ASSERT_TRUE(protoBody.has_register_address());
+		auto register_address = protoBody.register_address();
 
 		ASSERT_EQ(
-			DataTypeConverter::binToHex(group_member_update.user_pubkey()).substr(0, 64),
+			DataTypeConverter::binToHex(register_address.user_pubkey()).substr(0, 64),
 			"131c7f68dd94b2be4c913400ff7ff4cdc03ac2bda99c2d29edcacb3b065c67e6"
 		);
 
 
 		if (i == 0) {
 			ASSERT_EQ(groupAlias, std::string("gdd1"));
-			ASSERT_EQ(group_member_update.target_group(), std::string("gdd2"));
+			ASSERT_EQ(protoBody.other_group(), std::string("gdd2"));
 		}
 		else if (i == 1) {
 			ASSERT_EQ(groupAlias, std::string("gdd2"));
-			ASSERT_EQ(group_member_update.target_group(), std::string("gdd1"));
+			ASSERT_EQ(protoBody.other_group(), std::string("gdd1"));
 		}
 
 		auto nowRead = DataTypeConverter::convertFromProtoTimestampSeconds(protoBody.created());

@@ -2,12 +2,12 @@
 #include "gtest/gtest.h"
 
 #include "JSONInterface/JsonSendTransactionIota.h"
-#include "lib/DataTypeConverter.h"
-#include "model/gradido/Transaction.h"
+#include "gradido_blockchain/lib/DataTypeConverter.h"
+#include "gradido_blockchain/model/TransactionFactory.h"
 #include "TestJsonSendTransactionIota.h"
 
 #include "Poco/DateTimeFormatter.h"
-#include "proto/gradido/TransactionBody.pb.h"
+//#include "proto/gradido/TransactionBody.pb.h"
 #include "ServerConfig.h"
 
 #include "../lib/MockIotaRequest.h"
@@ -44,27 +44,27 @@ void TestJsonSendTransactionIota::TearDown()
 TEST_F(TestJsonSendTransactionIota, SendValidTransaction)
 { 
 	auto mm = MemoryManager::getInstance();
-	auto public_key = mm->getFreeMemory(crypto_sign_PUBLICKEYBYTES);
-	auto secrect_key = mm->getFreeMemory(crypto_sign_SECRETKEYBYTES);
-	auto sign = mm->getFreeMemory(crypto_sign_BYTES);
+	auto public_key = mm->getMemory(crypto_sign_PUBLICKEYBYTES);
+	auto secrect_key = mm->getMemory(crypto_sign_SECRETKEYBYTES);
+	auto sign = mm->getMemory(crypto_sign_BYTES);
 	crypto_sign_keypair(*public_key, *secrect_key);
 	
 	//
-	auto transaction = model::gradido::Transaction::createGroupMemberUpdateAdd(public_key);
+	auto transaction = TransactionFactory::createRegisterAddress(public_key, proto::gradido::RegisterAddress_AddressType_HUMAN, nullptr, nullptr);
 	auto bodyBytes = transaction->getTransactionBody()->getBodyBytes();
-	crypto_sign_detached(*sign, NULL, (const unsigned char*)bodyBytes.data(), bodyBytes.size(), *secrect_key);
+	crypto_sign_detached(*sign, NULL, (const unsigned char*)bodyBytes->data(), bodyBytes->size(), *secrect_key);
 
 	Document params(kObjectType);
 	auto alloc = params.GetAllocator();
 	Value signaturePairs(kArrayType);
 	
-	params.AddMember("bodyBytesBase64", Value(DataTypeConverter::binToBase64(bodyBytes).data(), alloc), alloc);
+	params.AddMember("bodyBytesBase64", Value(DataTypeConverter::binToBase64(std::move(bodyBytes))->data(), alloc), alloc);
 	
 	params.AddMember("groupAlias", "gdd1", alloc);
 
 	Value entry(kObjectType);
-	entry.AddMember("pubkey", Value(public_key->convertToHex().data(), alloc), alloc);
-	entry.AddMember("signature", Value(sign->convertToHex().data(), alloc), alloc);
+	entry.AddMember("pubkey", Value(public_key->convertToHex()->data(), alloc), alloc);
+	entry.AddMember("signature", Value(sign->convertToHex()->data(), alloc), alloc);
 	signaturePairs.PushBack(entry, alloc);
 
 	params.AddMember("signaturePairs", signaturePairs, alloc);

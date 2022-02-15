@@ -5,7 +5,7 @@
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
 
-#include "JSONInterface/JsonRequestHandler.h"
+#include "gradido_blockchain/http/JsonRequestHandler.h"
 
 using namespace rapidjson;
 

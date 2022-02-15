@@ -1,6 +1,6 @@
 #include "JsonSendTransactionIota.h"
-#include "model/protobufWrapper/GradidoTransaction.h"
-#include "lib/DataTypeConverter.h"
+#include "gradido_blockchain/model/protobufWrapper/GradidoTransaction.h"
+#include "gradido_blockchain/lib/DataTypeConverter.h"
 
 #include "ServerConfig.h"
 

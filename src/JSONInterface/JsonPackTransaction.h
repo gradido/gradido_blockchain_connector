@@ -1,9 +1,9 @@
 #ifndef GRADIDO_BLOCKCHAIN_CONNECTOR_JSON_INTERFACE_JSON_PACK_TRANSACTION_H
 #define GRADIDO_BLOCKCHAIN_CONNECTOR_JSON_INTERFACE_JSON_PACK_TRANSACTION_H
 
-#include "http/JsonRequestHandler.h"
-#include "model/TransactionFactory.h"
-#include "model/CrossGroupTransactionBuilder.h"
+#include "gradido_blockchain/http/JsonRequestHandler.h"
+#include "gradido_blockchain/model/TransactionFactory.h"
+#include "gradido_blockchain/model/CrossGroupTransactionBuilder.h"
 
 /*!
 * @author Dario Rekowski

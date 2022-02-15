@@ -1,7 +1,7 @@
 #ifndef __JSON_INTERFACE_JSON_UNKNOWN_
 #define __JSON_INTERFACE_JSON_UNKNOWN_
 
-#include "http/JsonRequestHandler.h"
+#include "gradido_blockchain/http/JsonRequestHandler.h"
 
 class JsonUnknown : public JsonRequestHandler
 {

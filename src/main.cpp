@@ -1,7 +1,7 @@
 #include "GradidoBlockchainConnector.h"
 #include <sodium.h>
 
-#include "lib/Profiler.h"
+#include "gradido_blockchain/lib/Profiler.h"
 #include "ServerConfig.h"
 
 #include "Poco/DateTimeParser.h"

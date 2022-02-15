@@ -1,7 +1,7 @@
 #ifndef GRADIDO_BLOCKCHAIN_CONNECTOR_JSON_INTERFACE_JSON_SEND_TRANSACTION_IOTA_H
 #define GRADIDO_BLOCKCHAIN_CONNECTOR_JSON_INTERFACE_JSON_SEND_TRANSACTION_IOTA_H
 
-#include "http/JsonRequestHandler.h"
+#include "gradido_blockchain/http/JsonRequestHandler.h"
 
 #include "rapidjson/document.h"
 
