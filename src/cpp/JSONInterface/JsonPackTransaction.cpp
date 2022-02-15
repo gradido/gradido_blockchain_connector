@@ -242,6 +242,15 @@ Document JsonPackTransaction::resultBase64Transactions(std::vector<TransactionGr
 		}
 		try {
 			auto base64 = DataTypeConverter::binToBase64(transactionBody->getBodyBytes());
+			printf("base64: %s\n", base64->data());
+			try {
+				std::unique_ptr<std::string> base64UniqueString(new std::string(base64->data(), base64->size()));
+				auto bin = DataTypeConverter::base64ToBinString(std::move(base64UniqueString));
+				
+			}
+			catch (GradidoInvalidBase64Exception& ex) {
+				printf("error on way back\n");
+			}
 			entry.AddMember("bodyBytesBase64", Value(base64->data(), base64->size(), alloc), alloc);
 			
 			transactionsJsonArray.PushBack(entry, alloc);
