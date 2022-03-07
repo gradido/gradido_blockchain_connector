@@ -7,6 +7,7 @@
 #include "gradido_blockchain/model/protobufWrapper/TransactionValidationExceptions.h"
 #include "TestJsonPackTransaction.h"
 #include "TestJsonHelper.h"
+#include "../TestMpfrHelper.h"
 
 #include "Poco/DateTimeFormatter.h"
 //#include "proto/gradido/TransactionBody.pb.h"
@@ -37,7 +38,7 @@ Document TestJsonPackTransaction::simpleTransfer(Poco::DateTime created)
 	params.AddMember("memo", Value(memo.data(), alloc), alloc);
 	params.AddMember("senderPubkey", "131c7f68dd94b2be4c913400ff7ff4cdc03ac2bda99c2d29edcacb3b065c67e6", alloc);
 	params.AddMember("recipientPubkey", "eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd", alloc);
-	params.AddMember("amount", 1000000, alloc);
+	params.AddMember("amount", "100", alloc);
 
 	return params;
 }
@@ -63,7 +64,7 @@ Document TestJsonPackTransaction::simpleCreation(Poco::DateTime now, Poco::DateT
 	params.AddMember("targetDate", Value(Poco::DateTimeFormatter::format(targetDate, "%Y-%m-%d %H:%M:%S").data(), alloc), alloc);
 	params.AddMember("memo", Value(memo.data(), alloc), alloc);
 	params.AddMember("recipientPubkey", "eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd", alloc);
-	params.AddMember("amount", 10000000, alloc);
+	params.AddMember("amount", "1000", alloc);
 
 	return params;
 }
@@ -100,7 +101,7 @@ TEST_F(TestJsonPackTransaction, LocalTransfer)
 	ASSERT_TRUE(protoBody.ParseFromString(std::string((const char*)bodyBytes->data(), bodyBytes->size())));
 	ASSERT_TRUE(protoBody.has_transfer());
 	auto transfer = protoBody.transfer();
-	ASSERT_EQ(transfer.sender().amount(), 1000000);
+	ASSERT_TRUE(testMpfrHelper::isSame(transfer.sender().amount(), 100));
 	ASSERT_EQ(
 		DataTypeConverter::binToHex(transfer.sender().pubkey()).substr(0, 64),
 		"131c7f68dd94b2be4c913400ff7ff4cdc03ac2bda99c2d29edcacb3b065c67e6"
@@ -341,7 +342,7 @@ TEST_F(TestJsonPackTransaction, CrossGroupTransfer)
 		ASSERT_TRUE(protoBody.has_transfer());
 		auto transfer = protoBody.transfer();
 
-		ASSERT_EQ(transfer.sender().amount() , 1000000);
+		ASSERT_TRUE(testMpfrHelper::isSame(transfer.sender().amount() , 100));
 		ASSERT_EQ(
 			DataTypeConverter::binToHex(transfer.sender().pubkey()).substr(0,64),
 			"131c7f68dd94b2be4c913400ff7ff4cdc03ac2bda99c2d29edcacb3b065c67e6"
@@ -403,7 +404,7 @@ TEST_F(TestJsonPackTransaction, Creation)
 	ASSERT_TRUE(protoBody.ParseFromString(std::string((const char*)bodyBytes->data(), bodyBytes->size())));
 	ASSERT_TRUE(protoBody.has_creation());
 	auto creation = protoBody.creation();
-	ASSERT_EQ(creation.recipient().amount(), 10000000);
+	ASSERT_TRUE(testMpfrHelper::isSame(creation.recipient().amount(), 1000));
 	ASSERT_EQ(
 		DataTypeConverter::binToHex(creation.recipient().pubkey()).substr(0, 64),
 		"eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd"
@@ -426,14 +427,14 @@ TEST_F(TestJsonPackTransaction, CreationToHighAmount)
 	auto params = simpleCreation(now, testHelper::subtractMonthFromDate(now, 2));
 	auto alloc = params.GetAllocator();
 	params.RemoveMember("amount");
-	params.AddMember("amount", 100000000, alloc);
+	params.AddMember("amount", "10000", alloc);
 
 	JsonPackTransaction jsonCall;
 	try {
 		auto result = jsonCall.handle(params);
 	}
 	catch (model::gradido::TransactionValidationInvalidInputException& ex) {
-		ASSERT_EQ(ex.getFullString(), "creation amount to high, max 1000 per month with amount: integer");
+		ASSERT_EQ(ex.getFullString(), "creation amount to high, max 1000 per month with amount: string");
 	}
 }
 
@@ -443,14 +444,14 @@ TEST_F(TestJsonPackTransaction, CreationToLowAmount)
 	auto params = simpleCreation(now, testHelper::subtractMonthFromDate(now, 2));
 	auto alloc = params.GetAllocator();
 	params.RemoveMember("amount");
-	params.AddMember("amount", 1, alloc);
+	params.AddMember("amount", "0.001", alloc);
 
 	JsonPackTransaction jsonCall;
 	try {
 		auto result = jsonCall.handle(params);
 	}
 	catch (model::gradido::TransactionValidationInvalidInputException& ex) {
-		ASSERT_EQ(ex.getFullString(), "creation amount to low, min 1 GDD with amount: integer");
+		ASSERT_EQ(ex.getFullString(), "creation amount to low, min 1 GDD with amount: string");
 	}
 }
 

@@ -42,9 +42,9 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 #FetchContent_MakeAvailable(googletest)
 
 add_executable(GradidoBlockchainConnectorTest ${TEST_SRC})
-target_link_libraries(GradidoBlockchainConnectorTest GradidoBlockchain libprotobuf)
+target_link_libraries(GradidoBlockchainConnectorTest GradidoBlockchain libprotobuf gtest)
 IF(WIN32) 
-    target_link_libraries(GradidoBlockchainConnectorTest ${CONAN_LIBS})
+    target_link_libraries(GradidoBlockchainConnectorTest ${CONAN_LIBS} )
 ENDIF()
 
 include(GoogleTest)

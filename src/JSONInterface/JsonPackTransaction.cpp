@@ -46,14 +46,13 @@ Document JsonPackTransaction::transfer(const Document& params)
 		"created":"2021-01-10 10:00:00",
 		"senderPubkey":"131c7f68dd94b2be4c913400ff7ff4cdc03ac2bda99c2d29edcacb3b065c67e6",
 		"recipientPubkey":"eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd",
-		"amount": 1000000,
+		"amount": "100",
 		"coinColor": "ffffffff",
 		"senderGroupAlias": "gdd1",
 		"recipientGroupAlias":"gdd2"
 	}
 	*/
-	std::string senderPubkey, recipientPubkey, senderGroupAlias, recipientGroupAlias;
-	Poco::Int64 amount = 0;
+	std::string senderPubkey, recipientPubkey, senderGroupAlias, recipientGroupAlias, amount;
 	Poco::UInt32 coinColor = 0;
 
 	auto paramError = getStringParameter(params, "senderPubkey", senderPubkey);
@@ -62,7 +61,7 @@ Document JsonPackTransaction::transfer(const Document& params)
 	paramError = getStringParameter(params, "recipientPubkey", recipientPubkey);
 	if (paramError.IsObject()) { return paramError; }
 
-	auto param_error = getInt64Parameter(params, "amount", amount);
+	auto param_error = getStringParameter(params, "amount", amount);
 	if (param_error.IsObject()) { return param_error; }
 
 
@@ -106,19 +105,18 @@ Document JsonPackTransaction::creation(const Document& params)
 		"created":"2021-01-10 10:00:00",
 		"memo": "AGE September 2021",
 		"recipientPubkey":"eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd",
-		"amount": 10000000,
+		"amount": "100",
 		"coinColor": "ffffffff",
 		"targetDate": "2021-09-01 01:00:00",
 	}
 	*/
-	std::string recipientPubkey;
-	Poco::Int64 amount = 0;
+	std::string recipientPubkey, amount;
 	Poco::DateTime targetDate;
 
 	auto paramError = getStringParameter(params, "recipientPubkey", recipientPubkey);
 	if (paramError.IsObject()) { return paramError; }
 
-	paramError = getInt64Parameter(params, "amount", amount);
+	paramError = getStringParameter(params, "amount", amount);
 	if (paramError.IsObject()) { return paramError; }
 
 	std::string targetDateString, createdString;

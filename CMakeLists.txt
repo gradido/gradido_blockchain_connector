@@ -17,9 +17,11 @@ include_directories(
 	"dependencies" 
 	"dependencies/rapidjson/include"
 	"dependencies/gradido_blockchain/include"
-	"dependencies/gradido_blockchain/build/proto"
+	"dependencies/gradido_blockchain/build"
 	"dependencies/protobuf/src"
+	"dependencies/gradido_blockchain/dependencies/protobuf/third_party/googletest/googletest/include"
 	"build"
+	"build/dependencies/gradido_blockchain/include"
 	"src"
 )
 
@@ -62,6 +64,11 @@ if(WIN32)
 endif()
 
 add_subdirectory("dependencies/gradido_blockchain")
+
+if(NOT BUILD_SHARED_LIBS)
+	#option(protobuf_BUILD_TESTS "Build tests" OFF)
+	#add_subdirectory("dependencies/gradido_blockchain/dependencies/protobuf/cmake")
+endif()
 
 add_executable(GradidoBlockchainConnector ${LOCAL_SRCS})
 
