@@ -16,6 +16,9 @@ Document JsonPackTransaction::handle(const Document& params)
 	std::string created_string;
 	paramError = getStringParameter(params, "created", created_string);
 	if (paramError.IsObject()) { return paramError; }
+
+	mApolloTransactionId = 0;
+	getUInt64Parameter(params, "apolloTransactionId", mApolloTransactionId);
 	int timezoneDifferential = 0;
 	try {
 		mCreated = Poco::DateTimeParser::parse(created_string, timezoneDifferential);
@@ -32,6 +35,9 @@ Document JsonPackTransaction::handle(const Document& params)
 	}
 	else if (transactionType == "registerAddress") {
 		return registerAddress(params);
+	} 
+	else if (transactionType == "groupAdd") {
+		return groupAdd(params);
 	}
 
 	return stateError("transaction_type unknown");
@@ -44,6 +50,7 @@ Document JsonPackTransaction::transfer(const Document& params)
 	* 
 	{
 		"created":"2021-01-10 10:00:00",
+		"apolloTransactionId": 10,
 		"senderPubkey":"131c7f68dd94b2be4c913400ff7ff4cdc03ac2bda99c2d29edcacb3b065c67e6",
 		"recipientPubkey":"eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd",
 		"amount": "100",
@@ -103,6 +110,7 @@ Document JsonPackTransaction::creation(const Document& params)
 	{
 		"transactionType": "creation",
 		"created":"2021-01-10 10:00:00",
+		"apolloTransactionId": 10,
 		"memo": "AGE September 2021",
 		"recipientPubkey":"eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd",
 		"amount": "100",
@@ -158,6 +166,7 @@ Document JsonPackTransaction::registerAddress(const Document& params)
 	{
 		"transactionType": "registerAddress",
 		"created":"2021-01-10 10:00:00",
+		"apolloTransactionId": 10,
 		"userRootPubkey":"eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd",
 		"addressType":"human",			
 		"nameHash":"",
@@ -219,6 +228,30 @@ Document JsonPackTransaction::registerAddress(const Document& params)
 
 }
 
+rapidjson::Document JsonPackTransaction::groupAdd(const rapidjson::Document& params)
+{
+	/*
+	* coinColor: uint32 or hex format
+	{
+		"transactionType": "groupAdd",
+		"created":"2021-01-10 10:00:00",
+		"apolloTransactionId": 10,
+		"groupName": "Gradido Academy Community",
+		"groupAlias":"gdd1",
+		"coinColor":"ff0000ff"
+	}
+	*/
+	std::string groupName, groupAlias, coinColorHex;
+
+	auto paramError = getStringParameter(params, "groupName", groupName);
+	if (paramError.IsObject()) { return paramError; }
+	paramError = getStringParameter(params, "groupAlias", groupAlias);
+	if (paramError.IsObject()) { return paramError; }
+	
+	auto transaction = TransactionFactory::createGlobalGroupAdd(groupName, groupAlias, readCoinColor(params));	
+	return resultBase64Transactions({ { transaction.release(), ""} });
+}
+
 
 Document JsonPackTransaction::resultBase64Transactions(std::vector<TransactionGroupAlias> transactions)
 {	
@@ -227,6 +260,9 @@ Document JsonPackTransaction::resultBase64Transactions(std::vector<TransactionGr
 	auto alloc = result.GetAllocator();
 	for (auto it = transactions.begin(); it != transactions.end(); it++) {
 		it->first->setMemo(mMemo).setCreated(mCreated);
+		if (mApolloTransactionId) {
+			it->first->setApolloTransactionId(mApolloTransactionId);
+		}
 
 		auto transactionBody = it->first->getTransactionBody();
 

@@ -22,6 +22,8 @@ protected:
 	rapidjson::Document transfer(const rapidjson::Document& params);
 	rapidjson::Document creation(const rapidjson::Document& params);
 	rapidjson::Document registerAddress(const rapidjson::Document& params);
+	rapidjson::Document groupAdd(const rapidjson::Document& params);
+	
 
 	rapidjson::Document resultBase64Transactions(std::vector<TransactionGroupAlias> transactions);
 
@@ -29,6 +31,7 @@ protected:
 
 	std::string mMemo;
 	Poco::DateTime mCreated;
+	uint64_t mApolloTransactionId;
 };
 
 
