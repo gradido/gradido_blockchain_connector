@@ -26,7 +26,7 @@ Document JsonSendTransactionIota::handle(const Document& params)
 	if (paramError.IsObject()) { return paramError; }
 
 	paramError = getStringParameter(params, "groupAlias", groupAlias);
-	if (paramError.IsObject()) { return paramError; }
+	//if (paramError.IsObject()) { return paramError; }
 
 	auto signaturePairsIt = params.FindMember("signaturePairs");
 	if (signaturePairsIt == params.MemberEnd()) {
@@ -62,10 +62,17 @@ Document JsonSendTransactionIota::handle(const Document& params)
 		mm->releaseMemory(pubkeyBin);
 		mm->releaseMemory(signatureBin);
 	}
+	transaction->validate(model::gradido::TRANSACTION_VALIDATION_SINGLE);
 	if (transaction->getSignCount() < transactionBody->getTransactionBase()->getMinSignatureCount()) {
 		return stateError("missing signatures");
 	}
-
+	// update target group alias if it is a global group add transaction
+	if (transaction->getTransactionBody()->isGlobalGroupAdd()) {
+		groupAlias = GROUP_REGISTER_GROUP_ALIAS;
+	}
+	if (groupAlias != GROUP_REGISTER_GROUP_ALIAS && !model::gradido::TransactionBase::isValidGroupAlias(groupAlias)) {
+		return stateError("invalid group alias");
+	}
 	// send transaction to iota
 	auto raw_message = transaction->getSerialized();
 
