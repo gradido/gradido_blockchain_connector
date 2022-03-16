@@ -9,6 +9,7 @@ using namespace rapidjson;
 /*
 {
 	"bodyBytesBase64": "CAEStwEKZgpkCiDs2zemYO1PxD1Odwh5YxyUmDp+lyxgVmiQgiFdPLUahRJAvyYRVASJNvyYiTAT2D8t6QtVgekqnsPIJRAx6jG8tEqxdzwKGg/Jm0gatdY1Ix7DGbHMBRw/9CtoXQXueqqDChJNChBBR0UgT2t0b2JlciAyMDIxEgYIuMWpjQY6MQonCiAdkWfcgRcDfCIg+GbikK6U9Fp4WMTGtAxF7RRdvhisSxCA2sQJGgYIgJ/ZigYaBgjGxamNBiABKiCijBRel5hudg5iZqfeQxjzIMhnOJA+tmHmloMVW+snjTIEyWETAA==",
+	"apolloTransactionId": 10,
 	"signaturePairs": [
 		{
 			"pubkey": "ecdb37a660ed4fc43d4e770879631c94983a7e972c6056689082215d3cb51a85",
@@ -22,10 +23,13 @@ using namespace rapidjson;
 Document JsonSendTransactionIota::handle(const Document& params)
 {
 	std::string bodyBytesBase64String, groupAlias;
+	uint64_t apolloTransactionId = 0;
+
 	auto paramError = getStringParameter(params, "bodyBytesBase64", bodyBytesBase64String);
 	if (paramError.IsObject()) { return paramError; }
 
 	paramError = getStringParameter(params, "groupAlias", groupAlias);
+	getUInt64Parameter(params, "apolloTransactionId", apolloTransactionId);
 	//if (paramError.IsObject()) { return paramError; }
 
 	auto signaturePairsIt = params.FindMember("signaturePairs");
@@ -61,7 +65,14 @@ Document JsonSendTransactionIota::handle(const Document& params)
 		}
 		mm->releaseMemory(pubkeyBin);
 		mm->releaseMemory(signatureBin);
+	
 	}
+
+	// add apollo transaction id
+	if (apolloTransactionId) {
+		transaction->setApolloTransactionId(apolloTransactionId);
+	}
+
 	transaction->validate(model::gradido::TRANSACTION_VALIDATION_SINGLE);
 	if (transaction->getSignCount() < transactionBody->getTransactionBase()->getMinSignatureCount()) {
 		return stateError("missing signatures");

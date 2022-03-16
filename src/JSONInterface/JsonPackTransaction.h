@@ -31,7 +31,6 @@ protected:
 
 	std::string mMemo;
 	Poco::DateTime mCreated;
-	uint64_t mApolloTransactionId;
 };
 
 
