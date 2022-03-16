@@ -144,7 +144,7 @@ Document JsonPackTransaction::creation(const Document& params)
 	std::vector<TransactionGroupAlias> transactions;
 	try {
 		auto creation = TransactionFactory::createTransactionCreation(recipientPubkeyBin, amount, readCoinColor(params), targetDate);
-
+		creation->getTransactionBody()->getCreationTransaction()->validateTargetDate(mCreated.timestamp().epochTime());
 		transactions.push_back({ creation.release(), "" });
 	}
 	catch (...) {
