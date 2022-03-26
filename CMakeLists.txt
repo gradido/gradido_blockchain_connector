@@ -90,8 +90,6 @@ endif()
 # Directory where lithium headers are located if not in the default include path.
 include_directories("dependencies/lithium/single_headers")
 
-add_dependencies(GradidoBlockchainConnector symbols_generation)
-
 
 ######################################################################
 

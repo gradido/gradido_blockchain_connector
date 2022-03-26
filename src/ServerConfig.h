@@ -2,7 +2,15 @@
 #define __GRADIDO_LOGIN_SERVER_SERVER_CONFIG__
 
 // MySQL header.
-#include <lithium_mysql.hh>
+// Lithium need 'and' and 'or' defined
+#ifndef and 
+#define and &&
+#endif
+
+#ifndef or 
+#define or ||
+#endif
+#include "lithium_mysql.hh"
 
 #include "Poco/Util/LayeredConfiguration.h"
 #include "Poco/Net/Context.h"

@@ -151,7 +151,7 @@ namespace ServerConfig {
 		g_Mysql = new li::mysql_database(
 			s::host = cfg.getString("db.host", "127.0.0.1"), // Hostname or ip of the database server
 			s::database = cfg.getString("db.name", "blockchain_connector"),  // Database name
-			s::user = cfg.getString("db.name", "admin"), // Username
+			s::user = cfg.getString("db.name", "root"), // Username
 			s::password = cfg.getString("db.password", ""), // Password
 			s::port = cfg.getInt("db.port", 3306), // Port
 			s::charset = cfg.getString("db.charset", "utf8mb4_general_ci"), // Charset

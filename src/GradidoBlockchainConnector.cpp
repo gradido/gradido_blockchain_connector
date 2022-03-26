@@ -1,6 +1,7 @@
 #include "GradidoBlockchainConnector.h"
 #include "ServerConfig.h"
 #include "JSONInterface/JsonRequestHandlerFactory.h"
+#include "model/table/VersionsManager.h"
 
 #include "gradido_blockchain/lib/Profiler.h"
 
@@ -179,7 +180,9 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 		}
 
 		ServerConfig::initMysql(config());
-		ServerConfig::initIota(config());	
+		ServerConfig::initIota(config());
+
+		model::table::VersionsManager::getInstance()->migrate();
 		
 		// JSON Interface Server
 		Poco::Net::ServerSocket json_svs(json_port);
