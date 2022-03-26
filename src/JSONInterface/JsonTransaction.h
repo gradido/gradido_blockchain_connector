@@ -1,0 +1,12 @@
+#ifndef __GRADIDO_BLOCKCHAIN_CONNECTOR_JSON_INTERFACE_JSON_TRANSACTION_H
+#define __GRADIDO_BLOCKCHAIN_CONNECTOR_JSON_INTERFACE_JSON_TRANSACTION_H
+
+#include "gradido_blockchain/http/JsonRequestHandler.h"
+
+class JsonTransaction : public JsonRequestHandler
+{
+public:
+
+};
+
+#endif //__GRADIDO_BLOCKCHAIN_CONNECTOR_JSON_INTERFACE_JSON_TRANSACTION_H
