@@ -209,7 +209,7 @@ TEST_F(TestJsonPackTransaction, LocalTransferZeroSenderPubkey)
 	auto params = simpleTransfer(now);
 	auto alloc = params.GetAllocator();
 	params.RemoveMember("senderPubkey");
-	auto emptyPubkey = mm->getFreeMemory(32);
+	auto emptyPubkey = mm->getMemory(32);
 	memset(*emptyPubkey, 0, 32);
 	params.AddMember("senderPubkey", Value(DataTypeConverter::binToHex(emptyPubkey).data(), alloc), alloc);
 	mm->releaseMemory(emptyPubkey);
@@ -264,7 +264,7 @@ TEST_F(TestJsonPackTransaction, LocalTransferZeroRecipientPubkey)
 	auto params = simpleTransfer(now);
 	auto alloc = params.GetAllocator();
 	params.RemoveMember("recipientPubkey");
-	auto emptyPubkey = mm->getFreeMemory(32);
+	auto emptyPubkey = mm->getMemory(32);
 	memset(*emptyPubkey, 0, 32);
 	params.AddMember("recipientPubkey", Value(DataTypeConverter::binToHex(emptyPubkey).data(), alloc), alloc);
 	mm->releaseMemory(emptyPubkey);
@@ -561,7 +561,7 @@ TEST_F(TestJsonPackTransaction, CreationZeroPubkey)
 	auto alloc = params.GetAllocator();
 
 	params.RemoveMember("recipientPubkey");
-	auto emptyPubkey = mm->getFreeMemory(32);
+	auto emptyPubkey = mm->getMemory(32);
 	memset(*emptyPubkey, 0, 32);
 	params.AddMember("recipientPubkey", Value(DataTypeConverter::binToHex(emptyPubkey).data(), alloc), alloc);
 	mm->releaseMemory(emptyPubkey);
