@@ -1,6 +1,8 @@
 #ifndef __GRADIDO_LOGIN_SERVER_SERVER_CONFIG__
 #define __GRADIDO_LOGIN_SERVER_SERVER_CONFIG__
 
+// MySQL header.
+#include <lithium_mysql.hh>
 
 #include "Poco/Util/LayeredConfiguration.h"
 #include "Poco/Net/Context.h"
@@ -8,7 +10,6 @@
 #include "Poco/Util/Timer.h"
 
 #include "gradido_blockchain/MemoryManager.h"
-
 #include "gradido_blockchain/http/IotaRequest.h"
 
 #define DISABLE_EMAIL
@@ -38,10 +39,12 @@ namespace ServerConfig {
 	extern ServerSetupType g_ServerSetupType;
 	extern MemoryBin*  g_CryptoAppSecret;
 	extern AllowUnsecure g_AllowUnsecureFlags;
+	extern li::mysql_database* g_Mysql;
 
 	bool initServerCrypto(const Poco::Util::LayeredConfiguration& cfg);
 	bool initSSLClientContext();
 	bool initIota(const Poco::Util::LayeredConfiguration& cfg);
+	bool initMysql(const Poco::Util::LayeredConfiguration& cfg);
 
 	void writeToFile(std::istream& datas, std::string fileName);
 

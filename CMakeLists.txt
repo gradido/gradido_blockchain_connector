@@ -43,11 +43,13 @@ ENDIF()
 ############################## bind source files ###################################
 
 FILE(GLOB JSONInterface "src/JSONInterface/*.h" "src/JSONInterface/*.cpp")
-
+FILE(GLOB MODEL "src/model/*.h" "src/model/*.cpp")
+FILE(GLOB MODEL_TABLE "src/model/table/*.cpp" "src/model/table/*.h")
 FILE(GLOB MAIN "src/*.cpp" "src/*.c"  "src/*.h")
 
 SET(LOCAL_SRCS 
 	${MAIN}
+	${MODEL} ${MODEL_TABLE}
 	${JSONInterface} 
 )
 
@@ -56,6 +58,8 @@ aux_source_directory("src" LOCAL_SRCS)
 if(MSVC)
 	# src
 	source_group("Json-Interface" FILES ${JSONInterface})	
+	source_group("model\\table" FILES ${MODEL_TABLE})
+	source_group("model" FILES ${MODEL})
 endif()
 
 
@@ -74,6 +78,22 @@ if(NOT BUILD_SHARED_LIBS)
 endif()
 
 add_executable(GradidoBlockchainConnector ${LOCAL_SRCS})
+
+########################### lithium ##################################
+if(UNIX)
+	include("dependencies/lithium/cmake/FindMYSQL.cmake")
+	find_package(MYSQL REQUIRED)
+	include_directories(${MYSQL_INCLUDE_DIR})
+	target_link_libraries(GradidoBlockchainConnector ${MYSQL_LIBRARY})
+endif()
+
+# Directory where lithium headers are located if not in the default include path.
+include_directories("dependencies/lithium/single_headers")
+
+add_dependencies(GradidoBlockchainConnector symbols_generation)
+
+
+######################################################################
 
 if(WIN32)
 	#MESSAGE("Poco Setup: ${CMAKE_BINARY_DIR}")

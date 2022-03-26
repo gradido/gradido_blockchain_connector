@@ -36,7 +36,7 @@ namespace ServerConfig {
 	ServerSetupType g_ServerSetupType = SERVER_TYPE_PRODUCTION;
 	MemoryBin*  g_CryptoAppSecret = nullptr;
 	AllowUnsecure g_AllowUnsecureFlags = NOT_UNSECURE;
-
+	li::mysql_database* g_Mysql = nullptr;
 
 	ServerSetupType getServerSetupTypeFromString(const std::string& serverSetupTypeString) {
 		if ("test" == serverSetupTypeString) {
@@ -136,11 +136,40 @@ namespace ServerConfig {
 		return true;
 	}
 
+	bool initMysql(const Poco::Util::LayeredConfiguration& cfg)
+	{
+		/*
+		db.host = 192.168.178.225
+		db.name = gradido_community
+		db.user = gradido_community
+		db.password = asjeuKJs783laskawk
+		db.port = 3306
+		db.charset = utf8mb4_general_ci
+		db.max_connections = 2000
+		*/
+		// Declare a mysql database.
+		g_Mysql = new li::mysql_database(
+			s::host = cfg.getString("db.host", "127.0.0.1"), // Hostname or ip of the database server
+			s::database = cfg.getString("db.name", "blockchain_connector"),  // Database name
+			s::user = cfg.getString("db.name", "admin"), // Username
+			s::password = cfg.getString("db.password", ""), // Password
+			s::port = cfg.getInt("db.port", 3306), // Port
+			s::charset = cfg.getString("db.charset", "utf8mb4_general_ci"), // Charset
+			// Only for synchronous connection, specify the maximum number of SQL connections
+			s::max_sync_connections = cfg.getInt("db.max_connections", 2000)
+		);
+		return true;		
+	}
+
 	void unload() {
 		
 		if (g_CryptoAppSecret) {
 			MemoryManager::getInstance()->releaseMemory(g_CryptoAppSecret);
 			g_CryptoAppSecret = nullptr;
+		}
+		if (g_Mysql) {
+			delete g_Mysql;
+			g_Mysql = nullptr;
 		}
 	}
 

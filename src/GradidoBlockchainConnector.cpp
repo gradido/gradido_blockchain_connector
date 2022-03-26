@@ -178,8 +178,8 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 			return Application::EXIT_CONFIG;
 		}
 
-		ServerConfig::initIota(config());
-
+		ServerConfig::initMysql(config());
+		ServerConfig::initIota(config());	
 		
 		// JSON Interface Server
 		Poco::Net::ServerSocket json_svs(json_port);
