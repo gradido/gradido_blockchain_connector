@@ -23,4 +23,5 @@ protected:
 	Poco::SharedPtr<Session> mSession;
 };
 
+
 #endif //__GRADIDO_BLOCKCHAIN_CONNECTOR_JSON_INTERFACE_JSON_TRANSACTION_H

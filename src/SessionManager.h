@@ -20,4 +20,5 @@ protected:
 	Poco::AccessExpireCache<std::string, Session> mActiveSessions;
 };
 
+
 #endif //__GRADIDO_BLOCKCHAIN_CONNECTOR_SESSION_MANAGER_H

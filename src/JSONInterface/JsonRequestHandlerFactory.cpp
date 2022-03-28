@@ -6,6 +6,7 @@
 
 #include "JsonPackTransaction.h"
 #include "JsonCreationTransaction.h"
+#include "JsonRegisterAddressTransaction.h"
 #include "JsonSendTransactionIota.h"
 #include "JsonUnknown.h"
 
@@ -56,6 +57,9 @@ Poco::Net::HTTPRequestHandler* JsonRequestHandlerFactory::createRequestHandler(c
 	}
 	else if (url_first_part == "/creation") {
 		return new JsonCreationTransaction;
+	}
+	else if (url_first_part == "/registerAddress") {
+		return new JsonRegisterAddressTransaction;
 	}
 	
 
