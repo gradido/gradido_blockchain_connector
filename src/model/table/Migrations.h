@@ -16,7 +16,7 @@ LI_SYMBOL(version)
 #define MIGRATE_TABLE_SCHEMA(DB, TABLE_NAME)															\
 		li::sql_orm_schema(DB, TABLE_NAME)																\
 			.fields(s::id(s::auto_increment, s::primary_key) = int(),									\
-				s::table_name = std::string(),	s::version = int());									 			
+				s::table_name = li::sql_varchar<255>(),	s::version = int());									 			
 
 
 

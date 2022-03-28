@@ -31,22 +31,37 @@ namespace li {
 		ss << "BINARY(" << S << ')';
 		return ss.str();
 	}
+
+	template <unsigned S> inline auto type_to_mysql_statement_buffer_type(const sql_binary<S>) {
+		return MYSQL_TYPE_STRING;
+	}
 }
 
 
-#define USER_TABLE_SCHEMA_1(DB, TABLE_NAME)								\
-		li::sql_orm_schema(DB, TABLE_NAME)								\
+#define USER_TABLE_SCHEMA_1(DB)											\
+		li::sql_orm_schema(DB, "user")									\
 		.fields(													    \
 				s::id(s::auto_increment, s::primary_key) = int(),		\
-				s::name = sql_varchar<255>(),						    \
+				s::name = li::sql_varchar<255>(),						    \
 				s::password = long long(),								\
-				s::public_key = sql_binary<32>(),					    \
-				s::encrypted_private_key = sql_binary<80>()				\
+				s::public_key = li::sql_binary<32>(),					    \
+				s::encrypted_private_key = li::sql_binary<80>()				\
 		)
 
 
 #define USER_TABLE_LAST_SCHEMA_VERSION 1
 #define USER_TABLE_LAST_SCHEMA USER_TABLE_SCHEMA_1
+
+namespace model {
+	namespace table {
+		inline auto getUserConnection()
+		{
+			auto userSchema = USER_TABLE_LAST_SCHEMA(*ServerConfig::g_Mysql);
+			return userSchema.connect();
+		}
+	}
+}
+
 
 
 #endif //__GRADIDO_BLOCKCHAIN_CONNECTOR_MODEL_TABLE_USER_H

@@ -21,6 +21,7 @@ namespace model {
 
 		void VersionsManager::migrate()
 		{
+			auto dbConnection = ServerConfig::g_Mysql->connect();
 			auto schema = MIGRATE_TABLE_SCHEMA(*ServerConfig::g_Mysql, "migration");
 			auto migrations = schema.connect();
 			migrations.create_table_if_not_exists();
@@ -28,28 +29,31 @@ namespace model {
 			bool userTable = false;
 			bool userBackupTable = false;
 
-			migrations.forall([&](auto u) {
-				if (u.table_name == "user") {
-					if (u.version < USER_TABLE_LAST_SCHEMA_VERSION) {
+			auto result = dbConnection("SELECT table_name, version from migration");
+			
+			result.map([&](std::string table_name, int version) {
+				if (table_name == "user") {
+					if (version < USER_TABLE_LAST_SCHEMA_VERSION) {
 						throw std::runtime_error("missing migration implementation for new user table version");
 					}
 					userTable = true;
 				}
-				else if (u.table_name == "user_backup") {
-					if (u.version < USER_BACKUP_TABLE_LAST_SCHEMA_VERSION) {
+				else if (table_name == "user_backup") {
+					if (version < USER_BACKUP_TABLE_LAST_SCHEMA_VERSION) {
 						throw std::runtime_error("missing migration implementation for new user backup table version");
 					}
 					userBackupTable = true;
 				}
 			});
+
 			if (!userTable) {
-				auto userSchema = USER_TABLE_LAST_SCHEMA(*ServerConfig::g_Mysql, "user");
+				auto userSchema = USER_TABLE_LAST_SCHEMA(*ServerConfig::g_Mysql);
 				auto users = userSchema.connect();
 				users.create_table_if_not_exists();
 				migrations.insert(s::table_name = "user", s::version = USER_TABLE_LAST_SCHEMA_VERSION);
 			}
 			if (!userBackupTable) {
-				auto userSchema = USER_BACKUP_TABLE_LAST_SCHEMA(*ServerConfig::g_Mysql, "user_backup");
+				auto userSchema = USER_BACKUP_TABLE_LAST_SCHEMA(*ServerConfig::g_Mysql);
 				auto userBackups = userSchema.connect();
 				userBackups.create_table_if_not_exists();
 				migrations.insert(s::table_name = "user_backup", s::version = USER_BACKUP_TABLE_LAST_SCHEMA_VERSION);

@@ -31,22 +31,12 @@ namespace ServerConfig {
 		SERVER_TYPE_PRODUCTION
 	};
 
-	// used with bit-operators, so only use numbers with control exactly one bit (1,2,4,8,16...)
-	enum AllowUnsecure {
-		NOT_UNSECURE = 0,
-		UNSECURE_PASSWORD_REQUESTS = 1,
-		UNSECURE_AUTO_SIGN_TRANSACTIONS = 2,
-		UNSECURE_CORS_ALL = 4,
-		UNSECURE_ALLOW_ALL_PASSWORDS = 8
-	};
-
-
 	extern Poco::Net::Context::Ptr g_SSL_CLient_Context;
 	extern IotaRequest* g_IotaRequestHandler;
 	extern std::string g_versionString;
 	extern ServerSetupType g_ServerSetupType;
 	extern MemoryBin*  g_CryptoAppSecret;
-	extern AllowUnsecure g_AllowUnsecureFlags;
+	
 	extern li::mysql_database* g_Mysql;
 
 	bool initServerCrypto(const Poco::Util::LayeredConfiguration& cfg);

@@ -19,8 +19,8 @@ LI_SYMBOL(key_user_id)
 LI_SYMBOL(passphrase)
 #endif
 
-#define USER_BACKUP_TABLE_SCHEMA_1(DB, TABLE_NAME)						\
-		li::sql_orm_schema(DB, TABLE_NAME)								\
+#define USER_BACKUP_TABLE_SCHEMA_1(DB)									\
+		li::sql_orm_schema(DB, "user_backup")							\
 			.fields(s::id(s::auto_increment, s::primary_key) = int(),   \
 				s::user_id = int(),										\
 				s::key_user_id = int(),									\
@@ -30,5 +30,15 @@ LI_SYMBOL(passphrase)
 
 #define USER_BACKUP_TABLE_LAST_SCHEMA_VERSION 1
 #define USER_BACKUP_TABLE_LAST_SCHEMA USER_BACKUP_TABLE_SCHEMA_1
+
+namespace model {
+	namespace table {
+		inline auto getUserBackupConnection()
+		{
+			auto userBackupSchema = USER_BACKUP_TABLE_LAST_SCHEMA(*ServerConfig::g_Mysql);
+			return userBackupSchema.connect();
+		}
+	}
+}
 
 #endif //__GRADIDO_BLOCKCHAIN_CONNECTOR_MODEL_TABLE_USER_BACKUP_H

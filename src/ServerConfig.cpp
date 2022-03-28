@@ -35,7 +35,6 @@ namespace ServerConfig {
 	std::string g_versionString = "";
 	ServerSetupType g_ServerSetupType = SERVER_TYPE_PRODUCTION;
 	MemoryBin*  g_CryptoAppSecret = nullptr;
-	AllowUnsecure g_AllowUnsecureFlags = NOT_UNSECURE;
 	li::mysql_database* g_Mysql = nullptr;
 
 	ServerSetupType getServerSetupTypeFromString(const std::string& serverSetupTypeString) {
@@ -80,20 +79,6 @@ namespace ServerConfig {
 		
 		//g_CryptoAppSecret
 
-		// unsecure flags
-		//g_AllowUnsecureFlags
-		if (cfg.getInt("unsecure.allow_passwort_via_json_request", 0) == 1) {
-			g_AllowUnsecureFlags = (AllowUnsecure)(g_AllowUnsecureFlags | UNSECURE_PASSWORD_REQUESTS);
-		}
-		if (cfg.getInt("unsecure.allow_auto_sign_transactions", 0) == 1) {
-			g_AllowUnsecureFlags = (AllowUnsecure)(g_AllowUnsecureFlags | UNSECURE_AUTO_SIGN_TRANSACTIONS);
-		}
-		if (cfg.getInt("unsecure.allow_cors_all", 0) == 1) {
-			g_AllowUnsecureFlags = (AllowUnsecure)(g_AllowUnsecureFlags | UNSECURE_CORS_ALL);
-		}
-		if (cfg.getInt("unsecure.allow_all_passwords", 0) == 1) {
-			g_AllowUnsecureFlags = (AllowUnsecure)(g_AllowUnsecureFlags | UNSECURE_ALLOW_ALL_PASSWORDS);
-		}
 
 		return true;
 	}

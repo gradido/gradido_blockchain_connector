@@ -92,10 +92,10 @@ Document JsonSendTransactionIota::handle(const Document& params)
 
 	std::string index = "GRADIDO." + groupAlias;
 
-	auto message_id = ServerConfig::g_IotaRequestHandler->sendMessage(DataTypeConverter::binToHex(index), *hex_message);
+	//auto message_id = ServerConfig::g_IotaRequestHandler->sendMessage(DataTypeConverter::binToHex(index), *hex_message);
 	
 	auto response = stateSuccess();
 	auto alloc = response.GetAllocator();
-	response.AddMember("iotaMessageId", Value(message_id.data(), message_id.size(), alloc), alloc);
+	//response.AddMember("iotaMessageId", Value(message_id.data(), message_id.size(), alloc), alloc);
 	return response;
 }

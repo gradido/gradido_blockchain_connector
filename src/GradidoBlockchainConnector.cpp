@@ -4,6 +4,8 @@
 #include "model/table/VersionsManager.h"
 
 #include "gradido_blockchain/lib/Profiler.h"
+#include "gradido_blockchain/crypto/CryptoConfig.h"
+#include "gradido_blockchain/http/ServerConfig.h"
 
 #include "Poco/Util/HelpFormatter.h"
 #include "Poco/Net/ServerSocket.h"
@@ -171,6 +173,11 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 			return Application::EXIT_CONFIG;
 		}
 
+		if (!CryptoConfig::loadMnemonicWordLists()) {
+			errorLog.error("[Gradido_LoginServer::main] error calling loadMnemonicWordLists");
+			return Application::EXIT_CONFIG;
+		}
+		CryptoConfig::loadCryptoKeys(config());
 
 		Poco::Net::initializeSSL();
 		if(!ServerConfig::initSSLClientContext()) {
@@ -181,6 +188,7 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 
 		ServerConfig::initMysql(config());
 		ServerConfig::initIota(config());
+		ServerConfig::readUnsecureFlags(config());
 
 		model::table::VersionsManager::getInstance()->migrate();
 		
