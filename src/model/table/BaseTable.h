@@ -8,8 +8,17 @@ namespace model {
 		class BaseTable
 		{
 		public:
+			BaseTable() : mID(0) {}
+			BaseTable(uint64_t id) : mID(id) {}
 			virtual ~BaseTable() {}
-			virtual const char* tableName() = 0;
+			virtual const char* tableName() const = 0;
+
+			inline uint64_t getId() const { return mID; }
+			inline void setId(uint64_t id) { mID = id; }
+
+			virtual uint64_t save() = 0;
+		protected:
+			uint64_t mID;
 		};
 	}
 }

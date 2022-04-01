@@ -7,6 +7,8 @@
 #include "gradido_blockchain/crypto/AuthenticatedEncryption.h"
 #include "gradido_blockchain/crypto/SealedBoxes.h"
 
+#include "PasswordEncryptionRateLimiter.h"
+
 Session::Session()
 	: mUserKeyPair(nullptr)
 {
@@ -15,85 +17,99 @@ Session::Session()
 
 Session::~Session()
 {
-	if (mUserKeyPair) {
-		delete mUserKeyPair;
-		mUserKeyPair = nullptr;
+}
+
+int Session::loginOrCreate(const std::string& userName, const std::string& userPassword, const std::string& clientIp)
+{
+	mClientIp = clientIp;
+	std::scoped_lock<std::recursive_mutex> _lock(mWorkMutex);
+	
+	try {
+		mEncryptionSecret = std::make_shared<SecretKeyCryptography>();
+		PasswordEncryptionRateLimiter::getInstance()->waitForFreeSlotAndRunEncryption(mEncryptionSecret.get(), userName, userPassword);
+		
+		auto dbConnection = ServerConfig::g_Mysql->connect();
+		auto preparedStatement = dbConnection.prepare("SELECT password, encrypted_private_key from user where name = ?");
+		auto optional_result = preparedStatement(userName).read_optional<uint64_t, li::sql_blob>();
+		if (optional_result) {
+			auto [password, encrypted_private_key] = optional_result.value();
+			printf("password: %d, encrypted priv key: %s\n", password, DataTypeConverter::binToHex((const unsigned char*)encrypted_private_key.data(), encrypted_private_key.size()).data());
+
+			if (password != mEncryptionSecret->getKeyHashed()) {
+				throw InvalidPasswordException("login failed", userName.data(), userPassword.size());
+			}
+			MemoryBin* privateKey = nullptr;
+			if (SecretKeyCryptography::AUTH_DECRYPT_OK != mEncryptionSecret->decrypt(
+				(const unsigned char*)encrypted_private_key.data(),
+				encrypted_private_key.size(),
+				&privateKey)) {
+				// TODO: define exception classes for this
+				throw Poco::NullPointerException("cannot decrypt private key");
+			}
+			mUserKeyPair = std::make_unique<KeyPairEd25519>(privateKey);
+			return 1;
+		} 
+		else {
+			createNewUser(userName);
+			return 0;
+		}
+		
+		return -1;
+	}
+	catch (std::runtime_error& ex) {
+		printf("runtime error: %s\n", ex.what());
+		throw;
 	}
 }
 
-int Session::loginOrCreate(const std::string& userName, const std::string& userPassword)
+bool Session::verifyPassword(const std::string& password)
 {
-	std::scoped_lock<std::recursive_mutex> _lock(mWorkMutex);
-	auto users = model::table::getUserConnection();
-	auto user = users.find_one(s::name = userName);
-
-	mEncryptionSecret = std::make_shared<SecretKeyCryptography>();
-	mEncryptionSecret->createKey(userName, userPassword);
-
-	// if user don't exist, create him
-	if (!user) {
-		createNewUser(userName);
-		return 0;
-	}
-	else {
-		if (user->password != mEncryptionSecret->getKeyHashed()) {
-			throw InvalidPasswordException("login failed", userName.data(), userPassword.size());
-		}
-		MemoryBin* privateKey = nullptr;
-		if (SecretKeyCryptography::AUTH_DECRYPT_OK != mEncryptionSecret->decrypt(
-			(const unsigned char*)user->encrypted_private_key.data(),
-			user->encrypted_private_key.size(),
-			&privateKey)) {
-			// TODO: define exception classes for this
-			throw Poco::NullPointerException("cannot decrypt private key");
-		}
-		mUserKeyPair = new KeyPairEd25519(privateKey);
-		return 1;
-	}
+	SecretKeyCryptography secretCryptography;
+	PasswordEncryptionRateLimiter::getInstance()->waitForFreeSlotAndRunEncryption(&secretCryptography, mUserName, password);
+	return mEncryptionSecret->getKeyHashed() == secretCryptography.getKeyHashed();
 }
 
 
 
 void Session::createNewUser(const std::string& userName)
-{
-
-	auto users = model::table::getUserConnection();
-	auto userBackups = model::table::getUserBackupConnection();
-
+{	
 	auto mm = MemoryManager::getInstance();
 	auto passphrase = Passphrase::generate(&CryptoConfig::g_Mnemonic_WordLists[CryptoConfig::MNEMONIC_BIP0039_SORTED_ORDER]);
-	mUserKeyPair = KeyPairEd25519::create(passphrase);
+	mUserKeyPair = std::move(KeyPairEd25519::create(passphrase));
 	
 	auto cryptedPrivKey = mUserKeyPair->getCryptedPrivKey(mEncryptionSecret);
 	if (!cryptedPrivKey) {
 		// TODO: define exception classes for this
 		throw Poco::NullPointerException("cannot get encrypted private key");
 	}
-	auto cryptedPrivKeyString = cryptedPrivKey->copyAsString();
-	mm->releaseMemory(cryptedPrivKey);
+	printf("key hashed: %d\n", mEncryptionSecret->getKeyHashed());
 
-	auto user_id = users.insert(
-		s::name = userName,
-		s::password = mEncryptionSecret->getKeyHashed(),
-		s::public_key = std::string((const char*)mUserKeyPair->getPublicKey(), KeyPairEd25519::getPublicKeySize()),
-		s::encrypted_private_key = *cryptedPrivKeyString.get()
-	);
 	
+	model::table::User user(
+		userName, 
+		mEncryptionSecret->getKeyHashed(), 
+		mUserKeyPair->getPublicKey(),
+		cryptedPrivKey
+	);
+	mm->releaseMemory(cryptedPrivKey);
+	auto userId = user.save();
+
 
 	if (!CryptoConfig::g_SupportPublicKey) {
 		throw CryptoConfig::MissingKeyException("missing key for saving passphrase for new user", "supportPublicKey");
 	}
-	KeyPairEd25519 supportKeyPair(*CryptoConfig::g_SupportPublicKey);
+	AuthenticatedEncryption supportKeyPair(*CryptoConfig::g_SupportPublicKey);
 	auto encryptedPassphrase = SealedBoxes::encrypt(&supportKeyPair, passphrase->getString());
-	auto encryptedPassphraseString = encryptedPassphrase->copyAsString();
+
+	model::table::UserBackup userBackup(
+		userId, 
+		0, 
+		encryptedPassphrase
+	);
+
 	mm->releaseMemory(encryptedPassphrase);
 
-	userBackups.insert(
-		s::user_id = user_id,
-		s::key_user_id = 0,
-		s::passphrase = *encryptedPassphraseString.get()
-	);
-	
+	userBackup.save();	
 }
 
 

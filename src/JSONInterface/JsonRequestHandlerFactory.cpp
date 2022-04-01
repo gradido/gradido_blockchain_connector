@@ -4,8 +4,9 @@
 #include "Poco/Net/HTTPServerRequest.h"
 #include "Poco/DateTimeFormatter.h"
 
-#include "JsonPackTransaction.h"
 #include "JsonCreationTransaction.h"
+#include "JsonLogin.h"
+#include "JsonPackTransaction.h"
 #include "JsonRegisterAddressTransaction.h"
 #include "JsonSendTransactionIota.h"
 #include "JsonUnknown.h"
@@ -60,6 +61,9 @@ Poco::Net::HTTPRequestHandler* JsonRequestHandlerFactory::createRequestHandler(c
 	}
 	else if (url_first_part == "/registerAddress") {
 		return new JsonRegisterAddressTransaction;
+	}
+	else if (url_first_part == "/login") {
+		return new JsonLogin;
 	}
 	
 

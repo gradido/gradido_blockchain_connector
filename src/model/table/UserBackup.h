@@ -4,40 +4,52 @@
 #include "BaseTable.h"
 
 
-#ifndef LI_SYMBOL_user_id
-#define LI_SYMBOL_user_id
-LI_SYMBOL(user_id)
-#endif
-
-#ifndef LI_SYMBOL_key_user_id
-#define LI_SYMBOL_key_user_id
-LI_SYMBOL(key_user_id)
-#endif
-
-#ifndef LI_SYMBOL_passphrase
-#define LI_SYMBOL_passphrase
-LI_SYMBOL(passphrase)
-#endif
-
-#define USER_BACKUP_TABLE_SCHEMA_1(DB)									\
-		li::sql_orm_schema(DB, "user_backup")							\
-			.fields(s::id(s::auto_increment, s::primary_key) = int(),   \
-				s::user_id = int(),										\
-				s::key_user_id = int(),									\
-				s::passphrase = std::string()							\
-)
+#define USER_BACKUP_TABLE_SCHEMA												\
+	"`id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,"						\
+	"`user_id` bigint UNSIGNED NOT NULL,"								\
+	"`key_user_id` bigint UNSIGNED NOT NULL,"							\
+	"`encrypted_passphrase` varbinary(255) DEFAULT NULL,"				\
+	"`created` datetime NOT NULL DEFAULT current_timestamp(),"			\
+	"PRIMARY KEY(`id`)"												
 
 
 #define USER_BACKUP_TABLE_LAST_SCHEMA_VERSION 1
-#define USER_BACKUP_TABLE_LAST_SCHEMA USER_BACKUP_TABLE_SCHEMA_1
 
 namespace model {
 	namespace table {
-		inline auto getUserBackupConnection()
+
+		typedef std::tuple<uint64_t, uint64_t, uint64_t, li::sql_blob> UserBackupTuple;
+
+		class UserBackup : public BaseTable
 		{
-			auto userBackupSchema = USER_BACKUP_TABLE_LAST_SCHEMA(*ServerConfig::g_Mysql);
-			return userBackupSchema.connect();
-		}
+		public:
+			UserBackup();
+			UserBackup(uint64_t userId, uint64_t keyUserId, const MemoryBin* encryptedPassphrase);
+			UserBackup(UserBackupTuple data);
+			~UserBackup();
+
+			const char* tableName() const { return getTableName(); }
+			static const char* getTableName() { return "user_backup"; }
+
+			inline uint64_t getUserId() const { return mUserId; }
+			inline uint64_t getKeyUserId() const { return mKeyUserId; }
+			inline const li::sql_blob& getEncryptedPassphrase() const { return mEncryptedPassphrase; }
+
+			inline void setUserId(uint64_t userId) { mUserId = userId; }
+			inline void setKeyUserId(uint64_t keyUserId) { mKeyUserId = keyUserId; }
+			inline void setEncryptedPassphrase(const MemoryBin* encryptedPassphrase) { 
+				mEncryptedPassphrase = *encryptedPassphrase->copyAsString().get();
+			}
+
+			uint64_t save();
+
+		protected:
+			uint64_t mUserId;
+			uint64_t mKeyUserId;
+			li::sql_blob mEncryptedPassphrase;
+
+		};
+
 	}
 }
 

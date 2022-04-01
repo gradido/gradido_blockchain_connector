@@ -14,16 +14,18 @@ public:
 
 	//! \return 1 if user was existing
 	//!	\return 0 if user was created		
-	int loginOrCreate(const std::string& userName, const std::string& userPassword);
-	inline const KeyPairEd25519* getKeyPair() const { std::scoped_lock<std::recursive_mutex> _lock(mWorkMutex); return mUserKeyPair; }
-
+	int loginOrCreate(const std::string& userName, const std::string& userPassword, const std::string& clientIp);
+	inline const KeyPairEd25519* getKeyPair() const { std::scoped_lock<std::recursive_mutex> _lock(mWorkMutex); return mUserKeyPair.get(); }
+	bool verifyPassword(const std::string& password);
+	inline const std::string& getClientIp() const { return mClientIp; }
 
 protected:
 
 	void createNewUser(const std::string& userName);
-	std::string mUserName;
+	std::string mUserName;	
+	std::string mClientIp;
 	std::shared_ptr<SecretKeyCryptography> mEncryptionSecret;
-	KeyPairEd25519* mUserKeyPair;
+	std::unique_ptr<KeyPairEd25519> mUserKeyPair;
 	
 };
 

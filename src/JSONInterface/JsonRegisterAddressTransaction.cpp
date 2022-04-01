@@ -61,9 +61,12 @@ Document JsonRegisterAddressTransaction::handle(const rapidjson::Document& param
 		else {
 			signAndSendTransaction(std::move(baseTransaction));
 		}
+		// TODO
+		return stateSuccess();
 	}
 	catch (...) {
 		if (userRootPubkey) { mm->releaseMemory(userRootPubkey); }
 		throw;
 	}
+	
 }

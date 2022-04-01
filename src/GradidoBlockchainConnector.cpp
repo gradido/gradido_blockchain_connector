@@ -140,10 +140,6 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 		// logging for request handling
 		createConsoleFileAsyncLogger("requestLog", log_Path + "requestLog.txt");
 
-		// logging for hedera request for debugging gradido node
-		createFileLogger("transactions_log", log_Path + "transactions_log.txt");
-		createFileLogger("transactions_log_base64", log_Path + "transactions_log_base64.txt");
-
 		// error logging
 		createConsoleFileAsyncLogger("errorLog", log_Path + "errorLog.txt");
 		Poco::Logger& errorLog = Poco::Logger::get("errorLog");
@@ -178,6 +174,8 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 			return Application::EXIT_CONFIG;
 		}
 		CryptoConfig::loadCryptoKeys(config());
+
+		
 
 		Poco::Net::initializeSSL();
 		if(!ServerConfig::initSSLClientContext()) {

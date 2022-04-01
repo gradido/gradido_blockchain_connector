@@ -1,12 +1,7 @@
 #ifndef __GRADIDO_BLOCKCHAIN_CONNECTOR_MODEL_TABLE_VERSIONS_MANAGER_H
 #define __GRADIDO_BLOCKCHAIN_CONNECTOR_MODEL_TABLE_VERSIONS_MANAGER_H
 
-#include "lithium_symbol.hh"
-
-#ifndef LI_SYMBOL_my_symbol
-#define LI_SYMBOL_my_symbol
-LI_SYMBOL(my_symbol)
-#endif
+#include <string>
 
 namespace model {
 	namespace table {
@@ -20,6 +15,8 @@ namespace model {
 			void migrate();
 			
 		protected:
+			void createTableIfNotExist(const std::string& tablename, const std::string& tableDefinition);
+
 			VersionsManager() {};
 		};
 

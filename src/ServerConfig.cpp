@@ -35,6 +35,11 @@ namespace ServerConfig {
 	std::string g_versionString = "";
 	ServerSetupType g_ServerSetupType = SERVER_TYPE_PRODUCTION;
 	MemoryBin*  g_CryptoAppSecret = nullptr;
+	MemoryBin* g_ApolloJwtPublicKey = nullptr;
+	MemoryBin* g_JwtPrivateKey = nullptr;
+	std::string g_JwtVerifySecret;
+	Poco::Timespan g_SessionValidDuration = Poco::Timespan(600, 0);
+
 	li::mysql_database* g_Mysql = nullptr;
 
 	ServerSetupType getServerSetupTypeFromString(const std::string& serverSetupTypeString) {
@@ -77,8 +82,19 @@ namespace ServerConfig {
 			g_CryptoAppSecret = DataTypeConverter::hexToBin(app_secret_string);
 		}
 		
-		//g_CryptoAppSecret
+		// load keys for jwt
+		auto apolloPublicKeyString = cfg.getString("crypto.jwt.apollo_public", "");
+		if (apolloPublicKeyString.size()) {
+			g_ApolloJwtPublicKey = DataTypeConverter::hexToBin(apolloPublicKeyString);
+		}
+		
+		auto privateKeyString = cfg.getString("crypto.jwt.private", "");
+		if (privateKeyString.size()) {
+			g_JwtPrivateKey = DataTypeConverter::hexToBin(privateKeyString);
+		}
+		g_JwtVerifySecret = cfg.getString("verify.jwt", "");
 
+		g_SessionValidDuration = Poco::Timespan(cfg.getInt("session.duration_seconds", 600), 0);
 
 		return true;
 	}
@@ -146,15 +162,26 @@ namespace ServerConfig {
 		return true;		
 	}
 
-	void unload() {
-		
+	void unload() 
+	{
+		auto mm = MemoryManager::getInstance();
+
 		if (g_CryptoAppSecret) {
-			MemoryManager::getInstance()->releaseMemory(g_CryptoAppSecret);
+			mm->releaseMemory(g_CryptoAppSecret);
 			g_CryptoAppSecret = nullptr;
 		}
 		if (g_Mysql) {
 			delete g_Mysql;
 			g_Mysql = nullptr;
+		}
+		
+		if (g_ApolloJwtPublicKey) {
+			mm->releaseMemory(g_ApolloJwtPublicKey);
+			g_ApolloJwtPublicKey = nullptr;
+		}
+		if (g_JwtPrivateKey) {
+			mm->releaseMemory(g_JwtPrivateKey);
+			g_JwtPrivateKey = nullptr;
 		}
 	}
 

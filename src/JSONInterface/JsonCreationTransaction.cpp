@@ -50,13 +50,12 @@ Document JsonCreationTransaction::handle(const rapidjson::Document& params)
 		return stateError("cannot parse targetDate", ex.what());
 	}
 
-	auto users = model::table::getUserConnection();
-	auto recipientUser = users.find_one(s::name = recipientName);
+	auto recipientUser = model::table::User::load(recipientName);
 	if (!recipientUser) {
 		return stateError("unknown recipient user");
 	}
 	auto publicKeyBin = mm->getMemory(32);
-	publicKeyBin->copyFromProtoBytes(recipientUser->public_key);
+	publicKeyBin->copyFromProtoBytes(recipientUser->getPublicKey());
 	
 	auto creation = TransactionFactory::createTransactionCreation(publicKeyBin, amount, readCoinColor(params), targetDate);
 	mm->releaseMemory(publicKeyBin);

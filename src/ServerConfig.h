@@ -10,11 +10,13 @@
 #ifndef or 
 #define or ||
 #endif
+
 #include "lithium_mysql.hh"
 
 #include "Poco/Util/LayeredConfiguration.h"
 #include "Poco/Net/Context.h"
 #include "Poco/Types.h"
+#include "Poco/Timespan.h"
 #include "Poco/Util/Timer.h"
 
 #include "gradido_blockchain/MemoryManager.h"
@@ -36,6 +38,10 @@ namespace ServerConfig {
 	extern std::string g_versionString;
 	extern ServerSetupType g_ServerSetupType;
 	extern MemoryBin*  g_CryptoAppSecret;
+	extern MemoryBin* g_ApolloJwtPublicKey;
+	extern MemoryBin* g_JwtPrivateKey;
+	extern std::string g_JwtVerifySecret;
+	extern Poco::Timespan g_SessionValidDuration;
 	
 	extern li::mysql_database* g_Mysql;
 

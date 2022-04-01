@@ -8,7 +8,7 @@
 #include "User.h"
 #include "UserBackup.h"
 
-using namespace li;
+//using namespace li;
 
 namespace model {
 	namespace table {
@@ -20,7 +20,7 @@ namespace model {
 		}
 
 		void VersionsManager::migrate()
-		{
+		{			
 			auto dbConnection = ServerConfig::g_Mysql->connect();
 			auto schema = MIGRATE_TABLE_SCHEMA(*ServerConfig::g_Mysql, "migration");
 			auto migrations = schema.connect();
@@ -47,18 +47,21 @@ namespace model {
 			});
 
 			if (!userTable) {
-				auto userSchema = USER_TABLE_LAST_SCHEMA(*ServerConfig::g_Mysql);
-				auto users = userSchema.connect();
-				users.create_table_if_not_exists();
+				createTableIfNotExist(User::getTableName(), USER_TABLE_SCHEMA);
 				migrations.insert(s::table_name = "user", s::version = USER_TABLE_LAST_SCHEMA_VERSION);
 			}
 			if (!userBackupTable) {
-				auto userSchema = USER_BACKUP_TABLE_LAST_SCHEMA(*ServerConfig::g_Mysql);
-				auto userBackups = userSchema.connect();
-				userBackups.create_table_if_not_exists();
+				createTableIfNotExist(UserBackup::getTableName(), USER_BACKUP_TABLE_SCHEMA);
 				migrations.insert(s::table_name = "user_backup", s::version = USER_BACKUP_TABLE_LAST_SCHEMA_VERSION);
 			}
+			
+		}
 
+		void VersionsManager::createTableIfNotExist(const std::string& tablename, const std::string& tableDefinition)
+		{
+			auto dbConnection = ServerConfig::g_Mysql->connect();
+			std::string sqlQuery = "CREATE TABLE IF NOT EXISTS `" + tablename + "` (" + tableDefinition + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+			dbConnection(sqlQuery);
 		}
 	}
 }
