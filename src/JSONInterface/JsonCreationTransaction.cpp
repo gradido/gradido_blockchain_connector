@@ -30,6 +30,7 @@ Document JsonCreationTransaction::handle(const rapidjson::Document& params)
 	if (paramError.IsObject()) { return paramError; }
 
 	std::string recipientName, amount, targetDateString;
+	uint64_t apolloTransactionId = 0;
 	paramError = getStringParameter(params, "recipientName", recipientName);
 	if (paramError.IsObject()) { return paramError;}
 
@@ -37,6 +38,8 @@ Document JsonCreationTransaction::handle(const rapidjson::Document& params)
 	if (paramError.IsObject()) { return paramError;}
 
 	auto coinColor = readCoinColor(params);
+
+	getUInt64Parameter(params, "apolloTransactionId", apolloTransactionId);
 
 	Poco::DateTime targetDate;
 	paramError = getStringParameter(params, "targetDate", targetDateString);
@@ -58,7 +61,7 @@ Document JsonCreationTransaction::handle(const rapidjson::Document& params)
 	publicKeyBin->copyFromProtoBytes(recipientUser->getPublicKey());
 	
 	auto creation = TransactionFactory::createTransactionCreation(publicKeyBin, amount, readCoinColor(params), targetDate);
+	creation->setApolloTransactionId(apolloTransactionId);
 	mm->releaseMemory(publicKeyBin);
 
-	
 }

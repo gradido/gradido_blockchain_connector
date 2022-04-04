@@ -17,13 +17,15 @@ void JsonLogin::handleRequest(Poco::Net::HTTPServerRequest& request, Poco::Net::
 	auto method = request.getMethod();
 	std::istream& request_stream = request.stream();
 	Document rapid_json_result;
+	auto alloc = rapid_json_result.GetAllocator();
 	Document rapidjson_params;
 	
 	if (method == "POST") {
-		// extract parameter from request
-		parseJsonWithErrorPrintFile(request_stream, rapidjson_params);
-
+	
 		try {
+			// extract parameter from request
+			parseJsonWithErrorPrintFile(request_stream, rapidjson_params);
+
 			std::string username, encryptedPasswordHex;
 			auto mm = MemoryManager::getInstance();
 			getStringParameter(rapidjson_params, "name", username);
@@ -33,14 +35,14 @@ void JsonLogin::handleRequest(Poco::Net::HTTPServerRequest& request, Poco::Net::
 			}
 
 			auto encryptedPasswordBin = DataTypeConverter::hexToBin(encryptedPasswordHex);
-			AuthenticatedEncryption keyPair(ServerConfig::g_JwtPrivateKey);
-			auto password = SealedBoxes::decrypt(&keyPair, encryptedPasswordBin);
-
+			auto password = SealedBoxes::decrypt(ServerConfig::g_JwtPrivateKey, encryptedPasswordBin);
 			auto jwtToken = SessionManager::getInstance()->login(username, password, mClientIp.toString());
+			// don't seems to work
 			response.set("token", jwtToken);
 
 			mm->releaseMemory(encryptedPasswordBin);
 			rapid_json_result = stateSuccess();
+			rapid_json_result.AddMember("token", Value(jwtToken.data(), alloc), alloc);
 		}
 		catch (GradidoBlockchainException& ex)
 		{
