@@ -3,6 +3,7 @@
 
 #include "gradido_blockchain/crypto/KeyPairEd25519.h"
 #include "gradido_blockchain/lib/MultithreadContainer.h"
+#include "gradido_blockchain/model/protobufWrapper/GradidoTransaction.h"
 
 //#include <string>
 
@@ -18,6 +19,9 @@ public:
 	inline const KeyPairEd25519* getKeyPair() const { std::scoped_lock<std::recursive_mutex> _lock(mWorkMutex); return mUserKeyPair.get(); }
 	bool verifyPassword(const std::string& password);
 	inline const std::string& getClientIp() const { return mClientIp; }
+
+	inline const unsigned char* getPublicKey() const { return !mUserKeyPair ? nullptr : mUserKeyPair->getPublicKey(); }
+	bool signTransaction(model::gradido::GradidoTransaction* gradidoTransaction);
 
 protected:
 

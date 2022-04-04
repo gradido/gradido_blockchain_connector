@@ -1,4 +1,5 @@
 #include "ServerConfig.h"
+#include "ConnectionManager.h"
 #include "gradido_blockchain/lib/DataTypeConverter.h"
 #include "sodium.h"
 
@@ -148,6 +149,7 @@ namespace ServerConfig {
 		db.charset = utf8mb4_general_ci
 		db.max_connections = 2000
 		*/
+		ConnectionManager::getInstance()->setConnectionsFromConfig(cfg);
 		// Declare a mysql database.
 		g_Mysql = new li::mysql_database(
 			s::host = cfg.getString("db.host", "127.0.0.1"), // Hostname or ip of the database server

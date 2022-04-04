@@ -3,6 +3,7 @@
 #include "gradido_blockchain/http/JsonRequestHandlerJwt.h"
 
 #include "Poco/JWT/Signer.h"
+#include "Poco/JWT/JWTException.h"
 
 // TODO: Move into config
 // 600000 = 10 min
@@ -29,16 +30,20 @@ std::string SessionManager::login(const std::string& username, const std::string
 	if (session.isNull()) {
 		session = new Session;
 		session->loginOrCreate(username, password, clientIp);
+		mActiveSessions.add(username, session);
 	}
 	if (session->getClientIp() != clientIp) {
 		throw LoginException("invalid ip", username, clientIp);
 	}
-
+	if (!session->getPublicKey()) {
+		throw LoginException("no public key", username, clientIp);
+	}
 	Poco::Timestamp now;
 	Poco::JWT::Token token;
 	token.setType("JWT");
 	token.setSubject("login");
 	token.payload().set("name", username);
+	token.payload().set("pubkey", DataTypeConverter::binToHex(session->getPublicKey(), KeyPairEd25519::getPublicKeySize()));
 	token.setIssuedAt(now);
 	token.setExpiration(now + ServerConfig::g_SessionValidDuration);
 
@@ -51,14 +56,7 @@ Poco::SharedPtr<Session> SessionManager::getSession(const std::string& serialize
 	try {
 		Poco::JWT::Signer signer(ServerConfig::g_JwtVerifySecret);
 		Poco::JWT::Token token = signer.verify(serializedJwtToken);
-	}
-	catch (Poco::Exception& ex) {
-		// SignatureVerificationException
-		printf("jwt error: %s\n", ex.displayText().data());
-		throw JwtTokenException("invalid jwtToken", serializedJwtToken);
-	}
-	try {
-		Poco::JWT::Token token(serializedJwtToken);
+
 		auto payloadJson = token.payload();
 		auto name = payloadJson.getValue<std::string>("name");
 
@@ -67,6 +65,9 @@ Poco::SharedPtr<Session> SessionManager::getSession(const std::string& serialize
 			throw SessionException("no session found", name);
 		}
 		return session;
+	}
+	catch (Poco::JWT::SignatureVerificationException& ex) {
+		throw JwtTokenException("invalid jwtToken", serializedJwtToken);
 	}
 	catch (Poco::Exception& ex) {
 		throw JwtTokenException("jwtToken not like expected", serializedJwtToken);

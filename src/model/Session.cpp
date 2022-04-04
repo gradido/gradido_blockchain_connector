@@ -8,6 +8,9 @@
 #include "gradido_blockchain/crypto/SealedBoxes.h"
 
 #include "PasswordEncryptionRateLimiter.h"
+#include "ConnectionManager.h"
+
+using namespace Poco::Data::Keywords;
 
 Session::Session()
 	: mUserKeyPair(nullptr)
@@ -28,32 +31,31 @@ int Session::loginOrCreate(const std::string& userName, const std::string& userP
 		mEncryptionSecret = std::make_shared<SecretKeyCryptography>();
 		PasswordEncryptionRateLimiter::getInstance()->waitForFreeSlotAndRunEncryption(mEncryptionSecret.get(), userName, userPassword);
 		
-		auto dbConnection = ServerConfig::g_Mysql->connect();
-		auto preparedStatement = dbConnection.prepare("SELECT password, encrypted_private_key from user where name = ?");
-		auto optional_result = preparedStatement(userName).read_optional<uint64_t, li::sql_blob>();
-		if (optional_result) {
-			auto [password, encrypted_private_key] = optional_result.value();
-			printf("password: %d, encrypted priv key: %s\n", password, DataTypeConverter::binToHex((const unsigned char*)encrypted_private_key.data(), encrypted_private_key.size()).data());
-
+		auto dbSession = ConnectionManager::getInstance()->getConnection();
+		Poco::Data::Statement select(dbSession);
+		uint64_t password(0);
+		std::string encryptedPrivateKey;
+		select << "SELECT password, encrypted_private_key from user where name = ?",
+			into(password), into(encryptedPrivateKey), useRef(userName);
+		if (select.execute()) {
 			if (password != mEncryptionSecret->getKeyHashed()) {
 				throw InvalidPasswordException("login failed", userName.data(), userPassword.size());
 			}
 			MemoryBin* privateKey = nullptr;
 			if (SecretKeyCryptography::AUTH_DECRYPT_OK != mEncryptionSecret->decrypt(
-				(const unsigned char*)encrypted_private_key.data(),
-				encrypted_private_key.size(),
+				(const unsigned char*)encryptedPrivateKey.data(),
+				encryptedPrivateKey.size(),
 				&privateKey)) {
 				// TODO: define exception classes for this
 				throw Poco::NullPointerException("cannot decrypt private key");
 			}
 			mUserKeyPair = std::make_unique<KeyPairEd25519>(privateKey);
 			return 1;
-		} 
+		}
 		else {
 			createNewUser(userName);
 			return 0;
 		}
-		
 		return -1;
 	}
 	catch (std::runtime_error& ex) {
@@ -112,6 +114,23 @@ void Session::createNewUser(const std::string& userName)
 	userBackup.save();	
 }
 
+bool Session::signTransaction(model::gradido::GradidoTransaction* gradidoTransaction)
+{
+	auto mm = MemoryManager::getInstance();
+	try {
+		auto sign = mUserKeyPair->sign(*gradidoTransaction->getTransactionBody()->getBodyBytes().get());
+		auto pubkey = mUserKeyPair->getPublicKeyCopy();
+		gradidoTransaction->addSign(pubkey, sign);
+		mm->releaseMemory(sign);
+		mm->releaseMemory(pubkey);
+	}
+	catch (Ed25519SignException& ex) {
+		Poco::Logger::get("errorLog").error("[Session::signTransaction] error signing transaction: %s", ex.getFullString());
+		return false;
+	}
+
+	return true;
+}
 
 
 // +++++++++++++++++++ Invalid Password Exception ++++++++++++++++++++++++++++

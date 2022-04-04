@@ -9,35 +9,38 @@
 #define USER_TABLE_SCHEMA												\
 	"`id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,"						\
 	"`name` varchar(150) NOT NULL,"										\
+    "`group_id` bigint UNSIGNED NOT NULL,"								\
 	"`password` bigint unsigned NOT NULL,"								\
 	"`public_key` binary(32) DEFAULT NULL,"							    \
 	"`encrypted_private_key` binary(80) DEFAULT NULL,"					\
 	"`created` datetime NOT NULL DEFAULT current_timestamp(),"			\
 	"PRIMARY KEY(`id`),"												\
-	"UNIQUE KEY `name` (`name`)"
+	"UNIQUE KEY `group_name` (`name`, `group_id`)"
 
 #define USER_TABLE_LAST_SCHEMA_VERSION 1
 
 namespace model {
 	namespace table {
 
-		typedef std::tuple<uint64_t, std::string, KeyHashed, li::sql_blob, li::sql_blob> UserTuple;
+		typedef std::tuple<uint64_t, std::string, uint64_t, KeyHashed, li::sql_blob, li::sql_blob> UserTuple;
 
 		class User: public BaseTable
 		{
 		public:
 			User();
-			User(const std::string& name, KeyHashed password, const unsigned char* publicKey, const MemoryBin* encyptedPrivateKey);
+			User(const std::string& name, uint64_t groupId, KeyHashed password, const unsigned char* publicKey, const MemoryBin* encyptedPrivateKey);
 			User(UserTuple data);
 			~User();
 			
 			static std::unique_ptr<User> load(const std::string& name);
 
 			inline const std::string& getName() const { return mName; }
+			inline uint64_t getGroupId() const { return mGroupId; }
 			inline KeyHashed getPassword() const { return mPassword; }
 			inline const li::sql_blob& getPublicKey() const { return mPublicKey; }
 
 			inline void setName(const std::string& name) { mName = name; }
+			inline void setGroupId(uint64_t groupId) { mGroupId = groupId; }
 			inline void setPassword(KeyHashed password) { mPassword = password; }
 
 			// insert or update if id is != 0
@@ -48,6 +51,7 @@ namespace model {
 
 		protected:
 			std::string mName;
+			uint64_t	mGroupId;
 			KeyHashed   mPassword;
 			li::sql_blob mPublicKey;
 			li::sql_blob mEncryptedPrivateKey;
