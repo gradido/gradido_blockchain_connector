@@ -2,6 +2,8 @@
 #define __GRADIDO_BLOCKCHAIN_CONNECTOR_MODEL_TABLE_VERSIONS_MANAGER_H
 
 #include <string>
+#include "BaseTable.h"
+#include "Poco/Data/Session.h"
 
 namespace model {
 	namespace table {
@@ -15,9 +17,33 @@ namespace model {
 			void migrate();
 			
 		protected:
-			void createTableIfNotExist(const std::string& tablename, const std::string& tableDefinition);
+			void createTableIfNotExist(Poco::Data::Session& dbSession, const std::string& tablename, const std::string& tableDefinition);
 
-			VersionsManager() {};
+			std::unique_ptr<BaseTable> factoryTable(const std::string& tableName);
+
+			VersionsManager();
+		};
+
+		// *******************  Exceptions ****************************************************
+		class UnknownTableNameException : public GradidoBlockchainException
+		{
+		public:
+			explicit UnknownTableNameException(const char* what, const std::string& tableName) noexcept;
+			std::string getFullString() const;
+
+		protected:
+			std::string mTableName;
+		};
+
+		class MissingMigrationException : public GradidoBlockchainException
+		{
+		public: 
+			explicit MissingMigrationException(const char* what, const std::string& tableName, uint32_t version) noexcept;
+			std::string getFullString() const;
+
+		protected:
+			std::string mTableName;
+			uint32_t mVersion;
 		};
 
 	}

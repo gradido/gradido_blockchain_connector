@@ -1,9 +1,12 @@
 #include "UserBackup.h"
+#include "ConnectionManager.h"
+
+using namespace Poco::Data::Keywords;
 
 namespace model {
 	namespace table {
 		UserBackup::UserBackup()
-			: mUserId(0), mKeyUserId(0), mEncryptedPassphrase(nullptr)
+			: mUserId(0), mKeyUserId(0)
 		{
 
 		}
@@ -14,8 +17,8 @@ namespace model {
 
 		}
 
-		UserBackup::UserBackup(UserBackupTuple data)
-			: BaseTable(std::get<0>(data)), mUserId(std::get<1>(data)), mKeyUserId(std::get<2>(data)), mEncryptedPassphrase(std::get<3>(data))
+		UserBackup::UserBackup(const UserBackupTuple& data)
+			: BaseTable(data.get<0>()), mUserId(data.get<1>()), mKeyUserId(data.get<2>()), mEncryptedPassphrase(data.get<3>())
 		{
 
 		}
@@ -25,15 +28,12 @@ namespace model {
 
 		}
 
-		uint64_t UserBackup::save()
+		void UserBackup::save(Poco::Data::Session& dbSession)
 		{
-			auto dbConnection = ServerConfig::g_Mysql->connect();
-			std::stringstream sqlQuery;
-			sqlQuery << "INSERT INTO " << getTableName() << "(user_id, key_user_id, encrypted_passphrase) VALUES(?,?,?)";
+			Poco::Data::Statement insert(dbSession);
 
-			auto preparedStatement = dbConnection.prepare(sqlQuery.str());
-			auto result = preparedStatement(mUserId, mKeyUserId, mEncryptedPassphrase);
-			return result.last_insert_id();
+			insert << "INSERT INTO " << getTableName() << "(user_id, key_user_id, encrypted_passphrase) VALUES(?,?,?);",
+				use(mUserId), use(mKeyUserId), use(mEncryptedPassphrase), now;
 		}
 	}
 		 

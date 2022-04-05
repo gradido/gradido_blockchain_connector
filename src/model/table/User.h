@@ -22,14 +22,14 @@
 namespace model {
 	namespace table {
 
-		typedef std::tuple<uint64_t, std::string, uint64_t, KeyHashed, li::sql_blob, li::sql_blob> UserTuple;
+		typedef Poco::Tuple<uint64_t, std::string, uint64_t, KeyHashed, std::string, std::string> UserTuple;
 
 		class User: public BaseTable
 		{
 		public:
 			User();
-			User(const std::string& name, uint64_t groupId, KeyHashed password, const unsigned char* publicKey, const MemoryBin* encyptedPrivateKey);
-			User(UserTuple data);
+			User(const std::string& name, uint64_t groupId, KeyHashed password, const unsigned char* publicKey, const MemoryBin* encryptedPrivateKey);
+			User(const UserTuple& data);
 			~User();
 			
 			static std::unique_ptr<User> load(const std::string& name);
@@ -37,24 +37,26 @@ namespace model {
 			inline const std::string& getName() const { return mName; }
 			inline uint64_t getGroupId() const { return mGroupId; }
 			inline KeyHashed getPassword() const { return mPassword; }
-			inline const li::sql_blob& getPublicKey() const { return mPublicKey; }
+			inline const std::string& getPublicKey() const { return mPublicKey; }
 
 			inline void setName(const std::string& name) { mName = name; }
 			inline void setGroupId(uint64_t groupId) { mGroupId = groupId; }
 			inline void setPassword(KeyHashed password) { mPassword = password; }
 
 			// insert or update if id is != 0
-			uint64_t save();
+			void save(Poco::Data::Session& dbSession);
 
 			const char* tableName() const { return getTableName(); }
 			static const char* getTableName() { return "user"; }
+			int getLastSchemaVersion() const { return USER_TABLE_LAST_SCHEMA_VERSION; }
+			const char* getSchema() const { return USER_TABLE_SCHEMA; }
 
 		protected:
 			std::string mName;
 			uint64_t	mGroupId;
 			KeyHashed   mPassword;
-			li::sql_blob mPublicKey;
-			li::sql_blob mEncryptedPrivateKey;
+			std::string mPublicKey;
+			std::string mEncryptedPrivateKey;
 		};
 	}
 }

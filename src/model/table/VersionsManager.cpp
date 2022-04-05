@@ -1,17 +1,23 @@
 
 #include "VersionsManager.h"
+#include "ConnectionManager.h"
 
 #include "ServerConfig.h"
 
 // tables
-#include "Migrations.h"
+#include "Migration.h"
 #include "User.h"
 #include "UserBackup.h"
+#include "Group.h"
 
-//using namespace li;
+using namespace Poco::Data::Keywords;
 
 namespace model {
 	namespace table {
+
+		VersionsManager::VersionsManager()
+		{
+		}
 
 		VersionsManager* VersionsManager::getInstance()
 		{
@@ -21,47 +27,84 @@ namespace model {
 
 		void VersionsManager::migrate()
 		{			
-			auto dbConnection = ServerConfig::g_Mysql->connect();
-			auto schema = MIGRATE_TABLE_SCHEMA(*ServerConfig::g_Mysql, "migration");
-			auto migrations = schema.connect();
-			migrations.create_table_if_not_exists();
+			auto dbSession = ConnectionManager::getInstance()->getConnection();
+			createTableIfNotExist(dbSession, Migration::getTableName(), MIGRATION_TABLE_SCHEMA);
 			
 			bool userTable = false;
 			bool userBackupTable = false;
+			bool groupTable = false;
+			std::unordered_set<std::string> existingTables;
+			std::vector<std::string> requiredTables = { User::getTableName(), Group::getTableName(), UserBackup::getTableName() };
 
-			auto result = dbConnection("SELECT table_name, version from migration");
-			
-			result.map([&](std::string table_name, int version) {
-				if (table_name == "user") {
-					if (version < USER_TABLE_LAST_SCHEMA_VERSION) {
-						throw std::runtime_error("missing migration implementation for new user table version");
-					}
-					userTable = true;
+			auto migrations = Migration::loadAll();
+
+			std::for_each(migrations.begin(), migrations.end(), [&](model::table::MigrationTuple& tuple) {
+				Migration migration(tuple);
+				auto tableName = migration.getTableNameValue();
+				auto tableBase = factoryTable(tableName);				
+				if (migration.getVersion() < tableBase->getLastSchemaVersion()) {
+					throw MissingMigrationException("migration missing", tableName, migration.getVersion());
 				}
-				else if (table_name == "user_backup") {
-					if (version < USER_BACKUP_TABLE_LAST_SCHEMA_VERSION) {
-						throw std::runtime_error("missing migration implementation for new user backup table version");
-					}
-					userBackupTable = true;
-				}
+				existingTables.insert(tableName);
 			});
-
-			if (!userTable) {
-				createTableIfNotExist(User::getTableName(), USER_TABLE_SCHEMA);
-				migrations.insert(s::table_name = "user", s::version = USER_TABLE_LAST_SCHEMA_VERSION);
-			}
-			if (!userBackupTable) {
-				createTableIfNotExist(UserBackup::getTableName(), USER_BACKUP_TABLE_SCHEMA);
-				migrations.insert(s::table_name = "user_backup", s::version = USER_BACKUP_TABLE_LAST_SCHEMA_VERSION);
-			}
 			
+			std::for_each(requiredTables.begin(), requiredTables.end(), [&](const std::string& tableName) {
+				if (existingTables.find(tableName) == existingTables.end()) {
+					auto tableBase = factoryTable(tableName);
+					createTableIfNotExist(dbSession, tableBase->tableName(), tableBase->getSchema());
+					auto migration = std::make_unique<Migration>(tableBase->tableName(), tableBase->getLastSchemaVersion());
+					migration->save(dbSession);
+				}
+			});			
 		}
 
-		void VersionsManager::createTableIfNotExist(const std::string& tablename, const std::string& tableDefinition)
+		void VersionsManager::createTableIfNotExist(Poco::Data::Session& dbSession, const std::string& tablename, const std::string& tableDefinition)
 		{
-			auto dbConnection = ServerConfig::g_Mysql->connect();
-			std::string sqlQuery = "CREATE TABLE IF NOT EXISTS `" + tablename + "` (" + tableDefinition + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
-			dbConnection(sqlQuery);
+			Poco::Data::Statement createTable(dbSession);
+			createTable << "CREATE TABLE IF NOT EXISTS `" + tablename + "` (" + tableDefinition + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;", now;
+		}
+
+		std::unique_ptr<BaseTable> VersionsManager::factoryTable(const std::string& tableName)
+		{
+			if (tableName == User::getTableName()) {
+				return std::make_unique<User>();
+			}
+			else if (tableName == Group::getTableName()) {
+				return std::make_unique<Group>();
+			}
+			else if (tableName == UserBackup::getTableName()) {
+				return std::make_unique<UserBackup>();
+			}
+			throw UnknownTableNameException("unknown tableName", tableName);
+		}
+
+
+		// ************************** Exceptions *******************************
+		UnknownTableNameException::UnknownTableNameException(const char* what, const std::string& tableName) noexcept
+			: GradidoBlockchainException(what), mTableName(tableName)
+		{
+
+		}
+
+		std::string UnknownTableNameException::getFullString() const
+		{
+			std::string result(what());
+			result += ", table name: " + mTableName;
+			return result;
+		}
+
+		MissingMigrationException::MissingMigrationException(const char* what, const std::string& tableName, uint32_t version) noexcept
+			: GradidoBlockchainException(what), mTableName(tableName), mVersion(version)
+		{
+
+		}
+
+		std::string MissingMigrationException::getFullString() const
+		{
+			std::string result(what());
+			result += ", table name: " + mTableName;
+			result += ", version: " + std::to_string(mVersion);
+			return result;
 		}
 	}
 }

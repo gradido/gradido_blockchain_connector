@@ -5,45 +5,51 @@
 #include "gradido_blockchain/lib/MultithreadContainer.h"
 #include "gradido_blockchain/model/protobufWrapper/GradidoTransaction.h"
 
-//#include <string>
+#include "Poco/Data/Session.h"
 
-class Session : public MultithreadContainer
-{
-public:
-	Session();
-	~Session();
+namespace model {
 
-	//! \return 1 if user was existing
-	//!	\return 0 if user was created		
-	int loginOrCreate(const std::string& userName, const std::string& userPassword, const std::string& clientIp);
-	inline const KeyPairEd25519* getKeyPair() const { std::scoped_lock<std::recursive_mutex> _lock(mWorkMutex); return mUserKeyPair.get(); }
-	bool verifyPassword(const std::string& password);
-	inline const std::string& getClientIp() const { return mClientIp; }
+	class Session : public MultithreadContainer
+	{
+	public:
+		Session();
+		~Session();
 
-	inline const unsigned char* getPublicKey() const { return !mUserKeyPair ? nullptr : mUserKeyPair->getPublicKey(); }
-	bool signTransaction(model::gradido::GradidoTransaction* gradidoTransaction);
+		//! \return 1 if user was existing
+		//!	\return 0 if user was created		
+		int loginOrCreate(const std::string& userName, const std::string& userPassword, const std::string& groupAlias, const std::string& clientIp);
+		inline const KeyPairEd25519* getKeyPair() const { std::scoped_lock<std::recursive_mutex> _lock(mWorkMutex); return mUserKeyPair.get(); }
+		bool verifyPassword(const std::string& password);
+		inline const std::string& getClientIp() const { return mClientIp; }
+		inline const std::string& getGroupAlias() const { return mGroupAlias; }
 
-protected:
+		inline const unsigned char* getPublicKey() const { return !mUserKeyPair ? nullptr : mUserKeyPair->getPublicKey(); }
+		bool signTransaction(model::gradido::GradidoTransaction* gradidoTransaction);
 
-	void createNewUser(const std::string& userName);
-	std::string mUserName;	
-	std::string mClientIp;
-	std::shared_ptr<SecretKeyCryptography> mEncryptionSecret;
-	std::unique_ptr<KeyPairEd25519> mUserKeyPair;
-	
-};
+	protected:
 
-class InvalidPasswordException : GradidoBlockchainException
-{
-public:
-	explicit InvalidPasswordException(const char* what, const char* username, size_t passwordSize) noexcept;
+		void createNewUser(const std::string& userName, const std::string& groupAlias, Poco::Data::Session& dbSession);
+		std::string mUserName;
+		std::string mGroupAlias;
+		std::string mClientIp;
+		std::shared_ptr<SecretKeyCryptography> mEncryptionSecret;
+		std::unique_ptr<KeyPairEd25519> mUserKeyPair;
 
-	std::string getFullString() const;
+	};
 
-protected:
-	std::string mUsername;
-	size_t mPasswordSize;
-	
-};
+	class InvalidPasswordException : GradidoBlockchainException
+	{
+	public:
+		explicit InvalidPasswordException(const char* what, const char* username, size_t passwordSize) noexcept;
+
+		std::string getFullString() const;
+
+	protected:
+		std::string mUsername;
+		size_t mPasswordSize;
+
+	};
+
+}
 
 #endif //__GRADIDO_BLOCKCHAIN_CONNECTOR_MODEL_SESSION_H

@@ -7,21 +7,41 @@
 #define GROUP_TABLE_SCHEMA												\
 	"`id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,"						\
 	"`name` varchar(150) NOT NULL,"										\
-	"`alias` bigint unsigned NOT NULL,"								    \
-	"`description` binary(32) DEFAULT NULL,"							\
+	"`groupAlias` varchar(150) NOT NULL,"								    \
+	"`description` text DEFAULT NULL,"							\
 	"`created` datetime NOT NULL DEFAULT current_timestamp(),"			\
 	"PRIMARY KEY(`id`),"												\
-	"UNIQUE KEY `alias` (`alias`)"
+	"UNIQUE KEY `groupAlias` (`groupAlias`)"
 
 #define GROUP_TABLE_LAST_SCHEMA_VERSION 1
 
 namespace model {
 	namespace table {
+
+		typedef Poco::Tuple<uint64_t, std::string, std::string, std::string, Poco::DateTime> GroupTuple;
+
 		class Group : public BaseTable
 		{
 		public:
+			Group();
+			Group(const std::string& name, const std::string& alias, const std::string& description);
+			Group(const GroupTuple& group);
+
+			static std::unique_ptr<Group> load(const std::string& alias);
+
+			// insert or update if id is != 0
+			void save(Poco::Data::Session& dbSession);
+
+			const char* tableName() const { return getTableName(); }
+			static const char* getTableName() { return "group"; }
+			int getLastSchemaVersion() const { return GROUP_TABLE_LAST_SCHEMA_VERSION; }
+			const char* getSchema() const { return GROUP_TABLE_SCHEMA; }
 
 		protected:
+			std::string mName;
+			std::string mAlias;
+			std::string mDescription;
+			Poco::DateTime mCreated;
 		};
 	}
 }

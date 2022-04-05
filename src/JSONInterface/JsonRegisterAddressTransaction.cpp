@@ -53,13 +53,11 @@ Document JsonRegisterAddressTransaction::handle(const rapidjson::Document& param
 		if (currentGroupAlias.size() && newGroupAlias.size()) {
 			CrossGroupTransactionBuilder builder(std::move(baseTransaction));
 
-			signAndSendTransaction(
-				std::move(builder.createOutboundTransaction(newGroupAlias)),
-				std::move(builder.createInboundTransaction(currentGroupAlias))
-			);
+			signAndSendTransaction(std::move(builder.createOutboundTransaction(newGroupAlias)), currentGroupAlias);
+			signAndSendTransaction(std::move(builder.createInboundTransaction(currentGroupAlias)), newGroupAlias);
 		}
 		else {
-			signAndSendTransaction(std::move(baseTransaction));
+			signAndSendTransaction(std::move(baseTransaction), mSession->getGroupAlias());
 		}
 		// TODO
 		return stateSuccess();

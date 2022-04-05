@@ -13,12 +13,12 @@ public:
 
 	static SessionManager* getInstance();
 
-	std::string login(const std::string& username, const std::string& password, const std::string& clientIp);
-	Poco::SharedPtr<Session> getSession(const std::string& serializedJwtToken);
+	std::string login(const std::string& username, const std::string& password, const std::string& groupAlias, const std::string& clientIp);
+	Poco::SharedPtr<model::Session> getSession(const std::string& serializedJwtToken);
 protected:
 	SessionManager();
 	
-	Poco::AccessExpireCache<std::string, Session> mActiveSessions;
+	Poco::AccessExpireCache<std::string, model::Session> mActiveSessions;
 };
 
 

@@ -24,12 +24,12 @@ SessionManager* SessionManager::getInstance()
 	return &one;
 }
 
-std::string SessionManager::login(const std::string& username, const std::string& password, const std::string& clientIp)
+std::string SessionManager::login(const std::string& username, const std::string& password, const std::string& groupAlias, const std::string& clientIp)
 {
 	auto session = mActiveSessions.get(username);
 	if (session.isNull()) {
-		session = new Session;
-		session->loginOrCreate(username, password, clientIp);
+		session = new model::Session;
+		session->loginOrCreate(username, password, groupAlias, clientIp);
 		mActiveSessions.add(username, session);
 	}
 	if (session->getClientIp() != clientIp) {
@@ -51,7 +51,7 @@ std::string SessionManager::login(const std::string& username, const std::string
 	return std::move(signer.sign(token, Poco::JWT::Signer::ALGO_HS256));
 }
 
-Poco::SharedPtr<Session> SessionManager::getSession(const std::string& serializedJwtToken)
+Poco::SharedPtr<model::Session> SessionManager::getSession(const std::string& serializedJwtToken)
 {
 	try {
 		Poco::JWT::Signer signer(ServerConfig::g_JwtVerifySecret);

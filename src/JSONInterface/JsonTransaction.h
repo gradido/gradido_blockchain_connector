@@ -17,7 +17,7 @@ protected:
 	
 	std::string mMemo;
 	Poco::DateTime mCreated;
-	Poco::SharedPtr<Session> mSession;
+	Poco::SharedPtr<model::Session> mSession;
 };
 
 

@@ -13,15 +13,17 @@ namespace model {
 			
 		}
 
-		User::User(const std::string& name, uint64_t groupId, KeyHashed password, const unsigned char* publicKey, const MemoryBin* encyptedPrivateKey)
-			: mName(name), mGroupId(groupId), mPassword(password), mPublicKey((const char*)publicKey, KeyPairEd25519::getPublicKeySize()), mEncryptedPrivateKey(*encyptedPrivateKey->copyAsString().get())
+		User::User(const std::string& name, uint64_t groupId, KeyHashed password, const unsigned char* publicKey, const MemoryBin* encryptedPrivateKey)
+			: mName(name), mGroupId(groupId), mPassword(password), 
+			mPublicKey((const char*)publicKey, KeyPairEd25519::getPublicKeySize()),
+			mEncryptedPrivateKey(*encryptedPrivateKey->copyAsString().get())
 		{
 			
 		}
 
-		User::User(UserTuple data)
-			: BaseTable(std::get<0>(data)), mName(std::get<1>(data)), mGroupId(std::get<2>(data)), mPassword(std::get<3>(data)), 
-			mPublicKey(std::get<4>(data)), mEncryptedPrivateKey(std::get<5>(data))
+		User::User(const UserTuple& data)
+			: BaseTable(data.get<0>()), mName(data.get<1>()), mGroupId(data.get<2>()), mPassword(data.get<3>()),
+			mPublicKey(data.get<4>()), mEncryptedPrivateKey(data.get<5>())
 		{
 
 		}
@@ -37,7 +39,7 @@ namespace model {
 
 			UserTuple userTuple;
 
-			select << "SELECT id, name, group_id, password, public_key, encrypted_private_key "
+			select << "SELECT id, name, group_id, password, public_key "
 				<< " from " << getTableName()
 				<< " where name LIKE ?",
 				into(userTuple), useRef(name);
@@ -49,15 +51,12 @@ namespace model {
 			return std::move(user);
 		}
 		
-		uint64_t User::save()
+		void User::save(Poco::Data::Session& dbSession)
 		{
-			auto dbConnection = ServerConfig::g_Mysql->connect();
-			std::stringstream sqlQuery;
-			sqlQuery << "INSERT INTO " << getTableName() << "(name, group_id, password, public_key, encrypted_private_key) VALUES(?,?,?,?)";
-			
-			auto preparedStatement = dbConnection.prepare(sqlQuery.str());
-			auto result = preparedStatement(mName, mGroupId, mPassword, mPublicKey, mEncryptedPrivateKey);
-			return result.last_insert_id();
+			Poco::Data::Statement insert(dbSession);
+
+			insert << "INSERT INTO " << getTableName() << "(name, group_id, password, public_key, encrypted_private_key) VALUES(?,?,?,?,?);",
+				use(mName), use(mGroupId), use(mPassword), use(mPublicKey), use(mEncryptedPrivateKey), now;
 		}
 
 	}

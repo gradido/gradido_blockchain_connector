@@ -26,17 +26,22 @@ void JsonLogin::handleRequest(Poco::Net::HTTPServerRequest& request, Poco::Net::
 			// extract parameter from request
 			parseJsonWithErrorPrintFile(request_stream, rapidjson_params);
 
-			std::string username, encryptedPasswordHex;
+			std::string username, encryptedPasswordHex, groupAlias;
 			auto mm = MemoryManager::getInstance();
 			getStringParameter(rapidjson_params, "name", username);
 			getStringParameter(rapidjson_params, "password", encryptedPasswordHex);
-			if (!username.size() || !encryptedPasswordHex.size()) {
+			getStringParameter(rapidjson_params, "groupAlias", groupAlias);
+			if (!username.size() || !encryptedPasswordHex.size() || !groupAlias.size()) {
 				throw HandleRequestException("parameter error");
+			}
+
+			if (!model::gradido::TransactionBase::isValidGroupAlias(groupAlias)) {
+				throw HandleRequestException("invalid group alias");
 			}
 
 			auto encryptedPasswordBin = DataTypeConverter::hexToBin(encryptedPasswordHex);
 			auto password = SealedBoxes::decrypt(ServerConfig::g_JwtPrivateKey, encryptedPasswordBin);
-			auto jwtToken = SessionManager::getInstance()->login(username, password, mClientIp.toString());
+			auto jwtToken = SessionManager::getInstance()->login(username, password, groupAlias, mClientIp.toString());
 			// don't seems to work
 			response.set("token", jwtToken);
 
