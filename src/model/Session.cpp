@@ -54,6 +54,8 @@ namespace model {
 					throw Poco::NullPointerException("cannot decrypt private key");
 				}
 				mUserKeyPair = std::make_unique<KeyPairEd25519>(privateKey);
+				auto group = table::Group::load(groupAlias);
+				mGroupId = group->getId();
 				return 1;
 			}
 			else {
@@ -92,6 +94,7 @@ namespace model {
 
 		try {
 			auto group = table::Group::load(groupAlias);
+			mGroupId = group->getId();
 		}
 		catch (table::RowNotFoundException& ex) {
 			// create new group if group with alias not exist

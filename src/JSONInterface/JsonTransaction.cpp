@@ -5,11 +5,15 @@
 #include "gradido_blockchain/model/protobufWrapper/TransactionValidationExceptions.h"
 
 #include "SessionManager.h"
+#include "ServerConfig.h"
+#include "model/PendingTransactions.h"
 
 #include "Poco/DateTimeParser.h"
 #include "Poco/Timezone.h"
 
-rapidjson::Document JsonTransaction::readSharedParameter(const rapidjson::Document& params)
+using namespace rapidjson;
+
+Document JsonTransaction::readSharedParameter(const Document& params)
 {
 	getStringParameter(params, "memo", mMemo);
 
@@ -25,10 +29,10 @@ rapidjson::Document JsonTransaction::readSharedParameter(const rapidjson::Docume
 		return stateError("cannot parse created", ex.what());
 	}
 	mSession = SessionManager::getInstance()->getSession(getJwtToken());
-	return rapidjson::Document();
+	return Document();
 }
 
-uint32_t JsonTransaction::readCoinColor(const rapidjson::Document& params)
+uint32_t JsonTransaction::readCoinColor(const Document& params)
 {
 	auto coinColor = params.FindMember("coinColor");
 	if (coinColor == params.MemberEnd()) {
@@ -50,7 +54,7 @@ uint32_t JsonTransaction::readCoinColor(const rapidjson::Document& params)
 	throw HandleRequestException("coinColor has unknown type");
 }
 
-rapidjson::Document JsonTransaction::signAndSendTransaction(std::unique_ptr<model::gradido::GradidoTransaction> transaction, const std::string& groupAlias)
+std::string JsonTransaction::signAndSendTransaction(std::unique_ptr<model::gradido::GradidoTransaction> transaction, const std::string& groupAlias)
 {
 	auto transactionBody = transaction->getTransactionBody();
 	if (!mSession->signTransaction(transaction.get())) {
@@ -72,11 +76,7 @@ rapidjson::Document JsonTransaction::signAndSendTransaction(std::unique_ptr<mode
 	auto hex_message = DataTypeConverter::binToHex(std::move(raw_message));
 
 	std::string index = "GRADIDO." + groupAlias;
-
-	//auto message_id = ServerConfig::g_IotaRequestHandler->sendMessage(DataTypeConverter::binToHex(index), *hex_message);
-
-	auto response = stateSuccess();
-	auto alloc = response.GetAllocator();
-	//response.AddMember("iotaMessageId", Value(message_id.data(), message_id.size(), alloc), alloc);
-	return response;
+	auto iotaMessageId = ServerConfig::g_IotaRequestHandler->sendMessage(DataTypeConverter::binToHex(index), *hex_message);
+	model::PendingTransactions::getInstance()->pushNewTransaction(iotaMessageId, transaction->getTransactionBody()->getTransactionType());
+	return std::move(iotaMessageId);
 }

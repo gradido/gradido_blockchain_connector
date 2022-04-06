@@ -47,20 +47,28 @@ Document JsonRegisterAddressTransaction::handle(const rapidjson::Document& param
 	memcpy(*userRootPubkey, mSession->getKeyPair()->getPublicKey(), KeyPairEd25519::getPublicKeySize());
 
 	try {
-
+		std::string lastIotaMessageId;
 		auto baseTransaction = TransactionFactory::createRegisterAddress(userRootPubkey, addressType);
 
 		if (currentGroupAlias.size() && newGroupAlias.size()) {
 			CrossGroupTransactionBuilder builder(std::move(baseTransaction));
 
-			signAndSendTransaction(std::move(builder.createOutboundTransaction(newGroupAlias)), currentGroupAlias);
-			signAndSendTransaction(std::move(builder.createInboundTransaction(currentGroupAlias)), newGroupAlias);
+			lastIotaMessageId = signAndSendTransaction(std::move(builder.createOutboundTransaction(newGroupAlias)), currentGroupAlias);			
+			auto inbound = builder.createInboundTransaction(currentGroupAlias);
+			auto iotaMessageIdBin = DataTypeConverter::hexToBin(lastIotaMessageId);
+			inbound->setParentMessageId(iotaMessageIdBin);
+			mm->releaseMemory(iotaMessageIdBin);
+
+			lastIotaMessageId = signAndSendTransaction(std::move(inbound), newGroupAlias);
 		}
 		else {
-			signAndSendTransaction(std::move(baseTransaction), mSession->getGroupAlias());
+			lastIotaMessageId = signAndSendTransaction(std::move(baseTransaction), mSession->getGroupAlias());
 		}
-		// TODO
-		return stateSuccess();
+		
+		auto response = stateSuccess();
+		auto alloc = response.GetAllocator();
+		response.AddMember("iotaMessageId", Value(lastIotaMessageId.data(), lastIotaMessageId.size(), alloc), alloc);
+		return response;
 	}
 	catch (...) {
 		if (userRootPubkey) { mm->releaseMemory(userRootPubkey); }

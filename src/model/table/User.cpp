@@ -32,7 +32,7 @@ namespace model {
 		{
 		}
 
-		std::unique_ptr<User> User::load(const std::string& name)
+		std::unique_ptr<User> User::load(const std::string& name, int groupId)
 		{
 			auto dbSession = ConnectionManager::getInstance()->getConnection();
 			Poco::Data::Statement select(dbSession);
@@ -41,8 +41,8 @@ namespace model {
 
 			select << "SELECT id, name, group_id, password, public_key "
 				<< " from " << getTableName()
-				<< " where name LIKE ?",
-				into(userTuple), useRef(name);
+				<< " where name LIKE ? AND group_id = ?",
+				into(userTuple), useRef(name), useRef(groupId);
 
 			if (!select.execute()) {
 				throw RowNotFoundException("couldn't load user", getTableName(), "where name LIKE " + name);

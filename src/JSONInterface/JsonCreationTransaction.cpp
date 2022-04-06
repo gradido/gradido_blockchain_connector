@@ -53,15 +53,28 @@ Document JsonCreationTransaction::handle(const rapidjson::Document& params)
 		return stateError("cannot parse targetDate", ex.what());
 	}
 
-	auto recipientUser = model::table::User::load(recipientName);
+	auto recipientUser = model::table::User::load(recipientName, mSession->getGroupId());
 	if (!recipientUser) {
 		return stateError("unknown recipient user");
 	}
 	auto publicKeyBin = mm->getMemory(32);
 	publicKeyBin->copyFromProtoBytes(recipientUser->getPublicKey());
 	
-	auto creation = TransactionFactory::createTransactionCreation(publicKeyBin, amount, readCoinColor(params), targetDate);
-	creation->setApolloTransactionId(apolloTransactionId);
-	mm->releaseMemory(publicKeyBin);
+	try {
+		auto creation = TransactionFactory::createTransactionCreation(publicKeyBin, amount, coinColor, targetDate);
+		creation->setApolloTransactionId(apolloTransactionId);
+		mm->releaseMemory(publicKeyBin);
+		publicKeyBin = nullptr;
+
+		auto iotaMessageId = signAndSendTransaction(std::move(creation), mSession->getGroupAlias());
+		auto response = stateSuccess();
+		auto alloc = response.GetAllocator();
+		response.AddMember("iotaMessageId", Value(iotaMessageId.data(), iotaMessageId.size(), alloc), alloc);
+		return response;
+	}
+	catch (...) {
+		if(publicKeyBin) mm->releaseMemory(publicKeyBin);
+		throw;
+	}
 
 }

@@ -22,6 +22,7 @@ namespace model {
 		bool verifyPassword(const std::string& password);
 		inline const std::string& getClientIp() const { return mClientIp; }
 		inline const std::string& getGroupAlias() const { return mGroupAlias; }
+		inline int getGroupId() const { return mGroupId; }
 
 		inline const unsigned char* getPublicKey() const { return !mUserKeyPair ? nullptr : mUserKeyPair->getPublicKey(); }
 		bool signTransaction(model::gradido::GradidoTransaction* gradidoTransaction);
@@ -31,6 +32,7 @@ namespace model {
 		void createNewUser(const std::string& userName, const std::string& groupAlias, Poco::Data::Session& dbSession);
 		std::string mUserName;
 		std::string mGroupAlias;
+		int			mGroupId;
 		std::string mClientIp;
 		std::shared_ptr<SecretKeyCryptography> mEncryptionSecret;
 		std::unique_ptr<KeyPairEd25519> mUserKeyPair;

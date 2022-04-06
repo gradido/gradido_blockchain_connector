@@ -32,7 +32,7 @@ namespace model {
 			User(const UserTuple& data);
 			~User();
 			
-			static std::unique_ptr<User> load(const std::string& name);
+			static std::unique_ptr<User> load(const std::string& name, int groupId);
 
 			inline const std::string& getName() const { return mName; }
 			inline uint64_t getGroupId() const { return mGroupId; }

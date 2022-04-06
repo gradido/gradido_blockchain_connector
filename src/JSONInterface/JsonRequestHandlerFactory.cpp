@@ -5,10 +5,12 @@
 #include "Poco/DateTimeFormatter.h"
 
 #include "JsonCreationTransaction.h"
+#include "JsonGetPendingTransactions.h"
 #include "JsonLogin.h"
 #include "JsonPackTransaction.h"
 #include "JsonRegisterAddressTransaction.h"
 #include "JsonSendTransactionIota.h"
+#include "JsonTransactionListener.h"
 #include "JsonUnknown.h"
 
 #include <sstream>
@@ -27,10 +29,11 @@ Poco::Net::HTTPRequestHandler* JsonRequestHandlerFactory::createRequestHandler(c
 
 	mRemoveGETParameters.extract(uri, url_first_part);
 
-	std::string dateTimeString = Poco::DateTimeFormatter::format(Poco::DateTime(), "%d.%m.%y %H:%M:%S");
-	logStream << dateTimeString << " call " << uri;
-
-	mLogging.information(logStream.str());
+	if (url_first_part != "/listPending") {
+		std::string dateTimeString = Poco::DateTimeFormatter::format(Poco::DateTime(), "%d.%m.%y %H:%M:%S");
+		logStream << dateTimeString << " call " << uri;
+		mLogging.information(logStream.str());
+	}
 
 	auto client_host = request.clientAddress().host();
 	//auto client_ip = request.clientAddress();
@@ -64,6 +67,12 @@ Poco::Net::HTTPRequestHandler* JsonRequestHandlerFactory::createRequestHandler(c
 	}
 	else if (url_first_part == "/login") {
 		return new JsonLogin;
+	}
+	else if (url_first_part == "/notify") {
+		return new JsonTransactionListener;
+	}
+	else if (url_first_part == "/listPending") {
+		return new JsonGetPendingTransactions;
 	}
 	
 

@@ -1,0 +1,29 @@
+#include "JsonTransactionListener.h"
+#include "model/PendingTransactions.h"
+#include "gradido_blockchain/lib/DataTypeConverter.h"
+#include "gradido_blockchain/model/protobufWrapper/GradidoBlock.h"
+
+using namespace rapidjson;
+
+Document JsonTransactionListener::handle(const Document& params)
+{
+	std::string transactionBase64, error, iotaMessageId;
+	getStringParameter(params, "transactionBase64", transactionBase64);
+	getStringParameter(params, "error", error);
+	getStringParameter(params, "messageId", iotaMessageId);
+
+	if (transactionBase64.size()) {
+		auto pt = model::PendingTransactions::getInstance();
+		 auto bin = DataTypeConverter::base64ToBinString(transactionBase64);
+		 if (error.size()) {
+			 pt->updateTransaction(iotaMessageId, false, error);
+		 }
+		 else {
+			 model::gradido::GradidoBlock gradidoBlock(&bin);
+			 pt->updateTransaction(gradidoBlock.getMessageIdHex(), true);
+		 }
+	}
+
+	return stateSuccess();
+}
+
