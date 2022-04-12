@@ -155,7 +155,6 @@ namespace model {
 	{
 		auto mm = MemoryManager::getInstance();
 		try {
-			printf("body bytes for signing: \n%s\n", DataTypeConverter::binToBase64(*gradidoTransaction->getTransactionBody()->getBodyBytes().get()).data());
 			auto sign = mUserKeyPair->sign(*gradidoTransaction->getTransactionBody()->getBodyBytes().get());
 			auto pubkey = mUserKeyPair->getPublicKeyCopy();
 			gradidoTransaction->addSign(pubkey, sign);
