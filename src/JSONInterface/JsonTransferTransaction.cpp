@@ -26,7 +26,6 @@ Document JsonTransferTransaction::handle(const rapidjson::Document& params)
 	if (paramError.IsObject()) { return paramError; }
 
 	std::string recipientName, amount, recipientGroupAlias;
-	uint64_t apolloTransactionId = 0;
 	paramError = getStringParameter(params, "recipientName", recipientName);
 	if (paramError.IsObject()) { return paramError; }
 
@@ -47,8 +46,6 @@ Document JsonTransferTransaction::handle(const rapidjson::Document& params)
 
 	auto coinColor = readCoinColor(params);
 
-	getUInt64Parameter(params, "apolloTransactionId", apolloTransactionId);
-
 	auto recipientUser = model::table::User::load(recipientName, targetGroupId);
 	if (!recipientUser) {
 		return stateError("unknown recipient user");
@@ -62,7 +59,6 @@ Document JsonTransferTransaction::handle(const rapidjson::Document& params)
 	try {
 		std::string lastIotaMessageId;
 		auto baseTransaction = TransactionFactory::createTransactionTransfer(senderPublicKey, amount, coinColor, recipientPublicKey);
-		baseTransaction->setApolloTransactionId(apolloTransactionId);
 		mm->releaseMemory(senderPublicKey);
 		senderPublicKey = nullptr;
 

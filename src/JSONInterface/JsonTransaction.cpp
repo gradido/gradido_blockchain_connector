@@ -7,6 +7,7 @@
 #include "SessionManager.h"
 #include "ServerConfig.h"
 #include "model/PendingTransactions.h"
+#include "model/table/Group.h"
 
 #include "Poco/DateTimeParser.h"
 #include "Poco/Timezone.h"
@@ -28,6 +29,8 @@ Document JsonTransaction::readSharedParameter(const Document& params)
 	catch (Poco::Exception& ex) {
 		return stateError("cannot parse created", ex.what());
 	}
+	mApolloTransactionId = 0;
+	getUInt64Parameter(params, "apolloTransactionId", mApolloTransactionId);
 	mSession = SessionManager::getInstance()->getSession(getJwtToken());
 	return Document();
 }
@@ -36,16 +39,27 @@ uint32_t JsonTransaction::readCoinColor(const Document& params)
 {
 	auto coinColor = params.FindMember("coinColor");
 	if (coinColor == params.MemberEnd()) {
-		return 0;
+		auto group = model::table::Group::load(mSession->getGroupAlias());
+		return group->getCoinColor();
 	}
 	if (coinColor->value.IsString()) {
+		auto mm = MemoryManager::getInstance();
 		std::string coinColorString = coinColor->value.GetString();
-		auto coinColorBin = DataTypeConverter::hexToBin(coinColorString);
+		if (!coinColorString.size()) return 0;
+		MemoryBin* coinColorBin = nullptr;
+		if (coinColorString.substr(0, 2) == "0x") {
+			coinColorBin = DataTypeConverter::hexToBin(coinColorString.substr(2));
+		}
+		else {
+			coinColorBin = DataTypeConverter::hexToBin(coinColorString);
+		}
 		if (!coinColorBin || coinColorBin->size() != sizeof(uint32_t)) {
+			if (coinColorBin) mm->releaseMemory(coinColorBin);
 			throw HandleRequestException("coinColor isn't a valid hex string");
 		}
 		uint32_t result;
 		memcpy(&result, *coinColorBin, sizeof(uint32_t));
+		mm->releaseMemory(coinColorBin);
 		return result;
 	}
 	else if (coinColor->value.IsUint()) {
@@ -56,11 +70,19 @@ uint32_t JsonTransaction::readCoinColor(const Document& params)
 
 std::string JsonTransaction::signAndSendTransaction(std::unique_ptr<model::gradido::GradidoTransaction> transaction, const std::string& groupAlias)
 {
+	transaction->setMemo(mMemo).setCreated(mCreated).setApolloTransactionId(mApolloTransactionId).updateBodyBytes();
 	auto transactionBody = transaction->getTransactionBody();
+	
 	if (!mSession->signTransaction(transaction.get())) {
 		throw Ed25519SignException("cannot sign transaction", mSession->getPublicKey(), *transactionBody->getBodyBytes().get());
 	}
-	transaction->validate(model::gradido::TRANSACTION_VALIDATION_SINGLE);
+	try {
+		transaction->validate(model::gradido::TRANSACTION_VALIDATION_SINGLE);
+	}
+	catch (model::gradido::TransactionValidationInvalidSignatureException& ex) {
+		printf("invalid signature exception: %s\n", ex.getFullString().data());
+		throw;
+	}
 	std::string _groupAlias = groupAlias;
 	// update target group alias if it is a global group add transaction
 	if (transaction->getTransactionBody()->isGlobalGroupAdd()) {

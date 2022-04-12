@@ -18,6 +18,7 @@
 #include "Poco/Types.h"
 #include "Poco/Timespan.h"
 #include "Poco/Util/Timer.h"
+#include "Poco/URI.h"
 
 #include "gradido_blockchain/MemoryManager.h"
 #include "gradido_blockchain/http/IotaRequest.h"
@@ -35,6 +36,7 @@ namespace ServerConfig {
 
 	extern Poco::Net::Context::Ptr g_SSL_CLient_Context;
 	extern IotaRequest* g_IotaRequestHandler;
+	extern Poco::URI    g_GradidoNodeUri;
 	extern std::string g_versionString;
 	extern ServerSetupType g_ServerSetupType;
 	extern MemoryBin*  g_CryptoAppSecret;

@@ -7,16 +7,19 @@
 #include "gradido_blockchain/crypto/CryptoConfig.h"
 #include "gradido_blockchain/crypto/AuthenticatedEncryption.h"
 #include "gradido_blockchain/crypto/SealedBoxes.h"
+#include "gradido_blockchain/http/JsonRPCRequest.h"
+#include "gradido_blockchain/http/RequestExceptions.h"
 
 #include "PasswordEncryptionRateLimiter.h"
 #include "ConnectionManager.h"
 
 using namespace Poco::Data::Keywords;
+using namespace rapidjson;
 
 namespace model {
 
 	Session::Session()
-		: mUserKeyPair(nullptr)
+		: mUserKeyPair(nullptr), mGroupId(0)
 	{
 
 	}
@@ -36,11 +39,13 @@ namespace model {
 			PasswordEncryptionRateLimiter::getInstance()->waitForFreeSlotAndRunEncryption(mEncryptionSecret.get(), userName, userPassword);
 
 			auto dbSession = ConnectionManager::getInstance()->getConnection();
+			// load group id or create new entry if not already exist
+			getGroupId(dbSession);
 			Poco::Data::Statement select(dbSession);
 			uint64_t password(0);
 			std::string encryptedPrivateKey;
-			select << "SELECT password, encrypted_private_key from user where name = ?",
-				into(password), into(encryptedPrivateKey), useRef(userName);
+			select << "SELECT password, encrypted_private_key from user where name = ? AND group_id = ?",
+				into(password), into(encryptedPrivateKey), useRef(userName), useRef(mGroupId);
 			if (select.execute()) {
 				if (password != mEncryptionSecret->getKeyHashed()) {
 					throw InvalidPasswordException("login failed", userName.data(), userPassword.size());
@@ -54,8 +59,6 @@ namespace model {
 					throw Poco::NullPointerException("cannot decrypt private key");
 				}
 				mUserKeyPair = std::make_unique<KeyPairEd25519>(privateKey);
-				auto group = table::Group::load(groupAlias);
-				mGroupId = group->getId();
 				return 1;
 			}
 			else {
@@ -77,6 +80,37 @@ namespace model {
 		return mEncryptionSecret->getKeyHashed() == secretCryptography.getKeyHashed();
 	}
 
+	uint64_t Session::getGroupId(Poco::Data::Session& dbSession)
+	{
+		if (mGroupId) return mGroupId;
+		try {
+			auto group = table::Group::load(mGroupAlias);
+			mGroupId = group->getId();
+			return mGroupId;
+		}
+		catch (table::RowNotFoundException& ex) {
+			// create new group if group with alias not exist
+			// load details from blockchain
+			JsonRPCRequest askGroupDetails(ServerConfig::g_GradidoNodeUri);
+			Value params(kObjectType);
+			params.AddMember("groupAlias", Value(mGroupAlias.data(), askGroupDetails.getJsonAllocator()), askGroupDetails.getJsonAllocator());
+			std::string groupName = mGroupAlias;
+			uint32_t coinColor = 0;
+			try {
+				auto result = askGroupDetails.request("getgroupdetails", params);
+				groupName = result["groupName"].GetString();
+				coinColor = result["coinColor"].GetUint();				
+			}
+			catch (JsonRPCException& ex) {
+				Poco::Logger::get("errroLog").information("group: %s not exist on blockchain, request result: %s", mGroupAlias, ex.getFullString());
+			}
+			auto group = std::make_unique<table::Group>(groupName, mGroupAlias, "", coinColor);
+			group->save(dbSession);
+			mGroupId = group->getLastInsertId(dbSession);
+			return mGroupId;
+		}
+	}
+
 	void Session::createNewUser(const std::string& userName, const std::string& groupAlias, Poco::Data::Session& dbSession)
 	{
 		auto mm = MemoryManager::getInstance();
@@ -90,22 +124,9 @@ namespace model {
 		}
 		printf("key hashed: %d\n", mEncryptionSecret->getKeyHashed());
 
-		int groupId = 0;
-
-		try {
-			auto group = table::Group::load(groupAlias);
-			mGroupId = group->getId();
-		}
-		catch (table::RowNotFoundException& ex) {
-			// create new group if group with alias not exist
-			auto group = std::make_unique<table::Group>(groupAlias, groupAlias, "");
-			group->save(dbSession);
-			groupId = group->getLastInsertId(dbSession);
-		}
-
 		table::User user(
 			userName,
-			groupId,
+			mGroupId,
 			mEncryptionSecret->getKeyHashed(),
 			mUserKeyPair->getPublicKey(),
 			cryptedPrivKey
@@ -134,6 +155,7 @@ namespace model {
 	{
 		auto mm = MemoryManager::getInstance();
 		try {
+			printf("body bytes for signing: \n%s\n", DataTypeConverter::binToBase64(*gradidoTransaction->getTransactionBody()->getBodyBytes().get()).data());
 			auto sign = mUserKeyPair->sign(*gradidoTransaction->getTransactionBody()->getBodyBytes().get());
 			auto pubkey = mUserKeyPair->getPublicKeyCopy();
 			gradidoTransaction->addSign(pubkey, sign);

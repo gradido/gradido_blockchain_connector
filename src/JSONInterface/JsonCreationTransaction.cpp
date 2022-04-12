@@ -16,7 +16,6 @@ using namespace rapidjson;
 		"memo": "AGE September 2021",
 		"recipientName":"<apollo user identificator>",
 		"amount": "100",
-		"coinColor": "ffffffff",
 		"targetDate": "2021-09-01 01:00:00",
 	}
 	and jwtoken with user informations
@@ -38,8 +37,9 @@ Document JsonCreationTransaction::handle(const rapidjson::Document& params)
 	if (paramError.IsObject()) { return paramError;}
 
 	auto coinColor = readCoinColor(params);
-
-	getUInt64Parameter(params, "apolloTransactionId", apolloTransactionId);
+	if (!coinColor) {
+		return stateError("no coin color found, was this group already registered?");
+	}
 
 	Poco::DateTime targetDate;
 	paramError = getStringParameter(params, "targetDate", targetDateString);
@@ -62,7 +62,6 @@ Document JsonCreationTransaction::handle(const rapidjson::Document& params)
 	
 	try {
 		auto creation = TransactionFactory::createTransactionCreation(publicKeyBin, amount, coinColor, targetDate);
-		creation->setApolloTransactionId(apolloTransactionId);
 		mm->releaseMemory(publicKeyBin);
 		publicKeyBin = nullptr;
 

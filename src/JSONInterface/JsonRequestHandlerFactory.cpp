@@ -6,6 +6,7 @@
 
 #include "JsonCreationTransaction.h"
 #include "JsonGetPendingTransactions.h"
+#include "JsonGlobalGroupAdd.h"
 #include "JsonLogin.h"
 #include "JsonPackTransaction.h"
 #include "JsonRegisterAddressTransaction.h"
@@ -73,6 +74,9 @@ Poco::Net::HTTPRequestHandler* JsonRequestHandlerFactory::createRequestHandler(c
 	}
 	else if (url_first_part == "/listPending") {
 		return new JsonGetPendingTransactions;
+	}
+	else if (url_first_part == "/globalGroupAdd") {
+		return new JsonGlobalGroupAdd;
 	}
 	
 

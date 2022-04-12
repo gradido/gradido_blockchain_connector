@@ -30,7 +30,7 @@ namespace model {
 	{
 		std::scoped_lock<std::recursive_mutex> _lock(mWorkMutex);
 		for (auto it = mPendingTransactions.rbegin(); it != mPendingTransactions.rend(); it++) {
-			if (it->iotaMessageId == iotaMessageId) {
+			if (memcmp(it->iotaMessageId.data(), iotaMessageId.data(), 64) == 0) {
 				if (it->pendingType == PENDING_CONFIRMED) return;
 				it->pendingType = confirmend ? PENDING_CONFIRMED : PENDING_REJECTED;
 				it->errorMessage = errorMessage;

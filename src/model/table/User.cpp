@@ -39,7 +39,7 @@ namespace model {
 
 			UserTuple userTuple;
 
-			select << "SELECT id, name, group_id, password, public_key "
+			select << "SELECT id, name, group_id, password, public_key, encrypted_private_key "
 				<< " from " << getTableName()
 				<< " where name LIKE ? AND group_id = ?",
 				into(userTuple), useRef(name), useRef(groupId);

@@ -10,14 +10,15 @@ namespace model {
 		{
 
 		}
-		Group::Group(const std::string& name, const std::string& alias, const std::string& description)
-			: mName(name), mAlias(alias), mDescription(description)
+		Group::Group(const std::string& name, const std::string& alias, const std::string& description, uint32_t coinColor)
+			: mName(name), mAlias(alias), mDescription(description), mCoinColor(coinColor)
 		{
 
 		}
 
 		Group::Group(const GroupTuple& group)
-			: BaseTable(group.get<0>()), mName(group.get<1>()), mAlias(group.get<2>()), mDescription(group.get<3>()), mCreated(group.get<4>())
+			: BaseTable(group.get<0>()), mName(group.get<1>()), mAlias(group.get<2>()), 
+			mDescription(group.get<3>()), mCoinColor(group.get<4>()), mCreated(group.get<5>())
 		{
 
 		}
@@ -29,7 +30,7 @@ namespace model {
 
 			GroupTuple groupTuple;
 
-			select << "SELECT id, name, groupAlias, description, created "
+			select << "SELECT id, name, groupAlias, description, coinColor, created "
 				<< " from `" << getTableName() << "`"
 				<< " where groupAlias LIKE ?",
 				into(groupTuple), useRef(alias);
@@ -45,8 +46,8 @@ namespace model {
 		{
 			Poco::Data::Statement insert(dbSession);
 
-			insert << "INSERT INTO `" << getTableName() << "` (name, groupAlias, description) VALUES(?,?,?);",
-				use(mName), use(mAlias), use(mDescription), into(mID), now;
+			insert << "INSERT INTO `" << getTableName() << "` (name, groupAlias, description, coinColor) VALUES(?,?,?,?);",
+				use(mName), use(mAlias), use(mDescription), use(mCoinColor), into(mID), now;
 		}
 	}
 }
