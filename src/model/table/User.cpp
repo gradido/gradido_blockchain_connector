@@ -50,6 +50,38 @@ namespace model {
 			auto user = std::make_unique<User>(userTuple);
 			return std::move(user);
 		}
+
+		std::unordered_map<std::string, std::string> User::loadUserNamesForPubkeys(const std::vector<std::string>& pubkeysHex)
+		{
+			auto dbSession = ConnectionManager::getInstance()->getConnection();
+			Poco::Data::Statement select(dbSession);
+
+			typedef Poco::Tuple<std::string, std::string> NamePubkeyHex;
+			std::vector<NamePubkeyHex> namePubkeysHex;
+
+			select << "SELECT LOWER(HEX(public_key)), name "
+				<< " from " << model::table::User::getTableName()
+				<< " where hex(public_key) IN ("; 
+			for (int i = 0; i < pubkeysHex.size(); i++) {
+				if (i > 0) select << ",";
+				select << "?";
+			}
+			select << ") ";
+			select, into(namePubkeysHex);
+			for (auto it = pubkeysHex.begin(); it != pubkeysHex.end(); it++) {
+				select, useRef(*it);
+			}
+			//printf("mysql: %s\n", select.toString().data());
+			select.execute();
+			std::unordered_map<std::string, std::string> pubkeyHexNamesMap;
+			for (auto it = namePubkeysHex.begin(); it != namePubkeysHex.end(); it++)
+			{
+				pubkeyHexNamesMap.insert({ it->get<0>(), it->get<1>() });
+			}
+			return std::move(pubkeyHexNamesMap);
+		}
+
+
 		
 		void User::save(Poco::Data::Session& dbSession)
 		{

@@ -7,11 +7,13 @@
 #include "JsonCreationTransaction.h"
 #include "JsonGetPendingTransactions.h"
 #include "JsonGlobalGroupAdd.h"
+#include "JsonListTransactions.h"
 #include "JsonLogin.h"
 #include "JsonPackTransaction.h"
 #include "JsonRegisterAddressTransaction.h"
 #include "JsonSendTransactionIota.h"
 #include "JsonTransactionListener.h"
+#include "JsonTransferTransaction.h"
 #include "JsonUnknown.h"
 
 #include <sstream>
@@ -63,6 +65,9 @@ Poco::Net::HTTPRequestHandler* JsonRequestHandlerFactory::createRequestHandler(c
 	else if (url_first_part == "/creation") {
 		return new JsonCreationTransaction;
 	}
+	else if (url_first_part == "/transfer") {
+		return new JsonTransferTransaction;
+	}
 	else if (url_first_part == "/registerAddress") {
 		return new JsonRegisterAddressTransaction;
 	}
@@ -72,12 +77,16 @@ Poco::Net::HTTPRequestHandler* JsonRequestHandlerFactory::createRequestHandler(c
 	else if (url_first_part == "/notify") {
 		return new JsonTransactionListener;
 	}
+	else if (url_first_part == "/listTransactions") {
+		return new JsonListTransactions;
+	}
 	else if (url_first_part == "/listPending") {
 		return new JsonGetPendingTransactions;
 	}
 	else if (url_first_part == "/globalGroupAdd") {
 		return new JsonGlobalGroupAdd;
 	}
+	
 	
 
 	return new JsonUnknown;

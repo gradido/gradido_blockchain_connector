@@ -33,6 +33,7 @@ namespace model {
 			~User();
 			
 			static std::unique_ptr<User> load(const std::string& name, int groupId);
+			static std::unordered_map<std::string, std::string> loadUserNamesForPubkeys(const std::vector<std::string>& pubkeysHex);
 
 			inline const std::string& getName() const { return mName; }
 			inline uint64_t getGroupId() const { return mGroupId; }

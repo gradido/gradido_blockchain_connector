@@ -70,6 +70,7 @@ uint32_t JsonTransaction::readCoinColor(const Document& params)
 
 std::string JsonTransaction::signAndSendTransaction(std::unique_ptr<model::gradido::GradidoTransaction> transaction, const std::string& groupAlias)
 {
+	// TODO: encrypt and decrypt memo
 	transaction->setMemo(mMemo).setCreated(mCreated).setApolloTransactionId(mApolloTransactionId).updateBodyBytes();
 	auto transactionBody = transaction->getTransactionBody();
 	

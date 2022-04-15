@@ -43,7 +43,7 @@ std::string SessionManager::login(const std::string& username, const std::string
 	token.setType("JWT");
 	token.setSubject("login");
 	token.payload().set("name", username);
-	token.payload().set("pubkey", DataTypeConverter::binToHex(session->getPublicKey(), KeyPairEd25519::getPublicKeySize()));
+	token.payload().set("pubkey", DataTypeConverter::binToHex(session->getPublicKey(), KeyPairEd25519::getPublicKeySize()).substr(0, KeyPairEd25519::getPublicKeySize()* 2));
 	token.setIssuedAt(now);
 	token.setExpiration(now + ServerConfig::g_SessionValidDuration);
 
