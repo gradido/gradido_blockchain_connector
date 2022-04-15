@@ -3,15 +3,15 @@
 
 // MySQL header.
 // Lithium need 'and' and 'or' defined
-#ifndef and 
+/*#ifndef and 
 #define and &&
 #endif
 
 #ifndef or 
 #define or ||
 #endif
-
-#include "lithium_mysql.hh"
+*/
+//#include "lithium_mysql.hh"
 
 #include "Poco/Util/LayeredConfiguration.h"
 #include "Poco/Net/Context.h"
@@ -45,7 +45,7 @@ namespace ServerConfig {
 	extern std::string g_JwtVerifySecret;
 	extern Poco::Timespan g_SessionValidDuration;
 	
-	extern li::mysql_database* g_Mysql;
+	//extern li::mysql_database* g_Mysql;
 
 	bool initServerCrypto(const Poco::Util::LayeredConfiguration& cfg);
 	bool initSSLClientContext();

@@ -42,7 +42,7 @@ namespace ServerConfig {
 	std::string g_JwtVerifySecret;
 	Poco::Timespan g_SessionValidDuration = Poco::Timespan(600, 0);
 
-	li::mysql_database* g_Mysql = nullptr;
+	//li::mysql_database* g_Mysql = nullptr;
 
 	ServerSetupType getServerSetupTypeFromString(const std::string& serverSetupTypeString) {
 		if ("test" == serverSetupTypeString) {
@@ -154,7 +154,7 @@ namespace ServerConfig {
 		*/
 		ConnectionManager::getInstance()->setConnectionsFromConfig(cfg);
 		// Declare a mysql database.
-		g_Mysql = new li::mysql_database(
+		/*g_Mysql = new li::mysql_database(
 			s::host = cfg.getString("db.host", "127.0.0.1"), // Hostname or ip of the database server
 			s::database = cfg.getString("db.name", "blockchain_connector"),  // Database name
 			s::user = cfg.getString("db.name", "root"), // Username
@@ -163,7 +163,7 @@ namespace ServerConfig {
 			s::charset = cfg.getString("db.charset", "utf8mb4_general_ci"), // Charset
 			// Only for synchronous connection, specify the maximum number of SQL connections
 			s::max_sync_connections = cfg.getInt("db.max_connections", 2000)
-		);
+		);*/
 		return true;		
 	}
 
@@ -175,10 +175,10 @@ namespace ServerConfig {
 			mm->releaseMemory(g_CryptoAppSecret);
 			g_CryptoAppSecret = nullptr;
 		}
-		if (g_Mysql) {
+		/*if (g_Mysq) {
 			delete g_Mysql;
 			g_Mysql = nullptr;
-		}
+		}*/
 		
 		if (g_ApolloJwtPublicKey) {
 			mm->releaseMemory(g_ApolloJwtPublicKey);
