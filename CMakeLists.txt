@@ -70,6 +70,25 @@ if(WIN32)
 	#message("conan lib debugs earlier: ${CONAN_LIBS_DEBUG}")
 endif()
 
+############################## config and add poco ###################################
+#SET(SOME_EXPAT_OPTION OFF CACHE BOOL "Use some expat option")
+IF(UNIX)
+	SET(ENABLE_MONGODB OFF CACHE BOOL "" FORCE) 
+	SET(ENABLE_DATA_SQLITE OFF CACHE BOOL "" FORCE) 
+	SET(ENABLE_DATA_MYSQL ON CACHE BOOL "" FORCE)
+	SET(ENABLE_REDIS OFF CACHE BOOL "" FORCE)
+	SET(ENABLE_PAGECOMPILER_FILE2PAGE OFF CACHE BOOL "" FORCE)
+	add_subdirectory("dependencies/poco")
+
+	set(POCO_LIBS Poco::Foundation Poco::Data Poco::Util Poco::Net Poco::NetSSL)
+ENDIF()
+
+############################## find protobuf  #########################################
+#add_subdirectory(dependencies/protobuf/cmake)
+
+
+
+############################## add gradido blockchain  #########################################
 add_subdirectory("dependencies/gradido_blockchain")
 
 if(NOT BUILD_SHARED_LIBS)
@@ -78,17 +97,7 @@ if(NOT BUILD_SHARED_LIBS)
 endif()
 
 add_executable(GradidoBlockchainConnector ${LOCAL_SRCS})
-
-########################### lithium ##################################
-if(UNIX)
-	include("dependencies/lithium/cmake/FindMYSQL.cmake")
-	find_package(MYSQL REQUIRED)
-	include_directories(${MYSQL_INCLUDE_DIR})
-	target_link_libraries(GradidoBlockchainConnector ${MYSQL_LIBRARY})
-endif()
-
-# Directory where lithium headers are located if not in the default include path.
-include_directories("dependencies/lithium/single_headers")
+target_link_libraries(GradidoBlockchainConnector libprotobuf)
 
 
 ######################################################################
@@ -110,21 +119,6 @@ if(WIN32)
 endif()
 
 target_link_libraries(GradidoBlockchainConnector $<TARGET_OBJECTS:GradidoBlockchain>)
-############################## config and add poco ###################################
-#SET(SOME_EXPAT_OPTION OFF CACHE BOOL "Use some expat option")
-IF(UNIX)
-	SET(ENABLE_MONGODB OFF CACHE BOOL "" FORCE) 
-	SET(ENABLE_DATA_SQLITE OFF CACHE BOOL "" FORCE) 
-	SET(ENABLE_REDIS OFF CACHE BOOL "" FORCE)
-	SET(ENABLE_PAGECOMPILER_FILE2PAGE OFF CACHE BOOL "" FORCE)
-	add_subdirectory("dependencies/poco")
-
-	set(POCO_LIBS Poco::Foundation Poco::Util Poco::Net Poco::NetSSL)
-ENDIF()
-
-############################## find protobuf  #########################################
-#add_subdirectory(dependencies/protobuf/cmake)
-target_link_libraries(GradidoBlockchainConnector libprotobuf)
 
 ############################## build gradido blockchain connector ###################################
 
