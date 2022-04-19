@@ -39,7 +39,8 @@ Document JsonGlobalGroupAdd::handle(const Document& params)
 	}
 	else {
 		JsonRPCRequest getUniqueCoinColor(ServerConfig::g_GradidoNodeUri);
-		auto result = getUniqueCoinColor.request("getRandomUniqueCoinColor", Value(kObjectType));
+		Value emptyValue(kObjectType);
+		auto result = getUniqueCoinColor.request("getRandomUniqueCoinColor", emptyValue);
 		coinColor = result["coinColor"].GetUint();
 	}
 	
