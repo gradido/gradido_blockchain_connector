@@ -1,7 +1,9 @@
 ## For Linux Build
 
-sudo apt install libsodium-dev libmariadb3 libmariadb-dev
-sudo ln -s /usr/local/mariadb /usr/local/mysql
+sudo apt install libsodium-dev libmariadb3 libmariadb-dev protobuf-compiler libprotobuf-dev
+sudo ln -s /usr/include/mariadb /usr/include/mysql
+
+
 ## For Windows Build
 
 mkdir build

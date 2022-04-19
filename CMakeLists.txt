@@ -80,7 +80,7 @@ IF(UNIX)
 	SET(ENABLE_PAGECOMPILER_FILE2PAGE OFF CACHE BOOL "" FORCE)
 	add_subdirectory("dependencies/poco")
 
-	set(POCO_LIBS Poco::Foundation Poco::Data Poco::Util Poco::Net Poco::NetSSL)
+	set(POCO_LIBS Poco::Foundation Poco::Data Poco::Util Poco::Net Poco::NetSSL Poco::JWT Poco::DataMySQL)
 ENDIF()
 
 ############################## find protobuf  #########################################
