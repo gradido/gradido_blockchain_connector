@@ -12,7 +12,7 @@ encrypted with user password.
 
 1. Compile GradidoBlockchainConnector, for more details look here: [INSTALL.md](INSTALL.md)
 2. copy default config from ./config/blockchain_connector.properties to ~/.gradido/blockchain_connector.properties
-3. make changes as needed, look for details into the default file [blockchain_connector.properties](./config/blockchain_connector.properties) 
+3. make changes as needed, look for details into the default file ./config/blockchain_connector.properties
 4. on linux create folder /var/log/gradido/ and give write permission to user which will be start GradidoBlockchainConnector
 5. run GradidoBlockchainConnector 
 
@@ -25,6 +25,9 @@ encrypted with user password.
 - to use another file or folder for config use ```-c=<path>``` or ```--config=<path>```
 
 
-## Using
+## Usage Example
 
 To use it simply make JSON Requests to the IP and Port on which GradidoBlockchainConnector is running (default Port: 1271)
+```bash
+curl 
+``` 
