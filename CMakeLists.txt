@@ -4,9 +4,11 @@ project(GradidoBlockchainConnector C CXX)
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "bin" )
 
 IF(WIN32)
-	set(CMAKE_CXX_FLAGS         "/MP /EHsc")
+	set(CMAKE_CXX_FLAGS         "/MP /EHsc /std:c++17")
+ELSE()
+	SET(CMAKE_CXX_FLAGS "-std=c++17" )
 ENDIF()
-SET(CMAKE_CXX_FLAGS "-std=c++17" )
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -19,6 +21,7 @@ include_directories(
 	"dependencies/gradido_blockchain/include"
 	"dependencies/gradido_blockchain/build"
 	"dependencies/gradido_blockchain/dependencies/protobuf/third_party/googletest/googletest/include"
+	"dependencies/gradido_blockchain/dependencies/protobuf/src"
 	"build"
 	"build/dependencies/gradido_blockchain/include"
 	"src"
@@ -117,7 +120,7 @@ if(WIN32)
 	#message("libsodium lib dir from conan: ${CONAN_LIB_DIRS_LIBSODIUM}")
 	#message("conan lib debugs: ${CONAN_LIBS_DEBUG}")
 	#message("conan build modules path: ${CONAN_BUILD_MODULES_PATHS}")
-	target_link_libraries(GradidoBlockchainConnector ${CONAN_LIBS})
+	target_link_libraries(GradidoBlockchainConnector ${CONAN_LIBS} libprotobuf)
 endif()
 
 target_link_libraries(GradidoBlockchainConnector $<TARGET_OBJECTS:GradidoBlockchain>)
