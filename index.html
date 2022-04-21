@@ -79,7 +79,7 @@ Getting Started</h1>
 <ol type="1">
 <li>Compile GradidoBlockchainConnector, for more details look here: <a class="el" href="md__i_n_s_t_a_l_l.html">INSTALL.md</a></li>
 <li>copy default config from ./config/blockchain_connector.properties to ~/.gradido/blockchain_connector.properties</li>
-<li>make changes as needed, look for details into the default file ./config/blockchain_connector.properties</li>
+<li>make changes as needed, look for details into the default file config/blockchain_connector.properties</li>
 <li>on linux create folder /var/log/gradido/ and give write permission to user which will be start GradidoBlockchainConnector</li>
 <li>run GradidoBlockchainConnector</li>
 </ol>
@@ -93,7 +93,20 @@ Command Line Options</h1>
 </ul>
 <h1><a class="anchor" id="autotoc_md5"></a>
 Usage Example</h1>
-<p >To use it simply make JSON Requests to the IP and Port on which GradidoBlockchainConnector is running (default Port: 1271) </p><div class="fragment"><div class="line">curl </div>
+<p >Example Datas</p><ul>
+<li>Crypto Box Key Pair (x25519)<ul>
+<li>Public Key:5d8d7e0ab0070a9d2303e36d51e1c6774ce582e941e8134e5559f78aaf26d346</li>
+<li>Private Key:2acd42ec14e12eecded40e300d420eabbf58f01d3cb3cf1eaf522af49ec92193</li>
+</ul>
+</li>
+<li>name: testUser1</li>
+<li>password: testUser1 &gt; b379938c857eaa6d480e46666813150cd70d25b289edfcbcdef570d0920a1e19f11fb682999efb5cce4bee78a17021b360c72cb02fd1bb6e67</li>
+<li>groupAlias: testgroup1</li>
+</ul>
+<p >To use it simply make JSON Requests to the IP and Port on which GradidoBlockchainConnector is running (default Port: 1271) Login with username <code>testUser1</code>, password <code>testUser1</code> encrypted with crypto_box_seal and <code>5d8d7e0ab0070a9d2303e36d51e1c6774ce582e941e8134e5559f78aaf26d346</code> as pubkey and from group <code>testgroup1</code> </p><div class="fragment"><div class="line">curl -X POST \</div>
+<div class="line">     -H &#39;Content-Type: application/json&#39; \</div>
+<div class="line">     -d &#39;{&quot;name&quot;:&quot;testUser1&quot;, &quot;password&quot;:&quot;b379938c857eaa6d480e46666813150cd70d25b289edfcbcdef570d0920a1e19f11fb682999efb5cce4bee78a17021b360c72cb02fd1bb6e67&quot;, &quot;groupAlias&quot;:&quot;testgroup1&quot;}&#39; \</div>
+<div class="line">     http://localhost:1271/login</div>
 </div><!-- fragment --> </div></div><!-- PageDoc -->
 </div><!-- contents -->
 <!-- start footer part -->
