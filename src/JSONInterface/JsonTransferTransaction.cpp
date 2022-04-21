@@ -65,7 +65,7 @@ Document JsonTransferTransaction::handle(const rapidjson::Document& params)
 		mm->releaseMemory(recipientPublicKey);
 		recipientPublicKey = nullptr;
 
-		if (recipientGroupAlias.size()) {
+		if (recipientGroupAlias.size() && recipientGroupAlias != mSession->getGroupAlias()) {
 			CrossGroupTransactionBuilder builder(std::move(baseTransaction));
 
 			lastIotaMessageId = signAndSendTransaction(std::move(builder.createOutboundTransaction(recipientGroupAlias)), mSession->getGroupAlias());

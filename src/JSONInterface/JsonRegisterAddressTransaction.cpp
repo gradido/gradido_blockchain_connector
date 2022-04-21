@@ -50,7 +50,7 @@ Document JsonRegisterAddressTransaction::handle(const rapidjson::Document& param
 		std::string lastIotaMessageId;
 		auto baseTransaction = TransactionFactory::createRegisterAddress(userRootPubkey, addressType);
 
-		if (currentGroupAlias.size() && newGroupAlias.size()) {
+		if (currentGroupAlias.size() && newGroupAlias.size() && currentGroupAlias != newGroupAlias) {
 			CrossGroupTransactionBuilder builder(std::move(baseTransaction));
 
 			lastIotaMessageId = signAndSendTransaction(std::move(builder.createOutboundTransaction(newGroupAlias)), currentGroupAlias);			
