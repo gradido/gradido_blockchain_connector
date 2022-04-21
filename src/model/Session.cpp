@@ -104,6 +104,12 @@ namespace model {
 			catch (JsonRPCException& ex) {
 				Poco::Logger::get("errroLog").information("group: %s not exist on blockchain, request result: %s", mGroupAlias, ex.getFullString());
 			}
+			catch(Poco::Exception& ex) {
+				Poco::Logger::get("errorLog").information("poco exception: %s by asking node server for group details: %s",
+				ex.displayText(), mGroupAlias);
+			} catch(std::runtime_error& ex) {
+				Poco::Logger::get("errorLog").information("runtime exception: %s by request to gradido node server", std::string(ex.what()));
+			}
 			auto group = std::make_unique<table::Group>(groupName, mGroupAlias, "", coinColor);
 			group->save(dbSession);
 			mGroupId = group->getLastInsertId(dbSession);
