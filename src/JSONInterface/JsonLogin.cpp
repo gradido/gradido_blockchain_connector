@@ -49,8 +49,10 @@ void JsonLogin::handleRequest(Poco::Net::HTTPServerRequest& request, Poco::Net::
 			rapid_json_result = stateSuccess();
 			rapid_json_result.AddMember("token", Value(jwtToken.data(), alloc), alloc);
 		}
-		catch (GradidoBlockchainException& ex)
-		{
+		catch (model::InvalidPasswordException& ex) {
+			rapid_json_result = stateError(ex.getFullString().data());
+		}		
+		catch (GradidoBlockchainException& ex) {
 			rapid_json_result = stateError(ex.getFullString().data());
 		}
 		catch (Poco::Exception& ex) {

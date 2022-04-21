@@ -181,7 +181,7 @@ namespace model {
 	{
 		std::string result = what();
 		result += ", username: " + mUsername;
-		result += ", password size: " + mPasswordSize;
+		result += ", password size: " + std::to_string(mPasswordSize);
 		return result;
 	}
 
