@@ -22,7 +22,12 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-    - uses: actions/checkout@v2
+    - name: Checkout submodules
+      uses: actions/checkout@v2
+    - name: Checkout Gradido Blockchain
+      run: git submodule update --init -- ./dependencies/gradido_blockchain
+    - name: Checkout doxygen style from gradido blockchain
+      run: git submodule update --init -- ./dependencies/gradido_blockchain/doc/doxygen-awesome-css
         
     - name: Doxygen Action
       uses: einhornimmond/doxygen-plantuml-action@v2.0
