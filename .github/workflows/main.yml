@@ -27,7 +27,7 @@ jobs:
     - name: Checkout Gradido Blockchain
       run: git submodule update --init -- ./dependencies/gradido_blockchain
     - name: Checkout doxygen style from gradido blockchain
-      run: git submodule update --init -- ./dependencies/gradido_blockchain/doc/doxygen-awesome-css
+      run: git submodule update --init -- ./dependencies/gradido_blockchain/doc/doxygen_awesome_css
         
     - name: Doxygen Action
       uses: einhornimmond/doxygen-plantuml-action@v2.0
