@@ -5,7 +5,7 @@ For easy connecting to [Gradido Blockchain](https://github.com/gradido/gradido_b
 - It generate and stores ed25519 public and private key pair for user, but the private key will be stored only
 encrypted with user password.
 - It sign and send Gradido Transactions via Iota into to blockchain
-- store sended transactions in memory and has interface for [Gradido Node](https://github.com/gradido/gradido_node) to tell that pending transaction was confirmed or rejected
+- store sended transactions in memory and has interface for [Gradido Node](https://github.com/gradido/gradido_node) to tell that pending transaction was confirmed or rejected [Read more](https://gradido.github.io/gradido_blockchain_connector/classmodel_1_1_pending_transactions.html)
 - use JWT Token for authenticated json requests
 
 ## Getting Started

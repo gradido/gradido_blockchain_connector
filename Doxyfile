@@ -1252,7 +1252,7 @@ HTML_STYLESHEET        =
 # list). For an example see the documentation.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_EXTRA_STYLESHEET  = ./dependencies/gradido_blockchain/doc/doxygen-awesome-css/doxygen-awesome.css
+HTML_EXTRA_STYLESHEET  = ./dependencies/gradido_blockchain/doc/doxygen_awesome_css/doxygen-awesome.css
 
 # The HTML_EXTRA_FILES tag can be used to specify one or more extra images or
 # other source files which should be copied to the HTML output directory. Note
@@ -2243,7 +2243,7 @@ SKIP_FUNCTION_MACROS   = YES
 # the path). If a tag file is not located in the directory in which doxygen is
 # run, you must also specify the path to the tagfile here.
 
-TAGFILES               =
+TAGFILES               = ./dependencies/gradido_blockchain/doc/doxygen_tags.tag
 
 # When a file name is specified after GENERATE_TAGFILE, doxygen will create a
 # tag file that is based on the input files it reads. See section "Linking to
@@ -2512,7 +2512,7 @@ DIAFILE_DIRS           =
 # generate a warning when it encounters a \startuml command in this case and
 # will not generate output for the diagram.
 
-PLANTUML_JAR_PATH      =
+PLANTUML_JAR_PATH      = ../plantuml.jar
 
 # When using plantuml, the PLANTUML_CFG_FILE tag can be used to specify a
 # configuration file for plantuml.
