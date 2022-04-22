@@ -26,10 +26,8 @@ jobs:
       uses: actions/checkout@v2
     - name: Checkout Gradido Blockchain
       run: git submodule update --init -- ./dependencies/gradido_blockchain
-    - name: cd into gradido blockchain folder
-      run: cd ./dependencies/gradido_blockchain/
     - name: Checkout doxygen style from gradido blockchain
-      run: git submodule update --init -- ./doc/doxygen_awesome_css
+      run: cd ./dependencies/gradido_blockchain/ && git submodule update --init -- ./doc/doxygen_awesome_css
         
     - name: Doxygen Action
       uses: einhornimmond/doxygen-plantuml-action@v2.0
