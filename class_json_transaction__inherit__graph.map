@@ -1,9 +1,10 @@
 <map id="JsonTransaction" name="JsonTransaction">
-<area shape="rect" id="node1" title=" " alt="" coords="227,107,349,133"/>
-<area shape="rect" id="node3" href="$class_json_creation_transaction.html" title=" " alt="" coords="423,5,601,32"/>
-<area shape="rect" id="node4" href="$class_json_global_group_add.html" title=" " alt="" coords="435,56,589,83"/>
-<area shape="rect" id="node5" href="$class_json_list_transactions.html" title=" " alt="" coords="435,107,589,133"/>
-<area shape="rect" id="node6" href="$class_json_register_address_transaction.html" title=" " alt="" coords="397,157,627,184"/>
-<area shape="rect" id="node7" href="$class_json_transfer_transaction.html" title=" " alt="" coords="425,208,599,235"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,107,179,133"/>
+<area shape="rect" id="node1" title=" " alt="" coords="428,107,551,133"/>
+<area shape="rect" id="node4" href="$class_json_creation_transaction.html" title=" " alt="" coords="624,5,803,32"/>
+<area shape="rect" id="node5" href="$class_json_global_group_add.html" title=" " alt="" coords="636,56,791,83"/>
+<area shape="rect" id="node6" href="$class_json_list_transactions.html" title=" " alt="" coords="637,107,790,133"/>
+<area shape="rect" id="node7" href="$class_json_register_address_transaction.html" title=" " alt="" coords="599,157,828,184"/>
+<area shape="rect" id="node8" href="$class_json_transfer_transaction.html" title=" " alt="" coords="626,208,801,235"/>
+<area shape="rect" id="node2" href="/github/workspace/dependencies/gradido_blockchain/doc/doxygen_tags.tag$class_json_request_handler_jwt.html" title=" " alt="" coords="207,107,380,133"/>
+<area shape="rect" id="node3" href="/github/workspace/dependencies/gradido_blockchain/doc/doxygen_tags.tag$class_json_request_handler.html" title=" " alt="" coords="5,107,159,133"/>
 </map>

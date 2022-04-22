@@ -13,6 +13,7 @@
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="doxygen-awesome.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
@@ -76,13 +77,15 @@ $(function() {
   <div class="headertitle"><div class="title">model::PendingTransactions Class Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p><code>#include &lt;<a class="el" href="_pending_transactions_8h_source.html">PendingTransactions.h</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for model::PendingTransactions:</div>
 <div class="dyncontent">
 <div class="center"><img src="classmodel_1_1_pending_transactions__inherit__graph.png" border="0" usemap="#amodel_1_1_pending_transactions_inherit__map" alt="Inheritance graph"/></div>
 <map name="amodel_1_1_pending_transactions_inherit__map" id="amodel_1_1_pending_transactions_inherit__map">
 <area shape="rect" title=" " alt="" coords="5,80,209,107"/>
-<area shape="rect" title=" " alt="" coords="27,5,187,32"/>
+<area shape="rect" target="_parent" href="class_multithread_container.html" title=" " alt="" coords="27,5,187,32"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <div class="dynheader">
@@ -91,7 +94,7 @@ Collaboration diagram for model::PendingTransactions:</div>
 <div class="center"><img src="classmodel_1_1_pending_transactions__coll__graph.png" border="0" usemap="#amodel_1_1_pending_transactions_coll__map" alt="Collaboration graph"/></div>
 <map name="amodel_1_1_pending_transactions_coll__map" id="amodel_1_1_pending_transactions_coll__map">
 <area shape="rect" title=" " alt="" coords="5,80,209,107"/>
-<area shape="rect" title=" " alt="" coords="27,5,187,32"/>
+<area shape="rect" target="_parent" href="class_multithread_container.html" title=" " alt="" coords="27,5,187,32"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -122,7 +125,10 @@ Protected Attributes</h2></td></tr>
 std::list&lt; <a class="el" href="structmodel_1_1_pending_transaction.html">PendingTransaction</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mPendingTransactions</b></td></tr>
 <tr class="separator:afa9f1d2b63265e649871cf188644565f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<hr/>The documentation for this class was generated from the following files:<ul>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p >Store pending transaction in memory </p><dl class="section author"><dt>Author</dt><dd>einhornimmond</dd></dl>
+<p>Store Transactions sended with Blockchain Connector as <a class="el" href="structmodel_1_1_pending_transaction.html">PendingTransaction</a> in list Need also a <a href="https://github.com/gradido/gradido_node">Gradido Node</a> which was configured to notify this <a class="el" href="class_gradido_blockchain_connector.html">GradidoBlockchainConnector</a> after getting new transactions from iota</p>
+</div><hr/>The documentation for this class was generated from the following files:<ul>
 <li>src/model/<a class="el" href="_pending_transactions_8h_source.html">PendingTransactions.h</a></li>
 <li>src/model/PendingTransactions.cpp</li>
 </ul>

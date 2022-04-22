@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['connectionmanager_0',['ConnectionManager',['../class_connection_manager.html',1,'']]]
+  ['basetable_0',['BaseTable',['../classmodel_1_1table_1_1_base_table.html',1,'model::table']]],
+  ['blockchainorderexception_1',['BlockchainOrderException',['class_blockchain_order_exception.html',1,'']]]
 ];

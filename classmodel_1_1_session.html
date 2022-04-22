@@ -13,6 +13,7 @@
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="doxygen-awesome.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
@@ -82,7 +83,7 @@ Inheritance diagram for model::Session:</div>
 <div class="center"><img src="classmodel_1_1_session__inherit__graph.png" border="0" usemap="#amodel_1_1_session_inherit__map" alt="Inheritance graph"/></div>
 <map name="amodel_1_1_session_inherit__map" id="amodel_1_1_session_inherit__map">
 <area shape="rect" title=" " alt="" coords="25,80,146,107"/>
-<area shape="rect" title=" " alt="" coords="5,5,165,32"/>
+<area shape="rect" target="_parent" href="class_multithread_container.html" title=" " alt="" coords="5,5,165,32"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <div class="dynheader">
@@ -91,7 +92,7 @@ Collaboration diagram for model::Session:</div>
 <div class="center"><img src="classmodel_1_1_session__coll__graph.png" border="0" usemap="#amodel_1_1_session_coll__map" alt="Collaboration graph"/></div>
 <map name="amodel_1_1_session_coll__map" id="amodel_1_1_session_coll__map">
 <area shape="rect" title=" " alt="" coords="25,80,146,107"/>
-<area shape="rect" title=" " alt="" coords="5,5,165,32"/>
+<area shape="rect" target="_parent" href="class_multithread_container.html" title=" " alt="" coords="5,5,165,32"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -100,7 +101,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a1e1577de40f68c79083f328426da0f3a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmodel_1_1_session.html#a1e1577de40f68c79083f328426da0f3a">loginOrCreate</a> (const std::string &amp;userName, const std::string &amp;userPassword, const std::string &amp;groupAlias, const std::string &amp;clientIp)</td></tr>
 <tr class="separator:a1e1577de40f68c79083f328426da0f3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac5a2c3c49aed1e4c9981996ec93ecc5a"><td class="memItemLeft" align="right" valign="top"><a id="ac5a2c3c49aed1e4c9981996ec93ecc5a" name="ac5a2c3c49aed1e4c9981996ec93ecc5a"></a>
-const KeyPairEd25519 *&#160;</td><td class="memItemRight" valign="bottom"><b>getKeyPair</b> () const</td></tr>
+const <a class="elRef" href="class_key_pair_ed25519.html">KeyPairEd25519</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>getKeyPair</b> () const</td></tr>
 <tr class="separator:ac5a2c3c49aed1e4c9981996ec93ecc5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1410a69469fe4e42caf64f553f119e9e"><td class="memItemLeft" align="right" valign="top"><a id="a1410a69469fe4e42caf64f553f119e9e" name="a1410a69469fe4e42caf64f553f119e9e"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>verifyPassword</b> (const std::string &amp;password)</td></tr>
@@ -121,7 +122,7 @@ uint64_t&#160;</td><td class="memItemRight" valign="bottom"><b>getGroupId</b> (P
 const unsigned char *&#160;</td><td class="memItemRight" valign="bottom"><b>getPublicKey</b> () const</td></tr>
 <tr class="separator:ae30feedb53888a5eeaf3af903c336ac5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a90d830a7e0b05e633c55c0bb18f6b4e2"><td class="memItemLeft" align="right" valign="top"><a id="a90d830a7e0b05e633c55c0bb18f6b4e2" name="a90d830a7e0b05e633c55c0bb18f6b4e2"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>signTransaction</b> (model::gradido::GradidoTransaction *gradidoTransaction)</td></tr>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>signTransaction</b> (<a class="elRef" href="classmodel_1_1gradido_1_1_gradido_transaction.html">model::gradido::GradidoTransaction</a> *gradidoTransaction)</td></tr>
 <tr class="separator:a90d830a7e0b05e633c55c0bb18f6b4e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
@@ -148,10 +149,10 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>mGroupId</b></td></tr>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>mClientIp</b></td></tr>
 <tr class="separator:a3d0fac1b3140f94df1d406c904a1e40b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a86174518579057b26e3e70ce073aeb8e"><td class="memItemLeft" align="right" valign="top"><a id="a86174518579057b26e3e70ce073aeb8e" name="a86174518579057b26e3e70ce073aeb8e"></a>
-std::shared_ptr&lt; SecretKeyCryptography &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mEncryptionSecret</b></td></tr>
+std::shared_ptr&lt; <a class="elRef" href="class_secret_key_cryptography.html">SecretKeyCryptography</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mEncryptionSecret</b></td></tr>
 <tr class="separator:a86174518579057b26e3e70ce073aeb8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2fe5802d927a042dba6195c68525865c"><td class="memItemLeft" align="right" valign="top"><a id="a2fe5802d927a042dba6195c68525865c" name="a2fe5802d927a042dba6195c68525865c"></a>
-std::unique_ptr&lt; KeyPairEd25519 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mUserKeyPair</b></td></tr>
+std::unique_ptr&lt; <a class="elRef" href="class_key_pair_ed25519.html">KeyPairEd25519</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mUserKeyPair</b></td></tr>
 <tr class="separator:a2fe5802d927a042dba6195c68525865c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>

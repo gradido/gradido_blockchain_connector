@@ -1,5 +1,6 @@
 var searchData=
 [
-  ['loginexception_0',['LoginException',['../class_login_exception.html',1,'']]],
-  ['loginorcreate_1',['loginOrCreate',['../classmodel_1_1_session.html#a1e1577de40f68c79083f328426da0f3a',1,'model::Session']]]
+  ['handlerequestexception_0',['HandleRequestException',['class_handle_request_exception.html',1,'']]],
+  ['hashcollisionwords_1',['HashCollisionWords',['struct_mnemonic_1_1_hash_collision_words.html',1,'Mnemonic']]],
+  ['httprequest_2',['HttpRequest',['class_http_request.html',1,'']]]
 ];

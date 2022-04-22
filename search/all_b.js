@@ -1,7 +1,5 @@
 var searchData=
 [
-  ['session_0',['Session',['../classmodel_1_1_session.html',1,'model']]],
-  ['sessionexception_1',['SessionException',['../class_session_exception.html',1,'']]],
-  ['sessionmanager_2',['SessionManager',['../class_session_manager.html',1,'']]],
-  ['setconnection_3',['setConnection',['../class_connection_manager.html#aac5076e3120eb647b9828123e178dbd6',1,'ConnectionManager']]]
+  ['loginexception_0',['LoginException',['../class_login_exception.html',1,'']]],
+  ['loginorcreate_1',['loginOrCreate',['../classmodel_1_1_session.html#a1e1577de40f68c79083f328426da0f3a',1,'model::Session']]]
 ];

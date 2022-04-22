@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['gradidoblockchainconnector_0',['GradidoBlockchainConnector',['../class_gradido_blockchain_connector.html',1,'']]],
-  ['group_1',['Group',['../classmodel_1_1table_1_1_group.html',1,'model::table']]]
+  ['connectionmanager_0',['ConnectionManager',['../class_connection_manager.html',1,'']]],
+  ['crossgrouptransactionbuilder_1',['CrossGroupTransactionBuilder',['class_cross_group_transaction_builder.html',1,'']]]
 ];
