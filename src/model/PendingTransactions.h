@@ -48,7 +48,7 @@ namespace model {
 		@author einhornimmond 
 
 		Store Transactions sended with Blockchain Connector as PendingTransaction in list 
-		Need also a <a href="https://github.com/gradido/gradido_node">Gradido Node</a> which was configured to notify this GradidoBlockchainConnector 
+		Need also a <a href="https://github.com/gradido/gradido_node">Gradido Node</a> configured to notify GradidoBlockchainConnector 
 		after getting new transactions from iota
 
 		@startuml "Pending Transactions"
