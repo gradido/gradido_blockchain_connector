@@ -1,0 +1,9 @@
+<map id="JsonTransaction" name="JsonTransaction">
+<area shape="rect" id="node1" title=" " alt="" coords="227,107,349,133"/>
+<area shape="rect" id="node3" href="$class_json_creation_transaction.html" title=" " alt="" coords="423,5,601,32"/>
+<area shape="rect" id="node4" href="$class_json_global_group_add.html" title=" " alt="" coords="435,56,589,83"/>
+<area shape="rect" id="node5" href="$class_json_list_transactions.html" title=" " alt="" coords="435,107,589,133"/>
+<area shape="rect" id="node6" href="$class_json_register_address_transaction.html" title=" " alt="" coords="397,157,627,184"/>
+<area shape="rect" id="node7" href="$class_json_transfer_transaction.html" title=" " alt="" coords="425,208,599,235"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,107,179,133"/>
+</map>

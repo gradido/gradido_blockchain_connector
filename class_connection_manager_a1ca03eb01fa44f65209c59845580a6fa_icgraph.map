@@ -1,0 +1,4 @@
+<map id="ConnectionManager::getConnection" name="ConnectionManager::getConnection">
+<area shape="rect" id="node1" title="return connection from pool, check if connected in if not, call reconnect on it" alt="" coords="272,5,432,47"/>
+<area shape="rect" id="node2" href="$classmodel_1_1_session.html#a1e1577de40f68c79083f328426da0f3a" title=" " alt="" coords="5,13,224,39"/>
+</map>
