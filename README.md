@@ -7,6 +7,8 @@ For easy connecting to [Gradido Blockchain](https://github.com/gradido/gradido_b
 - store sended transactions in memory and has interface for [Gradido Node](https://github.com/gradido/gradido_node) to tell that pending transaction was confirmed or rejected [Read more](https://gradido.github.io/gradido_blockchain_connector/classmodel_1_1_pending_transactions.html)
 - use JWT Token for authenticated json requests
 
+[Doxygen Documentation](https://gradido.github.io/gradido_blockchain_connector/)
+
 ## Getting Started
 
 1. Compile GradidoBlockchainConnector, for more details look here: [INSTALL.md](INSTALL.md)
