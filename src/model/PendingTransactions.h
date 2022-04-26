@@ -47,11 +47,11 @@ namespace model {
 	/*!	Store pending transaction in memory
 		@author einhornimmond 
 
-		Store Transactions sended with Blockchain Connector as PendingTransaction in list 
+		Store Transactions sended with Blockchain Connector as PendingTransaction in list.<br>
 		Need also a <a href="https://github.com/gradido/gradido_node">Gradido Node</a> configured to notify GradidoBlockchainConnector 
 		after getting new transactions from iota
 
-		@startuml "Pending Transactions"
+		@startuml{img/model/pending_transaction.png} "Pending Transactions"
 		participant GradidoBlockchainConnector as connector
 		database iota
 		participant GradidoNode as node

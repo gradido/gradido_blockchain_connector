@@ -107,7 +107,7 @@ For this request this error message are possible:
 	- is the key `gradidoNode` filled correctly in Gradido Blockchain Connector Properties?
 	- is the Gradido Node running and the last Version?
 	- for more details look into console or log output from Gradido Blockchain Connector
-- `coinColor isn't a valid hex string`: if the field coinColor is a string witz size > 0 but not a valid hex string
+- `coinColor isn't a valid hex string`: if the field coinColor is a string with size > 0 but not a valid hex string
 - `coinColor has unknown type`: if coinColor is neither a string or a unsigned 32 Bit Integer
 - `Internal Server Error`: something went wrong with Gradido Blockchain Connector, in this case look at the console output or in the logfile from Gradido Blockchain Connector
 - `transaction validation failed`: transaction is invalid, more infos can be found in details field from result

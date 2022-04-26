@@ -1,0 +1,37 @@
+name: Generate Doxygen and Plantuml png
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on: push
+  
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - name: Checkout 
+      uses: actions/checkout@v2
+    - name: Checkout Gradido Blockchain
+      run: git submodule update --init -- ./dependencies/gradido_blockchain
+    - name: Checkout doxygen style from gradido blockchain
+      run: cd ./dependencies/gradido_blockchain/ && git submodule update --init -- ./doc/doxygen_awesome_css
+        
+    - name: Doxygen Action
+      uses: einhornimmond/doxygen-plantuml-action@v2.2.1
+      with:
+        # Path to Doxyfile
+        doxyfile-path: "./Doxyfile" # default is ./Doxyfile
+        # Working directory
+        working-directory: "." # default is .
+        custom-output-path: "./doc"
+    
+    - name: commit plantuml png
+      uses: EndBug/add-and-commit@v9
+      with: 
+        default_author: github_actions
+        add: './doc/img/\*.png'
