@@ -51,7 +51,7 @@ namespace model {
 		Need also a <a href="https://github.com/gradido/gradido_node">Gradido Node</a> configured to notify GradidoBlockchainConnector 
 		after getting new transactions from iota
 
-		@startuml{img/model/pending_transaction.png} "Pending Transactions"
+		@startuml{uml_pending_transaction.png} "Pending Transactions"
 		participant GradidoBlockchainConnector as connector
 		database iota
 		participant GradidoNode as node
