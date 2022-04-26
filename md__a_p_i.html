@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.2"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Gradido Blockchain Connector: API</title>
+<title>Gradido Blockchain Connector: API for Gradido Blockchain Connector</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -65,10 +65,305 @@ $(function() {
 
 </div><!-- top -->
 <div><div class="header">
-  <div class="headertitle"><div class="title">API </div></div>
+  <div class="headertitle"><div class="title">API for Gradido Blockchain Connector </div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"></div></div><!-- contents -->
+<div class="textblock"><h1><a class="anchor" id="autotoc_md1"></a>
+&lt;a name="error_reporting"&gt;&lt;/a&gt; Error Reporting</h1>
+<p >If an error occure, the Response usually looks like that: </p><div class="fragment"><div class="line">{</div>
+<div class="line">    &quot;state&quot;: &quot;error&quot;,</div>
+<div class="line">    &quot;msg&quot;:&quot;parameter error&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><p >and sometimes they contain more infos in details:</p>
+<div class="fragment"><div class="line">{</div>
+<div class="line">    &quot;state&quot;: &quot;error&quot;,</div>
+<div class="line">    &quot;msg&quot;:&quot;parameter error&quot;,</div>
+<div class="line">    &quot;details&quot;: {</div>
+<div class="line">        &quot;what&quot;: &quot;contain invalid character&quot;,</div>
+<div class="line">        &quot;fieldName&quot;: &quot;name&quot;,</div>
+<div class="line">        &quot;fieldType&quot;: &quot;string&quot;,</div>
+<div class="line">    }</div>
+<div class="line">}</div>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md2"></a>
+New Api v2</h1>
+<h1><a class="anchor" id="autotoc_md3"></a>
+Login into Blockchain Connector / Create User if not exist</h1>
+<p >Login into Blockchain Connector to get JWT-Token for other requests. Intern the Blockchain Connector load the <a href="https://gradido.github.io/gradido_blockchain_connector/classmodel_1_1_session.html">Session</a> via <a href="https://gradido.github.io/gradido_blockchain_connector/class_session_manager.html">SessionManager</a> into memory and keep and unencrpyted private key for the user to able to sign transactions. If user with name and groupAlias not exist, he will generate a public-private key pair for this user and save it into db. The private key is saved encrypted. For decryption password and name are needed.</p>
+<h2><a class="anchor" id="autotoc_md4"></a>
+Request</h2>
+<p ><code>POST <a href="http://localhost:1271/login">http://localhost:1271/login</a></code></p>
+<div class="fragment"><div class="line">{   </div>
+<div class="line">    &quot;name&quot;:&quot;testUser1&quot;, &quot;password&quot;:&quot;b379938c857eaa6d480e46666813150cd70d25b289edfcbcdef570d0920a1e19f11fb682999efb5cce4bee78a17021b360c72cb02fd1bb6e67&quot;,</div>
+<div class="line">    &quot;groupAlias&quot;:&quot;testgroup1&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><ul>
+<li><code>name</code>: String identifier for user, can be also a UUID</li>
+<li><code>password</code>: encrypted password, encrypted with <a href="https://libsodium.gitbook.io/doc/public-key_cryptography/sealed_boxes">sodium (sealed boxes)</a> crypto_box_seal, key pair can be generated with crypto_box_keypair, private key will be stored in Gradido Blockchain Connector properties file under <code>crypto.jwt.private</code></li>
+<li><code>groupAlias</code>: group/community identifier string (can be also a UUID)</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md5"></a>
+Response</h2>
+<div class="fragment"><div class="line">{</div>
+<div class="line">    &quot;state&quot;: &quot;success&quot;,</div>
+<div class="line">    &quot;token&quot;: &quot;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2NTA1NjY5MzIuMTU1MTg0LCJpYXQiOjE2NTA1NjYzMzIuMTU1MTg0LCJuYW1lIjoidGVzdFVzZXIxIiwicHVia2V5IjoiMjVhZGMzZWEwYmZmZmE3ZDAwYmEyMjY4OTJlMDA1MWU5ODJlNGMxOGZiZDM4ZDRjNTE2NzIyMjRkNzM1NGY1YiIsInN1YiI6ImxvZ2luIn0.YsL4F7BUeBa-_yV1mF3aK9DSybwpj_eJH6fOaY_Tn9c&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><p> With this token from the response we can user the other requests.</p>
+<h2><a class="anchor" id="autotoc_md6"></a>
+Possible errors</h2>
+<p >Errors have the format like in <a href="#error_reporting">Error Reporting</a> at the begin of file shown. For this request this error message are possible:</p>
+<ul>
+<li><code>parameter error</code>: one of the expected parameters wasn't set</li>
+<li><code>invalid group alias</code>: the group alias has an invalid format<ul>
+<li>this regular expression check the format: <code>^[a-z0-9-]{3,120}$</code></li>
+</ul>
+</li>
+<li><code>Internal Server Error</code>: something went wrong with Gradido Blockchain Connector, in this case look at the console output or in the logfile from Gradido Blockchain Connector</li>
+<li><code>login failed</code>: wrong password</li>
+<li><code>cannot get free cpu core for encryption</code>: server gets to many login requests, try again later</li>
+<li><code>&lt;keyname&gt; is missing from config</code>: a key wasn't found in config from Gradido Blockchain Connector</li>
+<li><code>cannot decrypt password</code>: check that the password was really encrypted with the public key and the right private key was put into the Gradido Blockchain Server Config under <code>crypto.jwt.private</code></li>
+<li><code>invalid ip</code>: user was already logged in, but from another ip address</li>
+</ul>
+<h1><a class="anchor" id="autotoc_md7"></a>
+Add Group to Global Group Blockchain</h1>
+<p >The <a href="https://github.com/gradido/gradido_node">Gradido Node</a> has blockchains for every group and one blockchain which contain every Gradido group on Earth. This is to make sure that every group alias and also each coin color exist only once.</p>
+<h2><a class="anchor" id="autotoc_md8"></a>
+Request</h2>
+<p ><code>POST <a href="http://localhost:1271/globalGroupAdd">http://localhost:1271/globalGroupAdd</a></code></p>
+<p >a jwt Token returned from a Login Request transfered as Authorization Header is mandatory</p>
+<div class="fragment"><div class="line">{</div>
+<div class="line">    &quot;groupName&quot;:&quot;test Gruppe &quot;,</div>
+<div class="line">    &quot;groupAlias&quot;:&quot;testgroup1&quot;,</div>
+<div class="line">    &quot;coinColor&quot;:&quot;0xffaabbcc&quot;,</div>
+<div class="line">    &quot;created&quot;:&quot;2022-04-21T18:57:59.073Z&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><ul>
+<li><code>groupName</code>: a name for the group how it should be shown as title</li>
+<li><code>groupAlias</code>: a unique group alias containing only lowercase letters from a-z, 0-9 and - at least 3 character long, maximal 120 character long</li>
+<li><code>coinColor</code>: (optional) a unique 32 Bit Integer Number or a hex number with maximal 8 characters, will be choosen randomly if let empty</li>
+<li><code>created</code>: The current date and time on creating this transaction</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md9"></a>
+Possible errors</h2>
+<p >Errors have the format like in <a href="#error_reporting">Error Reporting</a> at the begin of file shown. For this request this error message are possible:</p>
+<ul>
+<li><code>coin color already exist, please choose another or keep empty</code>: this coin color already exist on Global Groups Blockchain</li>
+<li><code>error by requesting Gradido Node</code>: error in the communication with Gradido Node<ul>
+<li>is the key <code>gradidoNode</code> filled correctly in Gradido Blockchain Connector Properties?</li>
+<li>is the Gradido Node running and the last Version?</li>
+<li>for more details look into console or log output from Gradido Blockchain Connector</li>
+</ul>
+</li>
+<li><code>coinColor isn't a valid hex string</code>: if the field coinColor is a string witz size &gt; 0 but not a valid hex string</li>
+<li><code>coinColor has unknown type</code>: if coinColor is neither a string or a unsigned 32 Bit Integer</li>
+<li><code>Internal Server Error</code>: something went wrong with Gradido Blockchain Connector, in this case look at the console output or in the logfile from Gradido Blockchain Connector</li>
+<li><code>transaction validation failed</code>: transaction is invalid, more infos can be found in details field from result </li>
+</ul>
+<h3><a class="anchor" id="autotoc_md10"></a>
+group_name</h3>
+<div class="fragment"><div class="line">&quot;details&quot; : {</div>
+<div class="line">    &quot;what&quot;: &quot;to short, at least 3&quot;,</div>
+<div class="line">    &quot;fieldName&quot;: &quot;group_name&quot;,</div>
+<div class="line">    &quot;fieldType&quot;: &quot;string&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --> <div class="fragment"><div class="line">&quot;details&quot; : {</div>
+<div class="line">    &quot;what&quot;: &quot;to long, max 255&quot;,</div>
+<div class="line">    &quot;fieldName&quot;: &quot;group_name&quot;,</div>
+<div class="line">    &quot;fieldType&quot;: &quot;string&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --> <div class="fragment"><div class="line">&quot;details&quot; : {</div>
+<div class="line">    &quot;what&quot;: &quot;invalid character, only ascii&quot;,</div>
+<div class="line">    &quot;fieldName&quot;: &quot;group_name&quot;,</div>
+<div class="line">    &quot;fieldType&quot;: &quot;string&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --> <h3><a class="anchor" id="autotoc_md11"></a>
+group_alias</h3>
+<div class="fragment"><div class="line">&quot;details&quot; : {</div>
+<div class="line">    &quot;what&quot;: &quot;to short, at least 3&quot;,</div>
+<div class="line">    &quot;fieldName&quot;: &quot;group_alias&quot;, </div>
+<div class="line">    &quot;fieldType&quot;: &quot;string&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --> <div class="fragment"><div class="line">&quot;details&quot; : {</div>
+<div class="line">    &quot;what&quot;: &quot;to long, max 255&quot;,</div>
+<div class="line">    &quot;fieldName&quot;: &quot;group_alias&quot;, </div>
+<div class="line">    &quot;fieldType&quot;: &quot;string&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --> <div class="fragment"><div class="line">&quot;details&quot; : {</div>
+<div class="line">    &quot;what&quot;: &quot;invalid character, only ascii&quot;,</div>
+<div class="line">    &quot;fieldName&quot;: &quot;group_alias&quot;, </div>
+<div class="line">    &quot;fieldType&quot;: &quot;string&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --> <div class="fragment"><div class="line">&quot;details&quot; : {</div>
+<div class="line">    &quot;what&quot;: &quot;group alias is used from system&quot;,</div>
+<div class="line">    &quot;fieldName&quot;: &quot;group_alias&quot;, </div>
+<div class="line">    &quot;fieldType&quot;: &quot;string&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><ul>
+<li><p class="startli"><code>error by calling iota</code>: by calling iota an error occured, more infos can be found in details field from result</p>
+<div class="fragment"><div class="line">&quot;details&quot;: {</div>
+<div class="line">    &quot;what&quot;: &quot;no tips&quot;,</div>
+<div class="line">    &quot;url&quot;: &quot;api.lb-0.h.chrysalis-devnet.iota.cafe/api/v1/tips&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><p> iota hasn't returned previous iota transactions, if that ever happen I don't know what to do</p>
+<div class="fragment"><div class="line">&quot;details&quot;: {</div>
+<div class="line">    &quot;what&quot;: &quot;error parsing request answer&quot;,</div>
+<div class="line">    &quot;parseErrorCode&quot;: &quot;The document is empty.&quot;,</div>
+<div class="line">    &quot;parseErrorPosition&quot;: 0,</div>
+<div class="line">    &quot;src&quot;: &quot;&lt;iota response as raw text&gt;&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><p> iota returned invalid json, all possible rapidjson parse error codes: <a href="https://rapidjson.org/group___r_a_p_i_d_j_s_o_n___e_r_r_o_r_s.html#ga633f43fd92e6ed5ceb87dbf570647847">rapidjson error codes</a></p>
+<div class="fragment"><div class="line">&quot;details&quot;: {</div>
+<div class="line">    &quot;what&quot;: &quot;data member in response missing&quot;,</div>
+<div class="line">    &quot;url&quot;: &quot;api.lb-0.h.chrysalis-devnet.iota.cafe/api/v1/messages&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><p> the response for pushing Gradido Transaction as iota message to iota don't contain <code>data</code> field, so maybe the iota api changed</p>
+<div class="fragment"><div class="line">&quot;details&quot;: {</div>
+<div class="line">    &quot;what&quot;: &quot;messageId in response is missing or not a string&quot;,</div>
+<div class="line">    &quot;url&quot;: &quot;api.lb-0.h.chrysalis-devnet.iota.cafe/api/v1/messages&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><p> the response for pushing Gradido Transaction as iota message to iota don't contain <code>messageId</code> field, so maybe the api changed </p>
+</li>
+</ul>
+<h1><a class="anchor" id="autotoc_md12"></a>
+autotoc_md12</h1>
+<p >/creation</p>
+<h1><a class="anchor" id="autotoc_md13"></a>
+autotoc_md13</h1>
+<p >/transfer</p>
+<h1><a class="anchor" id="autotoc_md14"></a>
+autotoc_md14</h1>
+<p >/registerAddress</p>
+<h1><a class="anchor" id="autotoc_md15"></a>
+autotoc_md15</h1>
+<p >/notify</p>
+<h1><a class="anchor" id="autotoc_md16"></a>
+autotoc_md16</h1>
+<p >/listTransactions</p>
+<h1><a class="anchor" id="autotoc_md17"></a>
+autotoc_md17</h1>
+<p >/listPending</p>
+<hr  />
+<h1><a class="anchor" id="autotoc_md19"></a>
+Old Api v1</h1>
+<h1><a class="anchor" id="autotoc_md20"></a>
+Pack Transaction</h1>
+<p >Pack Transaction as protobuf Array, ready for signing The returned bodyBytes are in base64 format. They must be at first unpacked in a binary array. Than they can be signed with sodium.crypto_sign_detached (<a href="https://sodium-friends.github.io/docs/docs/signing#crypto_sign_detached">https://sodium-friends.github.io/docs/docs/signing#crypto_sign_detached</a>) m ist the binary body bytes buffer sk is the private key of the user</p>
+<p >currently every transaction need only one signature but this maybe change in future, or new transaction types added which need more than one signature</p>
+<p >After signing sendTransactionIota can be called for every transaction which consists of bodyBytes and a signature public key pair list and with the corresponding group alias</p>
+<p >For transactions which belong to two blockchains actually two transactions are generated and need to be signed and send</p>
+<h2><a class="anchor" id="autotoc_md21"></a>
+Request</h2>
+<p ><code>POST <a href="http://localhost/login_api/packTransaction">http://localhost/login_api/packTransaction</a></code></p>
+<h3><a class="anchor" id="autotoc_md22"></a>
+Transfer</h3>
+<p >Needed to be signed from sender user</p>
+<div class="fragment"><div class="line">{   </div>
+<div class="line">    &quot;transactionType&quot;: &quot;transfer&quot;,</div>
+<div class="line">    &quot;created&quot;:&quot;2021-01-10 10:00:00&quot;,</div>
+<div class="line">    &quot;memo&quot;: &quot;Danke für deine Hilfe!&quot;,</div>
+<div class="line">    &quot;senderPubkey&quot;:&quot;131c7f68dd94b2be4c913400ff7ff4cdc03ac2bda99c2d29edcacb3b065c67e6&quot;,</div>
+<div class="line">    &quot;recipientPubkey&quot;:&quot;eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd&quot;,</div>
+<div class="line">    &quot;amount&quot;: 1000000,</div>
+<div class="line">}</div>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md23"></a>
+Cross-Group Transfer</h3>
+<p >Needed to be signed from sender user</p>
+<div class="fragment"><div class="line">{   </div>
+<div class="line">    &quot;transactionType&quot;: &quot;transfer&quot;,</div>
+<div class="line">    &quot;created&quot;:&quot;2021-01-10 10:00:00&quot;,</div>
+<div class="line">    &quot;memo&quot;: &quot;Danke für deine Hilfe!&quot;,</div>
+<div class="line">    &quot;senderPubkey&quot;:&quot;131c7f68dd94b2be4c913400ff7ff4cdc03ac2bda99c2d29edcacb3b065c67e6&quot;,</div>
+<div class="line">    &quot;recipientPubkey&quot;:&quot;eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd&quot;,</div>
+<div class="line">    &quot;amount&quot;: 1000000,</div>
+<div class="line">    &quot;senderGroupAlias&quot;: &quot;gdd1&quot;,</div>
+<div class="line">    &quot;recipientGroupAlias&quot;:&quot;gdd2&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md24"></a>
+Creation</h3>
+<p >Needed to be signed from another user from this group which isn't the recipient After implementing roles on blockchain, the signing person need to have the correct role for this</p>
+<div class="fragment"><div class="line">{   </div>
+<div class="line">    &quot;transactionType&quot;: &quot;creation&quot;,</div>
+<div class="line">    &quot;created&quot;:&quot;2021-01-10 10:00:00&quot;,</div>
+<div class="line">    &quot;memo&quot;: &quot;AGE September 2021&quot;,</div>
+<div class="line">    &quot;recipientPubkey&quot;:&quot;eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd&quot;,</div>
+<div class="line">    &quot;amount&quot;: 10000000,</div>
+<div class="line">    &quot;targetDate&quot;: &quot;2021-09-01 01:00:00&quot;,</div>
+<div class="line">}</div>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md25"></a>
+Group Member Add</h3>
+<p >Needed to be signed from the user to add</p>
+<div class="fragment"><div class="line">{</div>
+<div class="line">    &quot;transactionType&quot;: &quot;groupMemberUpdate&quot;,</div>
+<div class="line">    &quot;created&quot;:&quot;2021-01-10 10:00:00&quot;,</div>
+<div class="line">    &quot;userRootPubkey&quot;:&quot;eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd&quot;,</div>
+<div class="line">}</div>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md26"></a>
+Group Member Move</h3>
+<p >Needed to be signed from the user to move</p>
+<div class="fragment"><div class="line">{</div>
+<div class="line">    &quot;transactionType&quot;: &quot;groupMemberUpdate&quot;,</div>
+<div class="line">    &quot;created&quot;:&quot;2021-01-10 10:00:00&quot;,</div>
+<div class="line">    &quot;userRootPubkey&quot;:&quot;eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd&quot;,</div>
+<div class="line">    &quot;currentGroupAlias&quot;: &quot;gdd1&quot;,</div>
+<div class="line">    &quot;newGroupAlias&quot;:&quot;gdd2&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><ul>
+<li><code>transactionType</code>: type of transaction, currently available: transfer, creation and groupMemberUpdate</li>
+<li><code>created</code>: creation date of transaction</li>
+<li><code>memo</code>: memo for transfer and creation transaction, should be encrypted for example with the sender private key and the recipient public key with sodium.crypto_box_easy maybe with creation date as nonce <a href="https://sodium-friends.github.io/docs/docs/keyboxencryption#crypto_box_easy">https://sodium-friends.github.io/docs/docs/keyboxencryption#crypto_box_easy</a></li>
+<li><code>senderPubkey</code>: sender account public key in hex format, need at least <code>amount</code> gradidos on this account</li>
+<li><code>recipientPubkey</code>: recipient account public key in hex format, must be added first with a groupMemberUpdate transaction to his or her blockchain</li>
+<li><code>amount</code>: amount of gradido as integer with 4 after comma</li>
+<li><code>senderGroupAlias</code>: only needed for cross group transactions, group alias from sender group</li>
+<li><code>recipientGroupAlias</code>: only needed for cross group transactions, group alias from recipient group</li>
+<li><code>userRootPubkey</code>: root public key from user, all his other addresses are derived from this address <a href="https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki">https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki</a> but with ed25519 keys</li>
+<li><code>currentGroupAlias</code>: only needed for moving user, group alias from where the user is from</li>
+<li><code>newGroupAlias</code>: only needed for moving user, group alias from the user where they are moving to</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md27"></a>
+Response</h2>
+<p >For Local Transactions which happen only on this group</p>
+<div class="fragment"><div class="line">{</div>
+<div class="line">    &quot;state&quot;:&quot;success&quot;,</div>
+<div class="line">    &quot;bodyBytesBase64&quot;: &quot;CAEStwEKZgpkCiDs2zemYO1PxD1Odwh5YxyUmDp+lyxgVmiQgiFdPLUahRJAvyYRVASJNvyYiTAT2D8t6QtVgekqnsPIJRAx6jG8tEqxdzwKGg/Jm0gatdY1Ix7DGbHMBRw/9CtoXQXueqqDChJNChBBR0UgT2t0b2JlciAyMDIxEgYIuMWpjQY6MQonCiAdkWfcgRcDfCIg+GbikK6U9Fp4WMTGtAxF7RRdvhisSxCA2sQJGgYIgJ/ZigYaBgjGxamNBiABKiCijBRel5hudg5iZqfeQxjzIMhnOJA+tmHmloMVW+snjTIEyWETAA==&quot;,  </div>
+<div class="line">}</div>
+</div><!-- fragment --><p >For Cross Group Transactions (and for moving user) This return at least two transaction, one for every chain involved in this transaction, inclusive groupAlias from the target blockchain for this transaction</p>
+<div class="fragment"><div class="line">{</div>
+<div class="line">    &quot;state&quot;:&quot;success&quot;,</div>
+<div class="line">    &quot;transactions&quot; : </div>
+<div class="line">    [</div>
+<div class="line">        {</div>
+<div class="line">            &quot;groupAlias&quot;: &quot;gdd1&quot;, </div>
+<div class="line">            &quot;bodyBytesBase64&quot;: &quot;CAUS7QEKZgpkCiDRCqrSJQDyMPnshI+UbSnVU22w+98UJsQ5qwh10VbNCxJAPvxMj7GKxhUf6OfzKRwmZthxXroj/GSLWizDWURDNtL4E8Ez1zqOu9d/ytdZEtY/nQr+1jbLvtsJQ6dfAaDAARKCAQoRVGVzdCBjcm9zcyA0LjEyIDESBgjR366NBjJlEmMKSgomCiDRCqrSJQDyMPnshI+UbSnVU22w+98UJsQ5qwh10VbNCxCI7isSIOzbN6Zg7U/EPU53CHljHJSYOn6XLGBWaJCCIV08tRqFGgdzdGFnaW5nIgwI0d+ujQYQ+LzOwQMaBgjc366NBiABKiBlPZP6a69Kz4JZ87cDcXBARbMXpesRMdDrh5V1PSWRLzIEGIMTAA==&quot;</div>
+<div class="line">        },</div>
+<div class="line">        {</div>
+<div class="line">            &quot;groupAlias&quot;: &quot;gdd2&quot;,</div>
+<div class="line">            &quot;bodyBytesBase64&quot;: &quot;CAoS8AEKZgpkCiDRCqrSJQDyMPnshI+UbSnVU22w+98UJsQ5qwh10VbNCxJAf6TTHmhDdP2VoN2eFmMhUHHjSg8ZHsfG2aEgRKVEPwCEVv2NFeSqbYSCbt8xVP16xu2hrEg87qCXq1AJBX7aCBKFAQoRVGVzdCBjcm9zcyA0LjEyIDESBgjS366NBjJoGmYKSgomCiDRCqrSJQDyMPnshI+UbSnVU22w+98UJsQ5qwh10VbNCxCI7isSIOzbN6Zg7U/EPU53CHljHJSYOn6XLGBWaJCCIV08tRqFGgpweXRoYWdvcmFzIgwI0d+ujQYQ+LzOwQMaBgjm366NBiABKiAnFsNGldvfB2QaenWbfdtiCBQ399e81il6VV0kL6CHijIEGYMTAA==&quot;</div>
+<div class="line">        }</div>
+<div class="line">    ]</div>
+<div class="line">}</div>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md28"></a>
+Send Transaction</h1>
+<h2><a class="anchor" id="autotoc_md29"></a>
+Request</h2>
+<p ><code>POST <a href="http://localhost/login_api/sendTransactionIota">http://localhost/login_api/sendTransactionIota</a></code></p>
+<p >with </p><div class="fragment"><div class="line">{</div>
+<div class="line">    &quot;bodyBytesBase64&quot;: &quot;CAEStwEKZgpkCiDs2zemYO1PxD1Odwh5YxyUmDp+lyxgVmiQgiFdPLUahRJAvyYRVASJNvyYiTAT2D8t6QtVgekqnsPIJRAx6jG8tEqxdzwKGg/Jm0gatdY1Ix7DGbHMBRw/9CtoXQXueqqDChJNChBBR0UgT2t0b2JlciAyMDIxEgYIuMWpjQY6MQonCiAdkWfcgRcDfCIg+GbikK6U9Fp4WMTGtAxF7RRdvhisSxCA2sQJGgYIgJ/ZigYaBgjGxamNBiABKiCijBRel5hudg5iZqfeQxjzIMhnOJA+tmHmloMVW+snjTIEyWETAA==&quot;,</div>
+<div class="line">    &quot;signaturePairs&quot;: [</div>
+<div class="line">        {</div>
+<div class="line">            &quot;pubkey&quot;: &quot;ecdb37a660ed4fc43d4e770879631c94983a7e972c6056689082215d3cb51a85&quot;,</div>
+<div class="line">            &quot;signature&quot;: &quot;c1b2e8077c206bf78aeaefbdcdfe8a5ae32ddf9adca95ba1f5a93e885b7b3a00f224fe1fb0ea491d20966f7336fd90479c792432dc94b8c8b83dd00510fca508&quot;</div>
+<div class="line">        }</div>
+<div class="line">    ],</div>
+<div class="line">    &quot;groupAlias&quot;:&quot;gdd1&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md30"></a>
+Response</h2>
+<div class="fragment"><div class="line">{</div>
+<div class="line">    &quot;state&quot;: &quot;success&quot;,</div>
+<div class="line">    &quot;iotaMessageId&quot;: &quot;acc2ad26e987a787145d20d61a140606b45bfc0857cff5391c784937a5430108&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --> </div></div><!-- contents -->
 </div><!-- PageDoc -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
