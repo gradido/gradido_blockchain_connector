@@ -2,6 +2,7 @@
 
 #include "gradido_blockchain/lib/DataTypeConverter.h"
 #include "gradido_blockchain/http/RequestExceptions.h"
+#include "gradido_blockchain/http/IotaRequestExceptions.h"
 #include "gradido_blockchain/model/protobufWrapper/TransactionValidationExceptions.h"
 
 #include "SessionManager.h"
@@ -47,6 +48,7 @@ uint32_t JsonTransaction::readCoinColor(const Document& params)
 		std::string coinColorString = coinColor->value.GetString();
 		if (!coinColorString.size()) return 0;
 		MemoryBin* coinColorBin = nullptr;
+		// TODO: Check seems to be not working correctly
 		if (coinColorString.substr(0, 2) == "0x") {
 			coinColorBin = DataTypeConverter::hexToBin(coinColorString.substr(2));
 		}
@@ -84,6 +86,7 @@ std::string JsonTransaction::signAndSendTransaction(std::unique_ptr<model::gradi
 		printf("invalid signature exception: %s\n", ex.getFullString().data());
 		throw;
 	}
+	
 	std::string _groupAlias = groupAlias;
 	// update target group alias if it is a global group add transaction
 	if (transaction->getTransactionBody()->isGlobalGroupAdd()) {
@@ -102,4 +105,32 @@ std::string JsonTransaction::signAndSendTransaction(std::unique_ptr<model::gradi
 	auto iotaMessageId = ServerConfig::g_IotaRequestHandler->sendMessage(DataTypeConverter::binToHex(index), *hex_message);
 	model::PendingTransactions::getInstance()->pushNewTransaction(iotaMessageId, transaction->getTransactionBody()->getTransactionType());
 	return std::move(iotaMessageId);
+}
+
+rapidjson::Document JsonTransaction::handleSignAndSendTransactionExceptions()
+{
+	try {
+		throw; // assume it was called from catch clause
+	}
+	catch (model::gradido::TransactionValidationInvalidSignatureException& ex) {
+		Poco::Logger::get("errorLog").error("invalid signature exception: %s", ex.getFullString());
+		return stateError("Internal Server Error");
+	}
+	catch (model::gradido::TransactionValidationInvalidInputException& ex) {
+		return stateError("transaction validation failed", ex.getDetails());
+	}
+	catch (IotaRequestException& ex) {
+		Poco::Logger::get("errorLog").error("error by calling iota: %s", ex.getFullString());
+		return stateError("error by calling iota", ex.getDetails());
+	}	
+	catch (RapidjsonParseErrorException& ex) {
+		Poco::Logger::get("errorLog").error("calling iota return invalid json: %s", ex.getFullString());
+		return stateError("error by calling iota", ex.getDetails());
+	}
+	catch (Ed25519SignException& ex) {
+		Poco::Logger::get("errorLog").error("error by signing a transaction: %s", ex.getFullString());
+		return stateError("Internal Server Error");
+	}
+
+	return Document();
 }

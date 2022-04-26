@@ -10,7 +10,6 @@ using namespace rapidjson;
 
 /*
 * {
-	"currentUser": "8ae14e70a0f2329e644fcd42919a3b799f15b367c2b13bbc9168f8ea61183bf2\u0000",
 	"currentPage": 1,
 	"pageSize": 25,
 	"orderDESC": true,
@@ -25,9 +24,17 @@ Document JsonListTransactions::handle(const Document& params)
 	Value jsonRpcParams(kObjectType);
 	auto alloc = gradidoNodeRequest.getJsonAllocator();
 	for (auto it = params.MemberBegin(); it != params.MemberEnd(); it++) {
-		jsonRpcParams.AddMember(Value(it->name, alloc), Value(it->value, alloc), alloc);
+		if (strcmp(it->name.GetString(), "currentUser") == 0) {
+			
+		}
+		else {
+			jsonRpcParams.AddMember(Value(it->name, alloc), Value(it->value, alloc), alloc);
+		}
 	}
-	jsonRpcParams.AddMember("groupAlias", Value(mSession->getGroupAlias().data(), alloc), alloc);
+	//currentUser
+	auto pubkeyHex = DataTypeConverter::binToHex(mSession->getPublicKey(), KeyPairEd25519::getPublicKeySize());
+	jsonRpcParams.AddMember("currentUser", Value(pubkeyHex.data(), alloc), alloc);
+	jsonRpcParams.AddMember("groupAlias", Value(mSession->getGroupAlias().data(), alloc), alloc);		
 	auto jsonAnswear = gradidoNodeRequest.request("listtransactions", jsonRpcParams);
 	auto resultIt = jsonAnswear.FindMember("result");
 	auto transactionListIt = resultIt->value.FindMember("transactionList");

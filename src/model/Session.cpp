@@ -44,8 +44,9 @@ namespace model {
 			Poco::Data::Statement select(dbSession);
 			uint64_t password(0);
 			std::string encryptedPrivateKey;
-			select << "SELECT password, encrypted_private_key from user where name = ? AND group_id = ?",
-				into(password), into(encryptedPrivateKey), useRef(userName), useRef(mGroupId);
+			std::string publicKey;
+			select << "SELECT password, encrypted_private_key, public_key from user where name = ? AND group_id = ?",
+				into(password), into(encryptedPrivateKey), into(publicKey), useRef(userName), useRef(mGroupId);
 			if (select.execute()) {
 				if (password != mEncryptionSecret->getKeyHashed()) {
 					throw InvalidPasswordException("login failed", userName.data(), userPassword.size());
@@ -55,10 +56,12 @@ namespace model {
 					(const unsigned char*)encryptedPrivateKey.data(),
 					encryptedPrivateKey.size(),
 					&privateKey)) {
-					// TODO: define exception classes for this
-					throw Poco::NullPointerException("cannot decrypt private key");
+					throw DecryptionFailedException("cannot decrypt private key");
 				}
 				mUserKeyPair = std::make_unique<KeyPairEd25519>(privateKey);
+				if (!mUserKeyPair->isTheSame((const unsigned char*)publicKey.data())) {
+					throw DecryptionFailedException("calculated and stored pubkey mismatch");
+				}
 				return 1;
 			}
 			else {
@@ -158,7 +161,7 @@ namespace model {
 		auto userId = user.getLastInsertId(dbSession);
 
 		if (!CryptoConfig::g_SupportPublicKey) {
-			throw CryptoConfig::MissingKeyException("missing key for saving passphrase for new user", "supportPublicKey");
+			throw CryptoConfig::MissingKeyException("missing key for saving passphrase for new user", "crypto.server_admin_public");
 		}
 		AuthenticatedEncryption supportKeyPair(*CryptoConfig::g_SupportPublicKey);
 		auto encryptedPassphrase = SealedBoxes::encrypt(&supportKeyPair, passphrase->getString());

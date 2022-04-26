@@ -42,7 +42,7 @@ namespace model {
 
 	};
 
-	class InvalidPasswordException : GradidoBlockchainException
+	class InvalidPasswordException : public GradidoBlockchainException
 	{
 	public:
 		explicit InvalidPasswordException(const char* what, const char* username, size_t passwordSize) noexcept;
