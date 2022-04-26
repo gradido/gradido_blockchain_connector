@@ -111,7 +111,6 @@ For this request this error message are possible:
 - `coinColor has unknown type`: if coinColor is neither a string or a unsigned 32 Bit Integer
 - `Internal Server Error`: something went wrong with Gradido Blockchain Connector, in this case look at the console output or in the logfile from Gradido Blockchain Connector
 - `transaction validation failed`: transaction is invalid, more infos can be found in details field from result
-	#### group_name
 	```json 
 	"details" : {
 		"what": "to short, at least 3",
@@ -133,7 +132,6 @@ For this request this error message are possible:
 		"fieldType": "string"
 	}
 	```
-	#### group_alias
 	```json
 	"details" : {
 		"what": "to short, at least 3",
