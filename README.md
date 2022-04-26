@@ -110,4 +110,5 @@ curl -X POST \
 
 The result on both requests are the same like for registerAddress and globalGroupAdd
 
+
 For more Details look here [API](API.md)
