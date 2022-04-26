@@ -68,11 +68,18 @@ $(function() {
   <div class="headertitle"><div class="title">For Linux Build </div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p >sudo apt install libsodium-dev libmariadb3 libmariadb-dev protobuf-compiler libprotobuf-dev sudo ln -s /usr/include/mariadb /usr/include/mysql install mpfr if not exist: <a href="https://www.mpfr.org/mpfr-current/mpfr.html#Installing-MPFR">https://www.mpfr.org/mpfr-current/mpfr.html#Installing-MPFR</a></p>
+<div class="textblock"><div class="fragment"><div class="line">sudo apt install libsodium-dev libmariadb3 libmariadb-dev protobuf-compiler libprotobuf-dev</div>
+<div class="line">sudo ln -s /usr/include/mariadb /usr/include/mysql</div>
+</div><!-- fragment --><p> install mpfr if not exist: <a href="https://www.mpfr.org/mpfr-current/mpfr.html#Installing-MPFR">https://www.mpfr.org/mpfr-current/mpfr.html#Installing-MPFR</a></p>
 <h1><a class="anchor" id="autotoc_md30"></a>
 For Windows Build</h1>
-<p >mkdir build cd build conan install .. -s build_type=Debug cmake .. make protoc cmake .. </p>
-</div></div><!-- contents -->
+<div class="fragment"><div class="line">mkdir build</div>
+<div class="line">cd build</div>
+<div class="line">conan install .. -s build_type=Debug</div>
+<div class="line">cmake .. </div>
+<div class="line">make protoc</div>
+<div class="line">cmake ..</div>
+</div><!-- fragment --> </div></div><!-- contents -->
 </div><!-- PageDoc -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
