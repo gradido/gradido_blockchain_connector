@@ -68,8 +68,9 @@ $(function() {
   <div class="headertitle"><div class="title">API for Gradido Blockchain Connector </div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h1><a class="anchor" id="autotoc_md1"></a>
-&lt;a name="error_reporting"&gt;&lt;/a&gt; Error Reporting</h1>
+<div class="textblock"><p ><a class="anchor" id="error_reporting"></a> </p>
+<h1><a class="anchor" id="autotoc_md1"></a>
+Error Reporting</h1>
 <p >If an error occure, the Response usually looks like that: </p><div class="fragment"><div class="line">{</div>
 <div class="line">    &quot;state&quot;: &quot;error&quot;,</div>
 <div class="line">    &quot;msg&quot;:&quot;parameter error&quot;</div>
@@ -147,6 +148,9 @@ Request</h2>
 Possible errors</h2>
 <p >Errors have the format like in <a href="#error_reporting">Error Reporting</a> at the begin of file shown. For this request this error message are possible:</p>
 <ul>
+<li><code>invalid ip</code>: the login which created this jwt token, came from another ip</li>
+<li><code>invalid jwt token</code>: jwt token couldn't be verified or don't contain expected data, or was timed out</li>
+<li><code>no session found</code>: no session for name in jwt token found, maybe Gradido Blockchain Connector was restarted since creating this jwt token or it was deleted because the time last access was longer than the configured <code>session.duration_seconds</code></li>
 <li><code>coin color already exist, please choose another or keep empty</code>: this coin color already exist on Global Groups Blockchain</li>
 <li><code>error by requesting Gradido Node</code>: error in the communication with Gradido Node<ul>
 <li>is the key <code>gradidoNode</code> filled correctly in Gradido Blockchain Connector Properties?</li>
