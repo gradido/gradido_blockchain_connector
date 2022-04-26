@@ -161,11 +161,7 @@ Possible errors</h2>
 <li><code>coinColor isn't a valid hex string</code>: if the field coinColor is a string witz size &gt; 0 but not a valid hex string</li>
 <li><code>coinColor has unknown type</code>: if coinColor is neither a string or a unsigned 32 Bit Integer</li>
 <li><code>Internal Server Error</code>: something went wrong with Gradido Blockchain Connector, in this case look at the console output or in the logfile from Gradido Blockchain Connector</li>
-<li><code>transaction validation failed</code>: transaction is invalid, more infos can be found in details field from result </li>
-</ul>
-<h3><a class="anchor" id="autotoc_md10"></a>
-group_name</h3>
-<div class="fragment"><div class="line">&quot;details&quot; : {</div>
+<li><code>transaction validation failed</code>: transaction is invalid, more infos can be found in details field from result <div class="fragment"><div class="line">&quot;details&quot; : {</div>
 <div class="line">    &quot;what&quot;: &quot;to short, at least 3&quot;,</div>
 <div class="line">    &quot;fieldName&quot;: &quot;group_name&quot;,</div>
 <div class="line">    &quot;fieldType&quot;: &quot;string&quot;</div>
@@ -180,9 +176,7 @@ group_name</h3>
 <div class="line">    &quot;fieldName&quot;: &quot;group_name&quot;,</div>
 <div class="line">    &quot;fieldType&quot;: &quot;string&quot;</div>
 <div class="line">}</div>
-</div><!-- fragment --> <h3><a class="anchor" id="autotoc_md11"></a>
-group_alias</h3>
-<div class="fragment"><div class="line">&quot;details&quot; : {</div>
+</div><!-- fragment --> <div class="fragment"><div class="line">&quot;details&quot; : {</div>
 <div class="line">    &quot;what&quot;: &quot;to short, at least 3&quot;,</div>
 <div class="line">    &quot;fieldName&quot;: &quot;group_alias&quot;, </div>
 <div class="line">    &quot;fieldType&quot;: &quot;string&quot;</div>
@@ -202,7 +196,7 @@ group_alias</h3>
 <div class="line">    &quot;fieldName&quot;: &quot;group_alias&quot;, </div>
 <div class="line">    &quot;fieldType&quot;: &quot;string&quot;</div>
 <div class="line">}</div>
-</div><!-- fragment --><ul>
+</div><!-- fragment --></li>
 <li><p class="startli"><code>error by calling iota</code>: by calling iota an error occured, more infos can be found in details field from result</p>
 <div class="fragment"><div class="line">&quot;details&quot;: {</div>
 <div class="line">    &quot;what&quot;: &quot;no tips&quot;,</div>
@@ -228,37 +222,37 @@ group_alias</h3>
 </div><!-- fragment --><p> the response for pushing Gradido Transaction as iota message to iota don't contain <code>messageId</code> field, so maybe the api changed </p>
 </li>
 </ul>
+<h1><a class="anchor" id="autotoc_md10"></a>
+autotoc_md10</h1>
+<p >/creation</p>
+<h1><a class="anchor" id="autotoc_md11"></a>
+autotoc_md11</h1>
+<p >/transfer</p>
 <h1><a class="anchor" id="autotoc_md12"></a>
 autotoc_md12</h1>
-<p >/creation</p>
+<p >/registerAddress</p>
 <h1><a class="anchor" id="autotoc_md13"></a>
 autotoc_md13</h1>
-<p >/transfer</p>
+<p >/notify</p>
 <h1><a class="anchor" id="autotoc_md14"></a>
 autotoc_md14</h1>
-<p >/registerAddress</p>
+<p >/listTransactions</p>
 <h1><a class="anchor" id="autotoc_md15"></a>
 autotoc_md15</h1>
-<p >/notify</p>
-<h1><a class="anchor" id="autotoc_md16"></a>
-autotoc_md16</h1>
-<p >/listTransactions</p>
-<h1><a class="anchor" id="autotoc_md17"></a>
-autotoc_md17</h1>
 <p >/listPending</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md19"></a>
+<h1><a class="anchor" id="autotoc_md17"></a>
 Old Api v1</h1>
-<h1><a class="anchor" id="autotoc_md20"></a>
+<h1><a class="anchor" id="autotoc_md18"></a>
 Pack Transaction</h1>
 <p >Pack Transaction as protobuf Array, ready for signing The returned bodyBytes are in base64 format. They must be at first unpacked in a binary array. Than they can be signed with sodium.crypto_sign_detached (<a href="https://sodium-friends.github.io/docs/docs/signing#crypto_sign_detached">https://sodium-friends.github.io/docs/docs/signing#crypto_sign_detached</a>) m ist the binary body bytes buffer sk is the private key of the user</p>
 <p >currently every transaction need only one signature but this maybe change in future, or new transaction types added which need more than one signature</p>
 <p >After signing sendTransactionIota can be called for every transaction which consists of bodyBytes and a signature public key pair list and with the corresponding group alias</p>
 <p >For transactions which belong to two blockchains actually two transactions are generated and need to be signed and send</p>
-<h2><a class="anchor" id="autotoc_md21"></a>
+<h2><a class="anchor" id="autotoc_md19"></a>
 Request</h2>
 <p ><code>POST <a href="http://localhost/login_api/packTransaction">http://localhost/login_api/packTransaction</a></code></p>
-<h3><a class="anchor" id="autotoc_md22"></a>
+<h3><a class="anchor" id="autotoc_md20"></a>
 Transfer</h3>
 <p >Needed to be signed from sender user</p>
 <div class="fragment"><div class="line">{   </div>
@@ -269,7 +263,7 @@ Transfer</h3>
 <div class="line">    &quot;recipientPubkey&quot;:&quot;eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd&quot;,</div>
 <div class="line">    &quot;amount&quot;: 1000000,</div>
 <div class="line">}</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md23"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md21"></a>
 Cross-Group Transfer</h3>
 <p >Needed to be signed from sender user</p>
 <div class="fragment"><div class="line">{   </div>
@@ -282,7 +276,7 @@ Cross-Group Transfer</h3>
 <div class="line">    &quot;senderGroupAlias&quot;: &quot;gdd1&quot;,</div>
 <div class="line">    &quot;recipientGroupAlias&quot;:&quot;gdd2&quot;</div>
 <div class="line">}</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md24"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md22"></a>
 Creation</h3>
 <p >Needed to be signed from another user from this group which isn't the recipient After implementing roles on blockchain, the signing person need to have the correct role for this</p>
 <div class="fragment"><div class="line">{   </div>
@@ -293,7 +287,7 @@ Creation</h3>
 <div class="line">    &quot;amount&quot;: 10000000,</div>
 <div class="line">    &quot;targetDate&quot;: &quot;2021-09-01 01:00:00&quot;,</div>
 <div class="line">}</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md25"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md23"></a>
 Group Member Add</h3>
 <p >Needed to be signed from the user to add</p>
 <div class="fragment"><div class="line">{</div>
@@ -301,7 +295,7 @@ Group Member Add</h3>
 <div class="line">    &quot;created&quot;:&quot;2021-01-10 10:00:00&quot;,</div>
 <div class="line">    &quot;userRootPubkey&quot;:&quot;eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd&quot;,</div>
 <div class="line">}</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md26"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md24"></a>
 Group Member Move</h3>
 <p >Needed to be signed from the user to move</p>
 <div class="fragment"><div class="line">{</div>
@@ -324,7 +318,7 @@ Group Member Move</h3>
 <li><code>currentGroupAlias</code>: only needed for moving user, group alias from where the user is from</li>
 <li><code>newGroupAlias</code>: only needed for moving user, group alias from the user where they are moving to</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md27"></a>
+<h2><a class="anchor" id="autotoc_md25"></a>
 Response</h2>
 <p >For Local Transactions which happen only on this group</p>
 <div class="fragment"><div class="line">{</div>
@@ -346,9 +340,9 @@ Response</h2>
 <div class="line">        }</div>
 <div class="line">    ]</div>
 <div class="line">}</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md28"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md26"></a>
 Send Transaction</h1>
-<h2><a class="anchor" id="autotoc_md29"></a>
+<h2><a class="anchor" id="autotoc_md27"></a>
 Request</h2>
 <p ><code>POST <a href="http://localhost/login_api/sendTransactionIota">http://localhost/login_api/sendTransactionIota</a></code></p>
 <p >with </p><div class="fragment"><div class="line">{</div>
@@ -361,7 +355,7 @@ Request</h2>
 <div class="line">    ],</div>
 <div class="line">    &quot;groupAlias&quot;:&quot;gdd1&quot;</div>
 <div class="line">}</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md30"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md28"></a>
 Response</h2>
 <div class="fragment"><div class="line">{</div>
 <div class="line">    &quot;state&quot;: &quot;success&quot;,</div>
