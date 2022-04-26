@@ -19,7 +19,7 @@ using namespace rapidjson;
 
 Document JsonListTransactions::handle(const Document& params)
 {
-	mSession = SessionManager::getInstance()->getSession(getJwtToken());
+	mSession = SessionManager::getInstance()->getSession(getJwtToken(), mClientIp.toString());
 	JsonRPCRequest gradidoNodeRequest(ServerConfig::g_GradidoNodeUri);
 	Value jsonRpcParams(kObjectType);
 	auto alloc = gradidoNodeRequest.getJsonAllocator();

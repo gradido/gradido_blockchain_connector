@@ -20,7 +20,7 @@ using namespace rapidjson;
 Document JsonGlobalGroupAdd::handle(const Document& params)
 {
 	auto result = readSharedParameter(params);
-	if (result.IsObject()) return result;
+	if (result.IsObject()) return result;	
 
 	std::string groupName, groupAlias;
 	getStringParameter(params, "groupName", groupName);
