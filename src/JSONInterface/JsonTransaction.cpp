@@ -32,7 +32,20 @@ Document JsonTransaction::readSharedParameter(const Document& params)
 	}
 	mApolloTransactionId = 0;
 	getUInt64Parameter(params, "apolloTransactionId", mApolloTransactionId);
-	mSession = SessionManager::getInstance()->getSession(getJwtToken());
+	try {
+		mSession = SessionManager::getInstance()->getSession(getJwtToken(), mClientIp.toString());
+	}
+	catch (JwtTokenException& ex) {
+		Poco::Logger::get("errorLog").warning("jwt token exception: %s", ex.getFullString());
+		return stateError("invalid jwt token");
+	}
+	catch (LoginException& ex) {
+		return stateError(ex.what());
+	}
+	catch (SessionException& ex) {
+		Poco::Logger::get("errorLog").warning("jwt token exception: %s", ex.getFullString());
+		return stateError(ex.what());
+	}
 	return Document();
 }
 

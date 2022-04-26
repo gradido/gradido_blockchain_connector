@@ -1,6 +1,7 @@
 # API for Gradido Blockchain Connector 
 
-## <a name="error_reporting"></a> Error Reporting
+<a name="error_reporting"></a>
+##  Error Reporting
 If an error occure, the Response usually looks like that:
 ```json
 {
@@ -98,6 +99,9 @@ a jwt Token returned from a Login Request transfered as Authorization Header is 
 Errors have the format like in [Error Reporting](#error_reporting) at the begin of file shown. 
 For this request this error message are possible:
 
+- `invalid ip`: the login which created this jwt token, came from another ip
+- `invalid jwt token`: jwt token couldn't be verified or don't contain expected data, or was timed out
+- `no session found`: no session for name in jwt token found, maybe Gradido Blockchain Connector was restarted since creating this jwt token or it was deleted because the time last access was longer than the configured `session.duration_seconds`
 - `coin color already exist, please choose another or keep empty`: this coin color already exist on Global Groups Blockchain
 - `error by requesting Gradido Node`: error in the communication with Gradido Node
 	- is the key `gradidoNode` filled correctly in Gradido Blockchain Connector Properties?
