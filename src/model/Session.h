@@ -5,6 +5,7 @@
 #include "gradido_blockchain/lib/MultithreadContainer.h"
 #include "gradido_blockchain/model/protobufWrapper/GradidoTransaction.h"
 
+#include "model/table/Group.h"
 #include "Poco/Data/Session.h"
 
 namespace model {
@@ -29,7 +30,7 @@ namespace model {
 		bool signTransaction(model::gradido::GradidoTransaction* gradidoTransaction);
 
 	protected:
-
+		std::unique_ptr<model::table::Group> askForGroupDetails();
 		void createNewUser(const std::string& userName, const std::string& groupAlias, Poco::Data::Session& dbSession);
 
 		std::string mUserName;
@@ -41,7 +42,7 @@ namespace model {
 
 	};
 
-	class InvalidPasswordException : GradidoBlockchainException
+	class InvalidPasswordException : public GradidoBlockchainException
 	{
 	public:
 		explicit InvalidPasswordException(const char* what, const char* username, size_t passwordSize) noexcept;

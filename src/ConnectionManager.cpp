@@ -41,14 +41,14 @@ bool ConnectionManager::setConnectionsFromConfig(const Poco::Util::LayeredConfig
 	*/
 	
 	std::stringstream dbConfig;
-	dbConfig << "host=" << config.getString("db.host", "localhost") << "; ";
+	dbConfig << "host=" << config.getString("db.host", "localhost") << ";";
 	dbConfig << "port=" << config.getInt("db.port", 3306) << ";";
 	std::string dbName = config.getString("db.name", "blockchain_connector");
 	dbConfig << "db=" << dbName << ";";
 	dbConfig << "user=" << config.getString("db.user", "root") << ";";
 	dbConfig << "password=" << config.getString("db.password", "") << ";";
 	//dbConfig << "auto-reconnect=true";
-	std::clog << "try connect with: " << dbConfig.str() << std::endl;
+	//std::clog << "try connect with: " << dbConfig.str() << std::endl;
 	Poco::Data::MySQL::Connector::registerConnector();
 	setConnection(dbConfig.str());
 

@@ -39,6 +39,8 @@ namespace model {
 			const char* getSchema() const { return GROUP_TABLE_SCHEMA; }
 
 			inline uint32_t getCoinColor() const { return mCoinColor; }
+			const std::string& getName() const { return mName; }
+			const std::string& getDescription() const { return mDescription; }
 
 			inline void setName(const std::string& name) { mName = name; }
 			inline void setCoinColor(uint32_t coinColor) { mCoinColor = coinColor; }

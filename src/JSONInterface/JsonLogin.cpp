@@ -2,6 +2,7 @@
 #include "gradido_blockchain/lib/DataTypeConverter.h"
 #include "gradido_blockchain/crypto/SealedBoxes.h"
 #include "gradido_blockchain/http/RequestExceptions.h"
+#include "gradido_blockchain/crypto/CryptoConfig.h"
 #include "ServerConfig.h"
 #include "SessionManager.h"
 
@@ -49,9 +50,22 @@ void JsonLogin::handleRequest(Poco::Net::HTTPServerRequest& request, Poco::Net::
 			rapid_json_result = stateSuccess();
 			rapid_json_result.AddMember("token", Value(jwtToken.data(), alloc), alloc);
 		}
-		catch (GradidoBlockchainException& ex)
-		{
-			rapid_json_result = stateError(ex.getFullString().data());
+		catch (SealedBoxes::DecryptException& ex) {
+			rapid_json_result = stateError("cannot decrypt password");
+		}
+		catch (model::InvalidPasswordException& ex) {
+			rapid_json_result = stateError(ex.what());
+		}		
+		catch (CryptoConfig::MissingKeyException& ex) {
+			std::string errorMessage = ex.getKeyName() + " is missing from config";
+			rapid_json_result = stateError(errorMessage.data());
+		}
+		catch (DecryptionFailedException& ex) {
+			rapid_json_result = stateError("Internal Server Error");
+			Poco::Logger::get("errorLog").critical("Decryption failed: %s", ex.getFullString());
+		}
+		catch (GradidoBlockchainException& ex) {
+			rapid_json_result = stateError(ex.what());
 		}
 		catch (Poco::Exception& ex) {
 			rapid_json_result = stateError("Internal Server Error");

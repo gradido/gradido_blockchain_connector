@@ -26,29 +26,39 @@ Document JsonGlobalGroupAdd::handle(const Document& params)
 	getStringParameter(params, "groupName", groupName);
 	getStringParameter(params, "groupAlias", groupAlias);
 	auto coinColor = readCoinColor(params);
-	if (coinColor) {
-		Value rpcParams(kObjectType);
-		JsonRPCRequest askIfCoinColorIsUnique(ServerConfig::g_GradidoNodeUri);
-		auto alloc = askIfCoinColorIsUnique.getJsonAllocator();
-		rpcParams.AddMember("coinColor", coinColor, alloc);
-		auto result = askIfCoinColorIsUnique.request("isGroupUnique", rpcParams);
-		auto isUnique = result["isCoinColorUnique"].GetBool();
-		if (!isUnique) {
-			return stateError("coin color already exist, please choose another or keep empty");
+	try {
+		if (coinColor) {
+			Value rpcParams(kObjectType);
+			JsonRPCRequest askIfCoinColorIsUnique(ServerConfig::g_GradidoNodeUri);
+			auto alloc = askIfCoinColorIsUnique.getJsonAllocator();
+			rpcParams.AddMember("coinColor", coinColor, alloc);
+			auto result = askIfCoinColorIsUnique.request("isGroupUnique", rpcParams);
+			auto isUnique = result["isCoinColorUnique"].GetBool();
+			if (!isUnique) {
+				return stateError("coin color already exist, please choose another or keep empty");
+			}
+		}
+		else {
+			JsonRPCRequest getUniqueCoinColor(ServerConfig::g_GradidoNodeUri);
+			Value emptyValue(kObjectType);
+			auto result = getUniqueCoinColor.request("getRandomUniqueCoinColor", emptyValue);
+			coinColor = result["coinColor"].GetUint();
 		}
 	}
-	else {
-		JsonRPCRequest getUniqueCoinColor(ServerConfig::g_GradidoNodeUri);
-		auto result = getUniqueCoinColor.request("getRandomUniqueCoinColor", Value(kObjectType));
-		coinColor = result["coinColor"].GetUint();
+	catch (std::exception& ex) {
+		Poco::Logger::get("errorLog").error("Error by requesting Gradido Node: %s", std::string(ex.what()));
+		return stateError("error by requesting Gradido Node");
 	}
-	
 	auto globalGroudAdd = TransactionFactory::createGlobalGroupAdd(groupName, groupAlias, coinColor);
-	
-	auto iotaMessageId = signAndSendTransaction(std::move(globalGroudAdd), GROUP_REGISTER_GROUP_ALIAS);
-	auto response = stateSuccess();
-	auto alloc = response.GetAllocator();
-	response.AddMember("iotaMessageId", Value(iotaMessageId.data(), iotaMessageId.size(), alloc), alloc);
-	return response;
+	try {
+		auto iotaMessageId = signAndSendTransaction(std::move(globalGroudAdd), GROUP_REGISTER_GROUP_ALIAS);
+		auto response = stateSuccess();
+		auto alloc = response.GetAllocator();
+		response.AddMember("iotaMessageId", Value(iotaMessageId.data(), iotaMessageId.size(), alloc), alloc);
+		return response;
+	}
+	catch (GradidoBlockchainException& ex) {
+		return handleSignAndSendTransactionExceptions();
+	}
 
 }

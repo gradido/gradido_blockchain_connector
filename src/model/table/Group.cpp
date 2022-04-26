@@ -44,10 +44,20 @@ namespace model {
 
 		void Group::save(Poco::Data::Session& dbSession)
 		{
-			Poco::Data::Statement insert(dbSession);
 
-			insert << "INSERT INTO `" << getTableName() << "` (name, groupAlias, description, coinColor) VALUES(?,?,?,?);",
-				use(mName), use(mAlias), use(mDescription), use(mCoinColor), into(mID), now;
+			if (mID) {
+				Poco::Data::Statement update(dbSession);
+				update << "UPDATE `" << getTableName()
+					<< "` SET name=?, description=?, coinColor=? "
+					<< "WHERE id = ?",
+					use(mName), use(mDescription), use(mCoinColor), use(mID), now;
+			}
+			else {
+				Poco::Data::Statement insert(dbSession);
+
+				insert << "INSERT INTO `" << getTableName() << "` (name, groupAlias, description, coinColor) VALUES(?,?,?,?);",
+					use(mName), use(mAlias), use(mDescription), use(mCoinColor), into(mID), now;
+			}
 		}
 	}
 }

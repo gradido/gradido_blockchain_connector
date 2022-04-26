@@ -1,14 +1,16 @@
 cmake_minimum_required(VERSION 3.18.2)
+cmake_policy(VERSION 3.18.2)
 project(GradidoBlockchainConnector C CXX)
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "bin" )
 
-SET(CMAKE_CXX_FLAGS "-std=c++17" )
+IF(WIN32)
+	set(CMAKE_CXX_FLAGS         "/MP /EHsc /std:c++17")
+ELSE()
+	SET(CMAKE_CXX_FLAGS "-std=c++17" )
+ENDIF()
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-IF(WIN32)
-	set(CMAKE_CXX_FLAGS         "/MP /EHsc")
-ENDIF()
 
 set(INSTALL_BINDIR "bin")
 set(INSTALL_PLUGINDIR "bin")
@@ -18,8 +20,8 @@ include_directories(
 	"dependencies/rapidjson/include"
 	"dependencies/gradido_blockchain/include"
 	"dependencies/gradido_blockchain/build"
-	"dependencies/protobuf/src"
 	"dependencies/gradido_blockchain/dependencies/protobuf/third_party/googletest/googletest/include"
+	"dependencies/gradido_blockchain/dependencies/protobuf/src"
 	"build"
 	"build/dependencies/gradido_blockchain/include"
 	"src"
@@ -70,6 +72,30 @@ if(WIN32)
 	#message("conan lib debugs earlier: ${CONAN_LIBS_DEBUG}")
 endif()
 
+############################## config and add poco ###################################
+#SET(SOME_EXPAT_OPTION OFF CACHE BOOL "Use some expat option")
+IF(UNIX)
+	SET(ENABLE_MONGODB OFF CACHE BOOL "" FORCE) 
+	SET(ENABLE_DATA_SQLITE OFF CACHE BOOL "" FORCE) 
+	SET(ENABLE_DATA_MYSQL ON CACHE BOOL "" FORCE)
+	SET(ENABLE_REDIS OFF CACHE BOOL "" FORCE)
+	SET(ENABLE_PAGECOMPILER_FILE2PAGE OFF CACHE BOOL "" FORCE)
+	add_subdirectory("dependencies/poco")
+
+	set(POCO_LIBS Poco::Foundation Poco::Data Poco::Util Poco::Net Poco::NetSSL Poco::JWT Poco::DataMySQL)
+ENDIF()
+
+############################## find protobuf  #########################################
+#add_subdirectory(dependencies/protobuf/cmake)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+# prevent problems with two libs including googletest 
+option(protobuf_BUILD_TESTS "Build tests" OFF)
+
+#message("binary dir: ${CMAKE_BINARY_DIR}")
+add_subdirectory(dependencies/gradido_blockchain/dependencies/protobuf/cmake)
+
+############################## add gradido blockchain  #########################################
 add_subdirectory("dependencies/gradido_blockchain")
 
 if(NOT BUILD_SHARED_LIBS)
@@ -78,18 +104,6 @@ if(NOT BUILD_SHARED_LIBS)
 endif()
 
 add_executable(GradidoBlockchainConnector ${LOCAL_SRCS})
-
-########################### lithium ##################################
-if(UNIX)
-	include("dependencies/lithium/cmake/FindMYSQL.cmake")
-	find_package(MYSQL REQUIRED)
-	include_directories(${MYSQL_INCLUDE_DIR})
-	target_link_libraries(GradidoBlockchainConnector ${MYSQL_LIBRARY})
-endif()
-
-# Directory where lithium headers are located if not in the default include path.
-include_directories("dependencies/lithium/single_headers")
-
 
 ######################################################################
 
@@ -106,25 +120,10 @@ if(WIN32)
 	#message("libsodium lib dir from conan: ${CONAN_LIB_DIRS_LIBSODIUM}")
 	#message("conan lib debugs: ${CONAN_LIBS_DEBUG}")
 	#message("conan build modules path: ${CONAN_BUILD_MODULES_PATHS}")
-	target_link_libraries(GradidoBlockchainConnector ${CONAN_LIBS})
+	target_link_libraries(GradidoBlockchainConnector ${CONAN_LIBS} libprotobuf)
 endif()
 
 target_link_libraries(GradidoBlockchainConnector $<TARGET_OBJECTS:GradidoBlockchain>)
-############################## config and add poco ###################################
-#SET(SOME_EXPAT_OPTION OFF CACHE BOOL "Use some expat option")
-IF(UNIX)
-	SET(ENABLE_MONGODB OFF CACHE BOOL "" FORCE) 
-	SET(ENABLE_DATA_SQLITE OFF CACHE BOOL "" FORCE) 
-	SET(ENABLE_REDIS OFF CACHE BOOL "" FORCE)
-	SET(ENABLE_PAGECOMPILER_FILE2PAGE OFF CACHE BOOL "" FORCE)
-	add_subdirectory("dependencies/poco")
-
-	set(POCO_LIBS Poco::Foundation Poco::Util Poco::Net Poco::NetSSL)
-ENDIF()
-
-############################## find protobuf  #########################################
-#add_subdirectory(dependencies/protobuf/cmake)
-target_link_libraries(GradidoBlockchainConnector libprotobuf)
 
 ############################## build gradido blockchain connector ###################################
 
@@ -132,8 +131,10 @@ target_link_libraries(GradidoBlockchainConnector libprotobuf)
 
 # install 
 if(UNIX)
-	target_link_libraries(GradidoBlockchainConnector ${POCO_LIBS} sodium)
+	target_link_libraries(GradidoBlockchainConnector ${POCO_LIBS} sodium ${MPFR_LIBRARIES} libprotobuf)
 	install(TARGETS GradidoBlockchainConnector RUNTIME DESTINATION /usr/local/bin)
+	get_target_property(OUT GradidoBlockchainConnector LINK_LIBRARIES)
+	message(STATUS ${OUT})
 endif()
 
 #  ----------------------    Test -----------------------------------------

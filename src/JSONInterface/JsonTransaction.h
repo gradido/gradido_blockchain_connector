@@ -14,6 +14,8 @@ protected:
 	rapidjson::Document readSharedParameter(const rapidjson::Document& params);
 	uint32_t readCoinColor(const rapidjson::Document& params);
 	std::string signAndSendTransaction(std::unique_ptr<model::gradido::GradidoTransaction> transaction, const std::string& groupAlias);	
+
+	rapidjson::Document handleSignAndSendTransactionExceptions();
 	
 	std::string mMemo;
 	Poco::DateTime mCreated;

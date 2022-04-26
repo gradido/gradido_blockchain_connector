@@ -193,7 +193,6 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 		// JSON Interface Server
 		Poco::Net::ServerSocket json_svs(json_port);
 		Poco::Net::HTTPServer json_srv(new JsonRequestHandlerFactory, json_svs, new Poco::Net::HTTPServerParams);
-
 		// start the json server
 		json_srv.start();
 

@@ -44,8 +44,9 @@ namespace model {
 			Poco::Data::Statement select(dbSession);
 			uint64_t password(0);
 			std::string encryptedPrivateKey;
-			select << "SELECT password, encrypted_private_key from user where name = ? AND group_id = ?",
-				into(password), into(encryptedPrivateKey), useRef(userName), useRef(mGroupId);
+			std::string publicKey;
+			select << "SELECT password, encrypted_private_key, public_key from user where name = ? AND group_id = ?",
+				into(password), into(encryptedPrivateKey), into(publicKey), useRef(userName), useRef(mGroupId);
 			if (select.execute()) {
 				if (password != mEncryptionSecret->getKeyHashed()) {
 					throw InvalidPasswordException("login failed", userName.data(), userPassword.size());
@@ -55,10 +56,12 @@ namespace model {
 					(const unsigned char*)encryptedPrivateKey.data(),
 					encryptedPrivateKey.size(),
 					&privateKey)) {
-					// TODO: define exception classes for this
-					throw Poco::NullPointerException("cannot decrypt private key");
+					throw DecryptionFailedException("cannot decrypt private key");
 				}
 				mUserKeyPair = std::make_unique<KeyPairEd25519>(privateKey);
+				if (!mUserKeyPair->isTheSame((const unsigned char*)publicKey.data())) {
+					throw DecryptionFailedException("calculated and stored pubkey mismatch");
+				}
 				return 1;
 			}
 			else {
@@ -86,29 +89,51 @@ namespace model {
 		try {
 			auto group = table::Group::load(mGroupAlias);
 			mGroupId = group->getId();
+			if (!group->getCoinColor()) {
+				auto askedGroup = askForGroupDetails();
+				group->setCoinColor(askedGroup->getCoinColor());
+				group->setDescription(askedGroup->getDescription());
+				group->setName(askedGroup->getName());
+				group->save(dbSession);
+			}
 			return mGroupId;
 		}
 		catch (table::RowNotFoundException& ex) {
 			// create new group if group with alias not exist
 			// load details from blockchain
-			JsonRPCRequest askGroupDetails(ServerConfig::g_GradidoNodeUri);
-			Value params(kObjectType);
-			params.AddMember("groupAlias", Value(mGroupAlias.data(), askGroupDetails.getJsonAllocator()), askGroupDetails.getJsonAllocator());
-			std::string groupName = mGroupAlias;
-			uint32_t coinColor = 0;
-			try {
-				auto result = askGroupDetails.request("getgroupdetails", params);
-				groupName = result["groupName"].GetString();
-				coinColor = result["coinColor"].GetUint();				
-			}
-			catch (JsonRPCException& ex) {
-				Poco::Logger::get("errroLog").information("group: %s not exist on blockchain, request result: %s", mGroupAlias, ex.getFullString());
-			}
-			auto group = std::make_unique<table::Group>(groupName, mGroupAlias, "", coinColor);
-			group->save(dbSession);
-			mGroupId = group->getLastInsertId(dbSession);
+			auto askedGroup = askForGroupDetails();
+			askedGroup->save(dbSession);
+			mGroupId = askedGroup->getLastInsertId(dbSession);
 			return mGroupId;
 		}
+	}
+
+	std::unique_ptr<model::table::Group> Session::askForGroupDetails()
+	{
+		// create new group if group with alias not exist
+		// load details from blockchain
+		JsonRPCRequest askGroupDetails(ServerConfig::g_GradidoNodeUri);
+		Value params(kObjectType);
+		params.AddMember("groupAlias", Value(mGroupAlias.data(), askGroupDetails.getJsonAllocator()), askGroupDetails.getJsonAllocator());
+		std::string groupName = mGroupAlias;
+		uint32_t coinColor = 0;
+		try {
+			auto result = askGroupDetails.request("getgroupdetails", params);
+			groupName = result["groupName"].GetString();
+			coinColor = result["coinColor"].GetUint();
+		}
+		catch (JsonRPCException& ex) {
+			Poco::Logger::get("errroLog").information("group: %s not exist on blockchain, request result: %s", mGroupAlias, ex.getFullString());
+		}
+		catch (Poco::Exception& ex) {
+			Poco::Logger::get("errorLog").information("poco exception: %s by asking node server for group details: %s",
+				ex.displayText(), mGroupAlias);
+		}
+		catch (std::runtime_error& ex) {
+			Poco::Logger::get("errorLog").information("runtime exception: %s by request to gradido node server", std::string(ex.what()));
+		}
+		auto group = std::make_unique<table::Group>(groupName, mGroupAlias, "", coinColor);
+		return std::move(group);
 	}
 
 	void Session::createNewUser(const std::string& userName, const std::string& groupAlias, Poco::Data::Session& dbSession)
@@ -136,7 +161,7 @@ namespace model {
 		auto userId = user.getLastInsertId(dbSession);
 
 		if (!CryptoConfig::g_SupportPublicKey) {
-			throw CryptoConfig::MissingKeyException("missing key for saving passphrase for new user", "supportPublicKey");
+			throw CryptoConfig::MissingKeyException("missing key for saving passphrase for new user", "crypto.server_admin_public");
 		}
 		AuthenticatedEncryption supportKeyPair(*CryptoConfig::g_SupportPublicKey);
 		auto encryptedPassphrase = SealedBoxes::encrypt(&supportKeyPair, passphrase->getString());
@@ -181,7 +206,7 @@ namespace model {
 	{
 		std::string result = what();
 		result += ", username: " + mUsername;
-		result += ", password size: " + mPasswordSize;
+		result += ", password size: " + std::to_string(mPasswordSize);
 		return result;
 	}
 
