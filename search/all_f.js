@@ -17,5 +17,5 @@ var searchData=
   ['protobufjsonserializationexception_14',['ProtobufJsonSerializationException',['class_protobuf_json_serialization_exception.html',1,'']]],
   ['protobufparseexception_15',['ProtobufParseException',['class_protobuf_parse_exception.html',1,'']]],
   ['protobufserializationexception_16',['ProtobufSerializationException',['class_protobuf_serialization_exception.html',1,'']]],
-  ['pushnewtransaction_17',['pushNewTransaction',['../classmodel_1_1_pending_transactions.html#abba2b389ff9fe29516cc01c645daaa8b',1,'model::PendingTransactions']]]
+  ['pushnewtransaction_17',['pushNewTransaction',['../classmodel_1_1_pending_transactions.html#a258a2611c373b8763eba16525624de4c',1,'model::PendingTransactions']]]
 ];

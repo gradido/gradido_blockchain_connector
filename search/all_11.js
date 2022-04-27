@@ -9,6 +9,6 @@ var searchData=
   ['sessionmanager_6',['SessionManager',['../class_session_manager.html',1,'']]],
   ['setconnection_7',['setConnection',['../class_connection_manager.html#aac5076e3120eb647b9828123e178dbd6',1,'ConnectionManager']]],
   ['sign_8',['sign',['class_key_pair_ed25519.html#a2ca30219eb03bf1f534c857e1318e9af',1,'KeyPairEd25519']]],
-  ['state_9',['State',['../structmodel_1_1_pending_transactions_1_1_pending_transaction.html#ab7813699e7b0f4a6e571bdd879d2e3dc',1,'model::PendingTransactions::PendingTransaction']]],
-  ['state_10',['state',['../structmodel_1_1_pending_transactions_1_1_pending_transaction.html#a499348e3dc16aab1ae72f724ba166aec',1,'model::PendingTransactions::PendingTransaction']]]
+  ['state_9',['state',['../structmodel_1_1_pending_transactions_1_1_pending_transaction.html#a499348e3dc16aab1ae72f724ba166aec',1,'model::PendingTransactions::PendingTransaction']]],
+  ['state_10',['State',['../structmodel_1_1_pending_transactions_1_1_pending_transaction.html#ab7813699e7b0f4a6e571bdd879d2e3dc',1,'model::PendingTransactions::PendingTransaction']]]
 ];

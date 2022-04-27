@@ -18,9 +18,10 @@ var searchData=
   ['gradidoblockchaintransactionnotfoundexception_15',['GradidoBlockchainTransactionNotFoundException',['class_gradido_blockchain_transaction_not_found_exception.html',1,'']]],
   ['gradidoinvalidbase64exception_16',['GradidoInvalidBase64Exception',['class_gradido_invalid_base64_exception.html',1,'']]],
   ['gradidoinvalidenumexception_17',['GradidoInvalidEnumException',['class_gradido_invalid_enum_exception.html',1,'']]],
-  ['gradidotransaction_18',['GradidoTransaction',['classmodel_1_1gradido_1_1_gradido_transaction.html',1,'model::gradido']]],
-  ['gradidounknownenumexception_19',['GradidoUnknownEnumException',['class_gradido_unknown_enum_exception.html',1,'']]],
-  ['graphqlrequest_20',['GraphQLRequest',['class_graph_q_l_request.html',1,'']]],
-  ['group_21',['Group',['../classmodel_1_1table_1_1_group.html',1,'model::table']]],
-  ['groupfriendsupdate_22',['GroupFriendsUpdate',['classmodel_1_1gradido_1_1_group_friends_update.html',1,'model::gradido']]]
+  ['gradidonoderpcexception_18',['GradidoNodeRPCException',['../classgradido_node_r_p_c_1_1_gradido_node_r_p_c_exception.html',1,'gradidoNodeRPC']]],
+  ['gradidotransaction_19',['GradidoTransaction',['classmodel_1_1gradido_1_1_gradido_transaction.html',1,'model::gradido']]],
+  ['gradidounknownenumexception_20',['GradidoUnknownEnumException',['class_gradido_unknown_enum_exception.html',1,'']]],
+  ['graphqlrequest_21',['GraphQLRequest',['class_graph_q_l_request.html',1,'']]],
+  ['group_22',['Group',['../classmodel_1_1table_1_1_group.html',1,'model::table']]],
+  ['groupfriendsupdate_23',['GroupFriendsUpdate',['classmodel_1_1gradido_1_1_group_friends_update.html',1,'model::gradido']]]
 ];
