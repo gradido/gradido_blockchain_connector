@@ -7,7 +7,7 @@ var searchData=
   ['invalidpasswordexception_4',['InvalidPasswordException',['../classmodel_1_1_invalid_password_exception.html',1,'model']]],
   ['invalidtransactiontypeonblockchain_5',['InvalidTransactionTypeOnBlockchain',['class_invalid_transaction_type_on_blockchain.html',1,'']]],
   ['iota_6',['iota',['structiota_1_1_node_info.html',1,'']]],
-  ['iotamessageid_7',['iotaMessageId',['../structmodel_1_1_pending_transaction.html#ae846aae2190897782a4bde2e1b846e31',1,'model::PendingTransaction']]],
+  ['iotamessageid_7',['iotaMessageId',['../structmodel_1_1_pending_transactions_1_1_pending_transaction.html#a4d3e42de0b082964f38e148edf334a4a',1,'model::PendingTransactions::PendingTransaction']]],
   ['iotapostrequestexception_8',['IotaPostRequestException',['class_iota_post_request_exception.html',1,'']]],
   ['iotarequest_9',['IotaRequest',['class_iota_request.html',1,'']]],
   ['iotarequestexception_10',['IotaRequestException',['class_iota_request_exception.html',1,'']]],

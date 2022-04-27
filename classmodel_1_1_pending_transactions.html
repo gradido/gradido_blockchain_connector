@@ -70,6 +70,7 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
@@ -98,43 +99,205 @@ Collaboration diagram for model::PendingTransactions:</div>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structmodel_1_1_pending_transactions_1_1_pending_transaction.html">PendingTransaction</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a3de8c479ddaaa5a5d6d263b87ad3125f"><td class="memItemLeft" align="right" valign="top"><a id="a3de8c479ddaaa5a5d6d263b87ad3125f" name="a3de8c479ddaaa5a5d6d263b87ad3125f"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>pushNewTransaction</b> (const std::string &amp;iotaMessageId, model::gradido::TransactionType transactionType)</td></tr>
-<tr class="separator:a3de8c479ddaaa5a5d6d263b87ad3125f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7d0d174099a4f28ee1d2c5185636782f"><td class="memItemLeft" align="right" valign="top"><a id="a7d0d174099a4f28ee1d2c5185636782f" name="a7d0d174099a4f28ee1d2c5185636782f"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>updateTransaction</b> (const std::string &amp;iotaMessageId, bool confirmend, const std::string &amp;errorMessage=&quot;&quot;)</td></tr>
+<tr class="memitem:abba2b389ff9fe29516cc01c645daaa8b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmodel_1_1_pending_transactions.html#abba2b389ff9fe29516cc01c645daaa8b">pushNewTransaction</a> (const std::string &amp;iotaMessageId, model::gradido::TransactionType transactionType, uint64_t apolloTransactionId, const std::string apolloCreatedDecay)</td></tr>
+<tr class="memdesc:abba2b389ff9fe29516cc01c645daaa8b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Push new pending transaction to list, called after transaction was pushed to Iota.  <a href="classmodel_1_1_pending_transactions.html#abba2b389ff9fe29516cc01c645daaa8b">More...</a><br /></td></tr>
+<tr class="separator:abba2b389ff9fe29516cc01c645daaa8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7d0d174099a4f28ee1d2c5185636782f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmodel_1_1_pending_transactions.html#a7d0d174099a4f28ee1d2c5185636782f">updateTransaction</a> (const std::string &amp;iotaMessageId, bool confirmend, const std::string &amp;errorMessage=&quot;&quot;)</td></tr>
+<tr class="memdesc:a7d0d174099a4f28ee1d2c5185636782f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update state of pending transaction.  <a href="classmodel_1_1_pending_transactions.html#a7d0d174099a4f28ee1d2c5185636782f">More...</a><br /></td></tr>
 <tr class="separator:a7d0d174099a4f28ee1d2c5185636782f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad58db55d9332e68a695698ae1167b901"><td class="memItemLeft" align="right" valign="top"><a id="ad58db55d9332e68a695698ae1167b901" name="ad58db55d9332e68a695698ae1167b901"></a>
-rapidjson::Value&#160;</td><td class="memItemRight" valign="bottom"><b>listAsJson</b> (rapidjson::Document::AllocatorType &amp;alloc) const</td></tr>
+<tr class="memitem:ad58db55d9332e68a695698ae1167b901"><td class="memItemLeft" align="right" valign="top">rapidjson::Value&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmodel_1_1_pending_transactions.html#ad58db55d9332e68a695698ae1167b901">listAsJson</a> (rapidjson::Document::AllocatorType &amp;alloc) const</td></tr>
+<tr class="memdesc:ad58db55d9332e68a695698ae1167b901"><td class="mdescLeft">&#160;</td><td class="mdescRight">export list of <a class="el" href="classmodel_1_1_pending_transactions.html">PendingTransactions</a> as json array  <a href="classmodel_1_1_pending_transactions.html#ad58db55d9332e68a695698ae1167b901">More...</a><br /></td></tr>
 <tr class="separator:ad58db55d9332e68a695698ae1167b901"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a021470a0271679dfd990591112f72dec"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structmodel_1_1_pending_transactions_1_1_pending_transaction.html">PendingTransaction</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmodel_1_1_pending_transactions.html#a021470a0271679dfd990591112f72dec">findPendingTransaction</a> (const std::string &amp;iotaMessageId)</td></tr>
+<tr class="memdesc:a021470a0271679dfd990591112f72dec"><td class="mdescLeft">&#160;</td><td class="mdescRight">find pending transaction with iota message id  <a href="classmodel_1_1_pending_transactions.html#a021470a0271679dfd990591112f72dec">More...</a><br /></td></tr>
+<tr class="separator:a021470a0271679dfd990591112f72dec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
 <tr class="memitem:adf74bfc53f793efda36ea1b1475aa2ce"><td class="memItemLeft" align="right" valign="top"><a id="adf74bfc53f793efda36ea1b1475aa2ce" name="adf74bfc53f793efda36ea1b1475aa2ce"></a>
 static <a class="el" href="classmodel_1_1_pending_transactions.html">PendingTransactions</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>getInstance</b> ()</td></tr>
+<tr class="memdesc:adf74bfc53f793efda36ea1b1475aa2ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">return single instance <br /></td></tr>
 <tr class="separator:adf74bfc53f793efda36ea1b1475aa2ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4009a7ea3d4c181a346f8acfd61fe2b4"><td class="memItemLeft" align="right" valign="top"><a id="a4009a7ea3d4c181a346f8acfd61fe2b4" name="a4009a7ea3d4c181a346f8acfd61fe2b4"></a>
-static const char *&#160;</td><td class="memItemRight" valign="bottom"><b>pendingTypeToString</b> (PendingType type)</td></tr>
-<tr class="separator:a4009a7ea3d4c181a346f8acfd61fe2b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
 <tr class="memitem:afa9f1d2b63265e649871cf188644565f"><td class="memItemLeft" align="right" valign="top"><a id="afa9f1d2b63265e649871cf188644565f" name="afa9f1d2b63265e649871cf188644565f"></a>
-std::list&lt; <a class="el" href="structmodel_1_1_pending_transaction.html">PendingTransaction</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mPendingTransactions</b></td></tr>
+std::list&lt; <a class="el" href="structmodel_1_1_pending_transactions_1_1_pending_transaction.html">PendingTransaction</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mPendingTransactions</b></td></tr>
 <tr class="separator:afa9f1d2b63265e649871cf188644565f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p >Store pending transaction in memory </p><dl class="section author"><dt>Author</dt><dd>einhornimmond</dd></dl>
-<p>Store Transactions sended with Blockchain Connector as <a class="el" href="structmodel_1_1_pending_transaction.html">PendingTransaction</a> in list.<br  />
- Need also a <a href="https://github.com/gradido/gradido_node">Gradido Node</a> configured to notify <a class="el" href="class_gradido_blockchain_connector.html">GradidoBlockchainConnector</a> after getting new transactions from iota</p>
+<ul>
+<li>store last MAX_PENDING_TRANSACTIONS_IN_LIST Transactions sended with Blockchain Connector as <a class="el" href="structmodel_1_1_pending_transactions_1_1_pending_transaction.html">PendingTransaction</a> in list</li>
+<li>need also a <a href="https://github.com/gradido/gradido_node">Gradido Node</a> configured to notify <a class="el" href="class_gradido_blockchain_connector.html">GradidoBlockchainConnector</a> after getting new transactions from iota</li>
+<li>Singleton Class (only one instance exist)</li>
+</ul>
 <div class="plantumlgraph">
 <img src="uml_pending_transaction.png" />
 <div class="caption">
 Pending Transactions</div>
 </div>
- </div><hr/>The documentation for this class was generated from the following files:<ul>
+ </div><h2 class="groupheader">Member Function Documentation</h2>
+<a id="a021470a0271679dfd990591112f72dec" name="a021470a0271679dfd990591112f72dec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a021470a0271679dfd990591112f72dec">&#9670;&nbsp;</a></span>findPendingTransaction()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structmodel_1_1_pending_transactions_1_1_pending_transaction.html">PendingTransaction</a> * model::PendingTransactions::findPendingTransaction </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>iotaMessageId</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>find pending transaction with iota message id </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">iotaMessageId</td><td>transaction identifier </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ad58db55d9332e68a695698ae1167b901" name="ad58db55d9332e68a695698ae1167b901"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad58db55d9332e68a695698ae1167b901">&#9670;&nbsp;</a></span>listAsJson()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Value model::PendingTransactions::listAsJson </td>
+          <td>(</td>
+          <td class="paramtype">rapidjson::Document::AllocatorType &amp;&#160;</td>
+          <td class="paramname"><em>alloc</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>export list of <a class="el" href="classmodel_1_1_pending_transactions.html">PendingTransactions</a> as json array </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">alloc</td><td>allocator from rapidjson::Document, the root node of the json object </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="abba2b389ff9fe29516cc01c645daaa8b" name="abba2b389ff9fe29516cc01c645daaa8b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abba2b389ff9fe29516cc01c645daaa8b">&#9670;&nbsp;</a></span>pushNewTransaction()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void model::PendingTransactions::pushNewTransaction </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>iotaMessageId</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">model::gradido::TransactionType&#160;</td>
+          <td class="paramname"><em>transactionType</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint64_t&#160;</td>
+          <td class="paramname"><em>apolloTransactionId</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::string&#160;</td>
+          <td class="paramname"><em>apolloCreatedDecay</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Push new pending transaction to list, called after transaction was pushed to Iota. </p>
+<p >Remove oldest entries from list if entry count exceed MAX_PENDING_TRANSACTIONS_IN_LIST. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">iotaMessageId</td><td>returned message id form iota </td></tr>
+    <tr><td class="paramname">transactionType</td><td>type of transaction </td></tr>
+    <tr><td class="paramname">apolloTransactionId</td><td>apollos identifier for the transaction </td></tr>
+    <tr><td class="paramname">apolloCreatedDecay</td><td>apollos decay calculation from last transaction to created date </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a7d0d174099a4f28ee1d2c5185636782f" name="a7d0d174099a4f28ee1d2c5185636782f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7d0d174099a4f28ee1d2c5185636782f">&#9670;&nbsp;</a></span>updateTransaction()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void model::PendingTransactions::updateTransaction </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>iotaMessageId</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>confirmend</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>errorMessage</em> = <code>&quot;&quot;</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Update state of pending transaction. </p>
+<p >Traverse list from end to begin, because the probability is high that the searched transaction is the last or one of the last. <br  />
+ Should be called from /notify which is called from Gradido Node. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">iotaMessageId</td><td>identifier for transaction </td></tr>
+    <tr><td class="paramname">confirmed</td><td><ul>
+<li>true if transaction was validated from Gradido Node</li>
+<li>false if transaction was rejected from Gradido Node </li>
+</ul>
+</td></tr>
+    <tr><td class="paramname">errorMessage</td><td>error string if confirmed was false </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<hr/>The documentation for this class was generated from the following files:<ul>
 <li>src/model/<a class="el" href="_pending_transactions_8h_source.html">PendingTransactions.h</a></li>
 <li>src/model/PendingTransactions.cpp</li>
 </ul>
