@@ -32,6 +32,7 @@ Document JsonTransaction::readSharedParameter(const Document& params)
 	}
 	mApolloTransactionId = 0;
 	getUInt64Parameter(params, "apolloTransactionId", mApolloTransactionId);
+	getStringParameter(params, "apolloCreatedDecay", mApolloCreatedDecay);
 	try {
 		mSession = SessionManager::getInstance()->getSession(getJwtToken(), mClientIp.toString());
 	}
@@ -116,7 +117,11 @@ std::string JsonTransaction::signAndSendTransaction(std::unique_ptr<model::gradi
 
 	std::string index = "GRADIDO." + groupAlias;
 	auto iotaMessageId = ServerConfig::g_IotaRequestHandler->sendMessage(DataTypeConverter::binToHex(index), *hex_message);
-	model::PendingTransactions::getInstance()->pushNewTransaction(iotaMessageId, transaction->getTransactionBody()->getTransactionType());
+	model::PendingTransactions::getInstance()->pushNewTransaction(
+		iotaMessageId,
+		transaction->getTransactionBody()->getTransactionType(),
+		mApolloCreatedDecay
+	);
 	return std::move(iotaMessageId);
 }
 

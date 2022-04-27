@@ -2,9 +2,12 @@
 
 #include "model/table/User.h"
 #include "model/table/Group.h"
+#include "../GradidoNodeRPC.h"
 
 #include "gradido_blockchain/model/TransactionFactory.h"
 #include "gradido_blockchain/model/CrossGroupTransactionBuilder.h"
+#include "gradido_blockchain/http/JsonRPCRequest.h"
+#include "gradido_blockchain/lib/Decay.h"
 
 using namespace rapidjson;
 
@@ -25,7 +28,7 @@ Document JsonTransferTransaction::handle(const rapidjson::Document& params)
 	auto paramError = readSharedParameter(params);
 	if (paramError.IsObject()) { return paramError; }
 
-	std::string recipientName, amount, recipientGroupAlias;
+	std::string recipientName, amountString, recipientGroupAlias;
 	paramError = getStringParameter(params, "recipientName", recipientName);
 	if (paramError.IsObject()) { return paramError; }
 
@@ -41,7 +44,7 @@ Document JsonTransferTransaction::handle(const rapidjson::Document& params)
 		}
 	}
 
-	paramError = getStringParameter(params, "amount", amount);
+	paramError = getStringParameter(params, "amount", amountString);
 	if (paramError.IsObject()) { return paramError; }
 
 	auto coinColor = readCoinColor(params);
@@ -56,9 +59,32 @@ Document JsonTransferTransaction::handle(const rapidjson::Document& params)
 	auto recipientPublicKey = mm->getMemory(KeyPairEd25519::getPublicKeySize());
 	recipientPublicKey->copyFromProtoBytes(recipientUser->getPublicKey());
 
+	// check if balance is enough on gradido node
+	try {
+		std::string created;
+		getStringParameter(params, "created", created);
+		auto balanceString = gradidoNodeRPC::getAddressBalance(mSession->getPublicKeyHex(), created, mSession->getGroupAlias(), coinColor);
+		auto balance = MathMemory::create();
+		if (mpfr_set_str(balance->getData(), balanceString.data(), 10, gDefaultRound)) {
+			Poco::Logger::get("errorLog").critical("cannot parse balance string from gradido node: %s", balanceString);
+			return stateError("error by requesting Gradido Node");
+		}
+		auto amount = MathMemory::create();
+		if (mpfr_set_str(amount->getData(), amountString.data(), 10, gDefaultRound)) {
+			return stateError("cannot parse amount to number");
+		}
+		if (mpfr_cmp(amount->getData(), balance->getData()) > 0) {
+			// if op1 > op2
+			return stateError("insufficient balance");
+		}
+	}
+	catch (gradidoNodeRPC::GradidoNodeRPCException& ex) {
+		return stateError("error by requesting Gradido Node");
+	}
+
 	try {
 		std::string lastIotaMessageId;
-		auto baseTransaction = TransactionFactory::createTransactionTransfer(senderPublicKey, amount, coinColor, recipientPublicKey);
+		auto baseTransaction = TransactionFactory::createTransactionTransfer(senderPublicKey, amountString, coinColor, recipientPublicKey);
 		mm->releaseMemory(senderPublicKey);
 		senderPublicKey = nullptr;
 
