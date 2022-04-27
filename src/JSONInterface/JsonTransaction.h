@@ -20,6 +20,7 @@ protected:
 	std::string mMemo;
 	Poco::DateTime mCreated;
 	uint64_t	mApolloTransactionId;
+	std::string mApolloCreatedDecay;
 	Poco::SharedPtr<model::Session> mSession;
 };
 

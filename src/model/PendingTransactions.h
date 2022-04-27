@@ -60,7 +60,6 @@ namespace model {
 			PendingTransaction(
 				const std::string& _iotaMessageId, 
 				model::gradido::TransactionType _transactionType,
-				uint64_t _apolloTransactionId,
 				const std::string _apolloCreatedDecay
 			);
 
@@ -95,8 +94,6 @@ namespace model {
 			//! error message from Gradido Node if transaction was rejected
 			std::string errorMessage;
 
-			//! apollos identifier for the transaction
-			uint64_t apolloTransactionId;
 			//! apollos decay calculation from last transaction to created date
 			std::string apolloCreatedDecay;
 		};
@@ -110,13 +107,11 @@ namespace model {
 			Remove oldest entries from list if entry count exceed MAX_PENDING_TRANSACTIONS_IN_LIST.
 			\param iotaMessageId returned message id form iota
 			\param transactionType type of transaction
-			\param apolloTransactionId apollos identifier for the transaction
 			\param apolloCreatedDecay apollos decay calculation from last transaction to created date
 		 */
 		void pushNewTransaction(
 			const std::string& iotaMessageId,
 			model::gradido::TransactionType transactionType,
-			uint64_t apolloTransactionId,
 			const std::string apolloCreatedDecay
 		);
 		/*! \brief Update state of pending transaction.
@@ -136,9 +131,11 @@ namespace model {
 		*/
 		rapidjson::Value listAsJson(rapidjson::Document::AllocatorType& alloc) const;
 		
-		//! \brief find pending transaction with iota message id
-		//! \param iotaMessageId transaction identifier
-		PendingTransaction* findPendingTransaction(const std::string& iotaMessageId);
+		/*! \brief Check if apollo calculated the same decay as Gradido Node would.
+			
+			Ask Gradido Node for balance from last transaction, calculate decay until created and compare
+		*/
+		bool validateApolloCreationDecay(const model::gradido::GradidoTransaction* gradidoTransaction);
 			
 	protected:
 		PendingTransactions() {};

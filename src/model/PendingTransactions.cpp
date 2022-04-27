@@ -8,11 +8,10 @@ namespace model {
 	PendingTransactions::PendingTransaction::PendingTransaction(
 		const std::string& _iotaMessageId, 
 		model::gradido::TransactionType _transactionType,
-		uint64_t _apolloTransactionId,
 		const std::string _apolloCreatedDecay
 	)
 		: iotaMessageId(_iotaMessageId), transactionType(_transactionType), 
-		  state(State::SENDED), apolloTransactionId(_apolloTransactionId),
+		  state(State::SENDED), 
 		  apolloCreatedDecay(_apolloCreatedDecay)
 	{
 
@@ -47,7 +46,6 @@ namespace model {
 	void PendingTransactions::pushNewTransaction(
 		const std::string& iotaMessageId,
 			model::gradido::TransactionType transactionType,
-			uint64_t apolloTransactionId,
 			const std::string apolloCreatedDecay
 		)
 	{
@@ -55,7 +53,6 @@ namespace model {
 		mPendingTransactions.push_back(std::move(PendingTransaction(
 			iotaMessageId, 
 			transactionType,
-			apolloTransactionId,
 			apolloCreatedDecay
 		)));
 		while (mPendingTransactions.size() > MAX_PENDING_TRANSACTIONS_IN_LIST) {
@@ -88,11 +85,16 @@ namespace model {
 			entry.AddMember("created", pending.created.timestamp().epochMicroseconds()/1000, alloc);
 			entry.AddMember("state", Value(pending.getStateString(), alloc), alloc);
 			entry.AddMember("errorMessage", Value(pending.errorMessage.data(), alloc), alloc);
-			entry.AddMember("apolloTransactionId", pending.apolloTransactionId, alloc);
 			list.PushBack(entry, alloc);
 		});
 		return list;
 	}
-
+		
+	bool PendingTransactions::validateApolloCreationDecay(const model::gradido::GradidoTransaction* gradidoTransaction)
+	{
+		// getaddressbalance
+		return true;
+	}
+	
 	
 }

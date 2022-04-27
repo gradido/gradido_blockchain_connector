@@ -24,16 +24,11 @@ Document JsonListTransactions::handle(const Document& params)
 	Value jsonRpcParams(kObjectType);
 	auto alloc = gradidoNodeRequest.getJsonAllocator();
 	for (auto it = params.MemberBegin(); it != params.MemberEnd(); it++) {
-		if (strcmp(it->name.GetString(), "currentUser") == 0) {
-			
-		}
-		else {
-			jsonRpcParams.AddMember(Value(it->name, alloc), Value(it->value, alloc), alloc);
-		}
+		jsonRpcParams.AddMember(Value(it->name, alloc), Value(it->value, alloc), alloc);		
 	}
 	//currentUser
 	auto pubkeyHex = DataTypeConverter::binToHex(mSession->getPublicKey(), KeyPairEd25519::getPublicKeySize());
-	jsonRpcParams.AddMember("currentUser", Value(pubkeyHex.data(), alloc), alloc);
+	jsonRpcParams.AddMember("pubkey", Value(pubkeyHex.data(), alloc), alloc);
 	jsonRpcParams.AddMember("groupAlias", Value(mSession->getGroupAlias().data(), alloc), alloc);		
 	auto jsonAnswear = gradidoNodeRequest.request("listtransactions", jsonRpcParams);
 	auto resultIt = jsonAnswear.FindMember("result");
