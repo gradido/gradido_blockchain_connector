@@ -77,7 +77,7 @@ Now you can register your public key (generated from GradidoBlockchainConnector)
 curl -X POST \
      -H 'Content-Type: application/json' \
      -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2NTA1NjY5MzIuMTU1MTg0LCJpYXQiOjE2NTA1NjYzMzIuMTU1MTg0LCJuYW1lIjoidGVzdFVzZXIxIiwicHVia2V5IjoiMjVhZGMzZWEwYmZmZmE3ZDAwYmEyMjY4OTJlMDA1MWU5ODJlNGMxOGZiZDM4ZDRjNTE2NzIyMjRkNzM1NGY1YiIsInN1YiI6ImxvZ2luIn0.YsL4F7BUeBa-_yV1mF3aK9DSybwpj_eJH6fOaY_Tn9c' \
-     -d '{"created":"2022-04-21T19:13:01.506Z","userName":"testUser1","addressType":"HUMAN"}' \
+     -d '{"created":"2022-04-21T19:13:01.506Z","addressType":"HUMAN"}' \
      http://localhost:1271/registerAddress
 ```
 

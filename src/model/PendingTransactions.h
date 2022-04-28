@@ -60,7 +60,8 @@ namespace model {
 			PendingTransaction(
 				const std::string& _iotaMessageId, 
 				model::gradido::TransactionType _transactionType,
-				const std::string _apolloCreatedDecay
+				const std::string& _apolloCreatedDecay,
+				Poco::DateTime _apolloDecayStart
 			);
 
 			/*! transaction state enum
@@ -96,6 +97,7 @@ namespace model {
 
 			//! apollos decay calculation from last transaction to created date
 			std::string apolloCreatedDecay;
+			Poco::DateTime apolloDecayStart;
 		};
 
 		~PendingTransactions() {};
@@ -112,7 +114,8 @@ namespace model {
 		void pushNewTransaction(
 			const std::string& iotaMessageId,
 			model::gradido::TransactionType transactionType,
-			const std::string apolloCreatedDecay
+			const std::string& apolloCreatedDecay,
+			Poco::DateTime apolloDecayStart
 		);
 		/*! \brief Update state of pending transaction.
 		 

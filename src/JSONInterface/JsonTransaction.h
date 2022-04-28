@@ -21,6 +21,7 @@ protected:
 	Poco::DateTime mCreated;
 	uint64_t	mApolloTransactionId;
 	std::string mApolloCreatedDecay;
+	Poco::DateTime  mApolloDecayStart;
 	Poco::SharedPtr<model::Session> mSession;
 };
 

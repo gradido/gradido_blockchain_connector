@@ -63,4 +63,38 @@ namespace gradidoNodeRPC {
 			handleGradidoNodeRpcException();
 		}
 	}
+
+	std::vector<uint64_t> getAddressTxids(const std::string& pubkeyHex, const std::string& groupAlias)
+	{
+		try {
+			Value rpcParams(kObjectType);
+			JsonRPCRequest askForAddressBalance(ServerConfig::g_GradidoNodeUri);
+			auto alloc = askForAddressBalance.getJsonAllocator();
+			rpcParams.AddMember("pubkey", Value(pubkeyHex.data(), alloc), alloc);
+			rpcParams.AddMember("groupAlias", Value(groupAlias.data(), alloc), alloc);
+			auto result = askForAddressBalance.request("getaddresstxids", rpcParams);
+			if (!result.HasMember("result")) {
+				throw RapidjsonMissingMemberException("missing result from getaddresstxids", "result", "object");
+			}
+			if (!result["result"].HasMember("transactionNrs")) {
+				StringBuffer buffer;
+				PrettyWriter<StringBuffer> writer(buffer);
+				result.Accept(writer);
+
+				const char* output = buffer.GetString();
+				printf("result from Gradido Node: %s\n", output);
+				throw RapidjsonMissingMemberException("missing in result from getaddresstxids", "transactionNrs", "array<uint64>");
+			}
+			std::vector<uint64_t> transactionNrs;
+			auto transactionNrsJson = result["result"]["transactionNrs"].GetArray();
+			transactionNrs.reserve(transactionNrsJson.Size());
+			for (auto it = transactionNrsJson.Begin(); it != transactionNrsJson.End(); it++) {
+				transactionNrs.push_back(it->GetUint64());
+			}
+			return std::move(transactionNrs);
+		}
+		catch (...) {
+			handleGradidoNodeRpcException();
+		}
+	}
 }
