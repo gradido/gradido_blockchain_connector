@@ -76,7 +76,7 @@ $(function() {
 <li>use JWT Token for authenticated json requests</li>
 </ul>
 <p ><a href="https://gradido.github.io/gradido_blockchain_connector/">Doxygen Documentation</a></p>
-<h1><a class="anchor" id="autotoc_md32"></a>
+<h1><a class="anchor" id="autotoc_md34"></a>
 Getting Started</h1>
 <ol type="1">
 <li>Compile <a class="el" href="class_gradido_blockchain_connector.html">GradidoBlockchainConnector</a>, for more details look here: <a class="el" href="md__i_n_s_t_a_l_l.html">INSTALL.md</a></li>
@@ -85,7 +85,7 @@ Getting Started</h1>
 <li>on linux create folder /var/log/gradido/ and give write permission to user which will be start <a class="el" href="class_gradido_blockchain_connector.html">GradidoBlockchainConnector</a></li>
 <li>run <a class="el" href="class_gradido_blockchain_connector.html">GradidoBlockchainConnector</a></li>
 </ol>
-<h1><a class="anchor" id="autotoc_md33"></a>
+<h1><a class="anchor" id="autotoc_md35"></a>
 Command Line Options</h1>
 <ul>
 <li>to start Gradido Blockchain Connector as daemon in linux use <code>--daemon</code></li>
@@ -93,7 +93,7 @@ Command Line Options</h1>
 <li>to record process id if started as deamon use <code>--pidfile=&lt;path&gt;</code> for example <code>--pidfile=/var/run/gradidoBlockchainConnector.pid</code></li>
 <li>to use another file or folder for config use <code>-c=&lt;path&gt;</code> or <code>--config=&lt;path&gt;</code></li>
 </ul>
-<h1><a class="anchor" id="autotoc_md34"></a>
+<h1><a class="anchor" id="autotoc_md36"></a>
 Usage Example</h1>
 <p >Example Datas</p><ul>
 <li>Crypto Box Key Pair (x25519)<ul>
@@ -127,7 +127,7 @@ Usage Example</h1>
 <p >Now you can register your public key (generated from <a class="el" href="class_gradido_blockchain_connector.html">GradidoBlockchainConnector</a>) on the blockchain </p><div class="fragment"><div class="line">curl -X POST \</div>
 <div class="line">     -H &#39;Content-Type: application/json&#39; \</div>
 <div class="line">     -H &#39;Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2NTA1NjY5MzIuMTU1MTg0LCJpYXQiOjE2NTA1NjYzMzIuMTU1MTg0LCJuYW1lIjoidGVzdFVzZXIxIiwicHVia2V5IjoiMjVhZGMzZWEwYmZmZmE3ZDAwYmEyMjY4OTJlMDA1MWU5ODJlNGMxOGZiZDM4ZDRjNTE2NzIyMjRkNzM1NGY1YiIsInN1YiI6ImxvZ2luIn0.YsL4F7BUeBa-_yV1mF3aK9DSybwpj_eJH6fOaY_Tn9c&#39; \</div>
-<div class="line">     -d &#39;{&quot;created&quot;:&quot;2022-04-21T19:13:01.506Z&quot;,&quot;userName&quot;:&quot;testUser1&quot;,&quot;addressType&quot;:&quot;HUMAN&quot;}&#39; \</div>
+<div class="line">     -d &#39;{&quot;created&quot;:&quot;2022-04-21T19:13:01.506Z&quot;,&quot;addressType&quot;:&quot;HUMAN&quot;}&#39; \</div>
 <div class="line">     http://localhost:1271/registerAddress</div>
 </div><!-- fragment --><p >If transaction was successfully send via Iota the result should be something like that: </p><div class="fragment"><div class="line">{</div>
 <div class="line">     &quot;state&quot;:&quot;success&quot;,</div>

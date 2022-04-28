@@ -106,9 +106,9 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a258a2611c373b8763eba16525624de4c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmodel_1_1_pending_transactions.html#a258a2611c373b8763eba16525624de4c">pushNewTransaction</a> (const std::string &amp;iotaMessageId, model::gradido::TransactionType transactionType, const std::string apolloCreatedDecay)</td></tr>
-<tr class="memdesc:a258a2611c373b8763eba16525624de4c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Push new pending transaction to list, called after transaction was pushed to Iota.  <a href="classmodel_1_1_pending_transactions.html#a258a2611c373b8763eba16525624de4c">More...</a><br /></td></tr>
-<tr class="separator:a258a2611c373b8763eba16525624de4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae16f82721a763410316717d72254f27d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmodel_1_1_pending_transactions.html#ae16f82721a763410316717d72254f27d">pushNewTransaction</a> (const std::string &amp;iotaMessageId, model::gradido::TransactionType transactionType, const std::string &amp;apolloCreatedDecay, Poco::DateTime apolloDecayStart)</td></tr>
+<tr class="memdesc:ae16f82721a763410316717d72254f27d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Push new pending transaction to list, called after transaction was pushed to Iota.  <a href="classmodel_1_1_pending_transactions.html#ae16f82721a763410316717d72254f27d">More...</a><br /></td></tr>
+<tr class="separator:ae16f82721a763410316717d72254f27d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7d0d174099a4f28ee1d2c5185636782f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmodel_1_1_pending_transactions.html#a7d0d174099a4f28ee1d2c5185636782f">updateTransaction</a> (const std::string &amp;iotaMessageId, bool confirmend, const std::string &amp;errorMessage=&quot;&quot;)</td></tr>
 <tr class="memdesc:a7d0d174099a4f28ee1d2c5185636782f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update state of pending transaction.  <a href="classmodel_1_1_pending_transactions.html#a7d0d174099a4f28ee1d2c5185636782f">More...</a><br /></td></tr>
 <tr class="separator:a7d0d174099a4f28ee1d2c5185636782f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -171,8 +171,8 @@ Pending Transactions</div>
 
 </div>
 </div>
-<a id="a258a2611c373b8763eba16525624de4c" name="a258a2611c373b8763eba16525624de4c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a258a2611c373b8763eba16525624de4c">&#9670;&nbsp;</a></span>pushNewTransaction()</h2>
+<a id="ae16f82721a763410316717d72254f27d" name="ae16f82721a763410316717d72254f27d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae16f82721a763410316717d72254f27d">&#9670;&nbsp;</a></span>pushNewTransaction()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -192,8 +192,14 @@ Pending Transactions</div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const std::string&#160;</td>
-          <td class="paramname"><em>apolloCreatedDecay</em>&#160;</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>apolloCreatedDecay</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Poco::DateTime&#160;</td>
+          <td class="paramname"><em>apolloDecayStart</em>&#160;</td>
         </tr>
         <tr>
           <td></td>

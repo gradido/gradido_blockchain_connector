@@ -111,7 +111,7 @@ Response</h2>
 </div><!-- fragment --><p> With this token from the response we can user the other requests.</p>
 <h2><a class="anchor" id="autotoc_md6"></a>
 Possible errors</h2>
-<p >Errors have the format like in <a href="#error_reporting">Error Reporting</a> at the begin of file shown. For this request this error message are possible:</p>
+<p >Errors have the format like in <a href="#error_reporting">Error Reporting</a> at the begin of file shown. For this request this error messages are possible:</p>
 <ul>
 <li><code>parameter error</code>: one of the expected parameters wasn't set</li>
 <li><code>invalid group alias</code>: the group alias has an invalid format<ul>
@@ -126,7 +126,7 @@ Possible errors</h2>
 <li><code>invalid ip</code>: user was already logged in, but from another ip address</li>
 </ul>
 <h1><a class="anchor" id="autotoc_md7"></a>
-Add Group to Global Group Blockchain</h1>
+Add Group to Global Group Blockchain (depracted)</h1>
 <p >The <a href="https://github.com/gradido/gradido_node">Gradido Node</a> has blockchains for every group and one blockchain which contain every Gradido group on Earth. This is to make sure that every group alias and also each coin color exist only once.</p>
 <h2><a class="anchor" id="autotoc_md8"></a>
 Request</h2>
@@ -152,6 +152,7 @@ Possible errors</h2>
 <li><code>invalid jwt token</code>: jwt token couldn't be verified or don't contain expected data, or was timed out</li>
 <li><code>no session found</code>: no session for name in jwt token found, maybe Gradido Blockchain Connector was restarted since creating this jwt token or it was deleted because the time last access was longer than the configured <code>session.duration_seconds</code></li>
 <li><code>coin color already exist, please choose another or keep empty</code>: this coin color already exist on Global Groups Blockchain</li>
+<li><code>cannot parse created</code>: created date cannot be parsed (Supported Formats)[<a href="https://docs.pocoproject.org/current/Poco.DateTimeFormat.html">https://docs.pocoproject.org/current/Poco.DateTimeFormat.html</a>] look at details field for more infos</li>
 <li><code>error by requesting Gradido Node</code>: error in the communication with Gradido Node<ul>
 <li>is the key <code>gradidoNode</code> filled correctly in Gradido Blockchain Connector Properties?</li>
 <li>is the Gradido Node running and the last Version?</li>
@@ -219,40 +220,105 @@ Possible errors</h2>
 <div class="line">    &quot;what&quot;: &quot;messageId in response is missing or not a string&quot;,</div>
 <div class="line">    &quot;url&quot;: &quot;api.lb-0.h.chrysalis-devnet.iota.cafe/api/v1/messages&quot;</div>
 <div class="line">}</div>
-</div><!-- fragment --><p> the response for pushing Gradido Transaction as iota message to iota don't contain <code>messageId</code> field, so maybe the api changed </p>
+</div><!-- fragment --><p> the response for pushing Gradido Transaction as iota message to iota don't contain <code>messageId</code> field, so maybe the api changed</p>
 </li>
 </ul>
 <h1><a class="anchor" id="autotoc_md10"></a>
-autotoc_md10</h1>
-<p >/creation</p>
-<h1><a class="anchor" id="autotoc_md11"></a>
-autotoc_md11</h1>
-<p >/transfer</p>
-<h1><a class="anchor" id="autotoc_md12"></a>
-autotoc_md12</h1>
-<p >/registerAddress</p>
+Register address to blockchain or move from one blockchain to another</h1>
+<ul>
+<li>for registering new pubkey to blockchain and decide the type</li>
+<li>also for moving an address from one blockchain to another, than it is a cross group transaction</li>
+<li>only for HUMAN typed addresses Creation is allowed</li>
+<li>ideally it is only one address registered for every human to prevent Creation fraud</li>
+<li>currently only one signature, from the address themself is needed</li>
+<li>for the Future it is planned that the community can decide if new user can join and therefore additional signature(s) are required depending on community configuration <a href="https://github.com/gradido/gradido/blob/master/docu/Concepts/Snippets/1-Blockchain/Roles.md">More About Roles</a></li>
+<li>address from logged in user will be used</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md11"></a>
+Request</h2>
+<p ><code>POST <a href="http://localhost:1271/registerAddress">http://localhost:1271/registerAddress</a></code></p>
+<p >a jwt Token returned from a Login Request transfered as Authorization Header is mandatory</p>
+<div class="fragment"><div class="line">{</div>
+<div class="line">    &quot;created&quot;:&quot;2022-04-21T19:13:01.506Z&quot;,</div>
+<div class="line">    &quot;addressType&quot;:&quot;HUMAN&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><ul>
+<li><code>addressType</code>: decide type of address<ul>
+<li><code>HUMAN</code>: a address from a human, Creation is possible</li>
+<li><code>PROJECT</code>: a address for a project or a company, no Creation is possible</li>
+</ul>
+</li>
+<li><code>created</code>: The current date and time on creating this transaction</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md12"></a>
+Possible errors</h2>
+<p >Errors have the format like in <a href="#error_reporting">Error Reporting</a> at the begin of file shown. For this request this error message are possible:</p>
+<ul>
+<li><code>invalid ip</code>: the login which created this jwt token, came from another ip</li>
+<li><code>invalid jwt token</code>: jwt token couldn't be verified or don't contain expected data, or was timed out</li>
+<li><code>no session found</code>: no session for name in jwt token found, maybe Gradido Blockchain Connector was restarted since creating this jwt token or it was deleted because the time last access was longer than the configured <code>session.duration_seconds</code></li>
+<li><code>cannot parse created</code>: created date cannot be parsed (Supported Formats)[<a href="https://docs.pocoproject.org/current/Poco.DateTimeFormat.html">https://docs.pocoproject.org/current/Poco.DateTimeFormat.html</a>] look at details field for more infos</li>
+<li><code>error by requesting Gradido Node</code>: error in the communication with Gradido Node<ul>
+<li>is the key <code>gradidoNode</code> filled correctly in Gradido Blockchain Connector Properties?</li>
+<li>is the Gradido Node running and the last Version?</li>
+<li>for more details look into console or log output from Gradido Blockchain Connector</li>
+</ul>
+</li>
+<li><code>Internal Server Error</code>: something went wrong with Gradido Blockchain Connector, in this case look at the console output or in the logfile from Gradido Blockchain Connector</li>
+<li><code>cannot register address because it already exist</code>: this address was already registered or has received transactions on the target blockchain</li>
+<li><p class="startli"><code>error by calling iota</code>: by calling iota an error occured, more infos can be found in details field from result</p>
+<div class="fragment"><div class="line">&quot;details&quot;: {</div>
+<div class="line">    &quot;what&quot;: &quot;no tips&quot;,</div>
+<div class="line">    &quot;url&quot;: &quot;api.lb-0.h.chrysalis-devnet.iota.cafe/api/v1/tips&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><p> iota hasn't returned previous iota transactions, if that ever happen I don't know what to do</p>
+<div class="fragment"><div class="line">&quot;details&quot;: {</div>
+<div class="line">    &quot;what&quot;: &quot;error parsing request answer&quot;,</div>
+<div class="line">    &quot;parseErrorCode&quot;: &quot;The document is empty.&quot;,</div>
+<div class="line">    &quot;parseErrorPosition&quot;: 0,</div>
+<div class="line">    &quot;src&quot;: &quot;&lt;iota response as raw text&gt;&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><p> iota returned invalid json, all possible rapidjson parse error codes: <a href="https://rapidjson.org/group___r_a_p_i_d_j_s_o_n___e_r_r_o_r_s.html#ga633f43fd92e6ed5ceb87dbf570647847">rapidjson error codes</a></p>
+<div class="fragment"><div class="line">&quot;details&quot;: {</div>
+<div class="line">    &quot;what&quot;: &quot;data member in response missing&quot;,</div>
+<div class="line">    &quot;url&quot;: &quot;api.lb-0.h.chrysalis-devnet.iota.cafe/api/v1/messages&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><p> the response for pushing Gradido Transaction as iota message to iota don't contain <code>data</code> field, so maybe the iota api changed</p>
+<div class="fragment"><div class="line">&quot;details&quot;: {</div>
+<div class="line">    &quot;what&quot;: &quot;messageId in response is missing or not a string&quot;,</div>
+<div class="line">    &quot;url&quot;: &quot;api.lb-0.h.chrysalis-devnet.iota.cafe/api/v1/messages&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><p> the response for pushing Gradido Transaction as iota message to iota don't contain <code>messageId</code> field, so maybe the api changed</p>
+</li>
+</ul>
 <h1><a class="anchor" id="autotoc_md13"></a>
 autotoc_md13</h1>
-<p >/notify</p>
+<p >/creation</p>
 <h1><a class="anchor" id="autotoc_md14"></a>
 autotoc_md14</h1>
-<p >/listTransactions</p>
+<p >/transfer</p>
 <h1><a class="anchor" id="autotoc_md15"></a>
 autotoc_md15</h1>
+<p >/notify</p>
+<h1><a class="anchor" id="autotoc_md16"></a>
+autotoc_md16</h1>
+<p >/listTransactions</p>
+<h1><a class="anchor" id="autotoc_md17"></a>
+autotoc_md17</h1>
 <p >/listPending</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md17"></a>
+<h1><a class="anchor" id="autotoc_md19"></a>
 Old Api v1</h1>
-<h1><a class="anchor" id="autotoc_md18"></a>
+<h1><a class="anchor" id="autotoc_md20"></a>
 Pack Transaction</h1>
 <p >Pack Transaction as protobuf Array, ready for signing The returned bodyBytes are in base64 format. They must be at first unpacked in a binary array. Than they can be signed with sodium.crypto_sign_detached (<a href="https://sodium-friends.github.io/docs/docs/signing#crypto_sign_detached">https://sodium-friends.github.io/docs/docs/signing#crypto_sign_detached</a>) m ist the binary body bytes buffer sk is the private key of the user</p>
 <p >currently every transaction need only one signature but this maybe change in future, or new transaction types added which need more than one signature</p>
 <p >After signing sendTransactionIota can be called for every transaction which consists of bodyBytes and a signature public key pair list and with the corresponding group alias</p>
 <p >For transactions which belong to two blockchains actually two transactions are generated and need to be signed and send</p>
-<h2><a class="anchor" id="autotoc_md19"></a>
+<h2><a class="anchor" id="autotoc_md21"></a>
 Request</h2>
 <p ><code>POST <a href="http://localhost/login_api/packTransaction">http://localhost/login_api/packTransaction</a></code></p>
-<h3><a class="anchor" id="autotoc_md20"></a>
+<h3><a class="anchor" id="autotoc_md22"></a>
 Transfer</h3>
 <p >Needed to be signed from sender user</p>
 <div class="fragment"><div class="line">{   </div>
@@ -263,7 +329,7 @@ Transfer</h3>
 <div class="line">    &quot;recipientPubkey&quot;:&quot;eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd&quot;,</div>
 <div class="line">    &quot;amount&quot;: 1000000,</div>
 <div class="line">}</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md21"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md23"></a>
 Cross-Group Transfer</h3>
 <p >Needed to be signed from sender user</p>
 <div class="fragment"><div class="line">{   </div>
@@ -276,7 +342,7 @@ Cross-Group Transfer</h3>
 <div class="line">    &quot;senderGroupAlias&quot;: &quot;gdd1&quot;,</div>
 <div class="line">    &quot;recipientGroupAlias&quot;:&quot;gdd2&quot;</div>
 <div class="line">}</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md22"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md24"></a>
 Creation</h3>
 <p >Needed to be signed from another user from this group which isn't the recipient After implementing roles on blockchain, the signing person need to have the correct role for this</p>
 <div class="fragment"><div class="line">{   </div>
@@ -287,7 +353,7 @@ Creation</h3>
 <div class="line">    &quot;amount&quot;: 10000000,</div>
 <div class="line">    &quot;targetDate&quot;: &quot;2021-09-01 01:00:00&quot;,</div>
 <div class="line">}</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md23"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md25"></a>
 Group Member Add</h3>
 <p >Needed to be signed from the user to add</p>
 <div class="fragment"><div class="line">{</div>
@@ -295,7 +361,7 @@ Group Member Add</h3>
 <div class="line">    &quot;created&quot;:&quot;2021-01-10 10:00:00&quot;,</div>
 <div class="line">    &quot;userRootPubkey&quot;:&quot;eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd&quot;,</div>
 <div class="line">}</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md24"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md26"></a>
 Group Member Move</h3>
 <p >Needed to be signed from the user to move</p>
 <div class="fragment"><div class="line">{</div>
@@ -318,7 +384,7 @@ Group Member Move</h3>
 <li><code>currentGroupAlias</code>: only needed for moving user, group alias from where the user is from</li>
 <li><code>newGroupAlias</code>: only needed for moving user, group alias from the user where they are moving to</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md25"></a>
+<h2><a class="anchor" id="autotoc_md27"></a>
 Response</h2>
 <p >For Local Transactions which happen only on this group</p>
 <div class="fragment"><div class="line">{</div>
@@ -340,9 +406,9 @@ Response</h2>
 <div class="line">        }</div>
 <div class="line">    ]</div>
 <div class="line">}</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md26"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md28"></a>
 Send Transaction</h1>
-<h2><a class="anchor" id="autotoc_md27"></a>
+<h2><a class="anchor" id="autotoc_md29"></a>
 Request</h2>
 <p ><code>POST <a href="http://localhost/login_api/sendTransactionIota">http://localhost/login_api/sendTransactionIota</a></code></p>
 <p >with </p><div class="fragment"><div class="line">{</div>
@@ -355,7 +421,7 @@ Request</h2>
 <div class="line">    ],</div>
 <div class="line">    &quot;groupAlias&quot;:&quot;gdd1&quot;</div>
 <div class="line">}</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md28"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md30"></a>
 Response</h2>
 <div class="fragment"><div class="line">{</div>
 <div class="line">    &quot;state&quot;: &quot;success&quot;,</div>
