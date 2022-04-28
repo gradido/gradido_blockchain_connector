@@ -19,8 +19,9 @@ Document JsonTransaction::readSharedParameter(const Document& params)
 {
 	getStringParameter(params, "memo", mMemo);
 
-	std::string created_string;
+	std::string created_string, apollo_decay_start_string;
 	auto paramError = getStringParameter(params, "created", created_string);
+	getStringParameter(params, "apolloDecayStart", apollo_decay_start_string);
 	if (paramError.IsObject()) { return paramError; }
 
 	int timezoneDifferential = Poco::Timezone::tzd();
@@ -29,6 +30,14 @@ Document JsonTransaction::readSharedParameter(const Document& params)
 	}
 	catch (Poco::Exception& ex) {
 		return stateError("cannot parse created", ex.what());
+	}
+	try {
+		if (apollo_decay_start_string.size()) {
+			mApolloDecayStart = Poco::DateTimeParser::parse(apollo_decay_start_string, timezoneDifferential);
+		}
+	}
+	catch (Poco::Exception& ex) {
+		return stateError("cannot parse apollo decay start", ex.what());
 	}
 	mApolloTransactionId = 0;
 	getUInt64Parameter(params, "apolloTransactionId", mApolloTransactionId);
@@ -120,7 +129,8 @@ std::string JsonTransaction::signAndSendTransaction(std::unique_ptr<model::gradi
 	model::PendingTransactions::getInstance()->pushNewTransaction(
 		iotaMessageId,
 		transaction->getTransactionBody()->getTransactionType(),
-		mApolloCreatedDecay
+		mApolloCreatedDecay,
+		mApolloDecayStart
 	);
 	return std::move(iotaMessageId);
 }

@@ -60,7 +60,7 @@ With this token from the response we can user the other requests.
 
 ### Possible errors
 Errors have the format like in [Error Reporting](#error_reporting) at the begin of file shown. 
-For this request this error message are possible:
+For this request this error messages are possible:
 
 - `parameter error`: one of the expected parameters wasn't set
 - `invalid group alias`: the group alias has an invalid format
@@ -72,7 +72,7 @@ For this request this error message are possible:
 - `cannot decrypt password`: check that the password was really encrypted with the public key and the right private key was put into the Gradido Blockchain Server Config under `crypto.jwt.private`
 - `invalid ip`: user was already logged in, but from another ip address
 
-## Add Group to Global Group Blockchain
+## Add Group to Global Group Blockchain (depracted)
 The [Gradido Node](https://github.com/gradido/gradido_node) has blockchains for every group and one blockchain which contain every Gradido group on Earth. 
 This is to make sure that every group alias and also each coin color exist only once. 
 
@@ -103,6 +103,7 @@ For this request this error message are possible:
 - `invalid jwt token`: jwt token couldn't be verified or don't contain expected data, or was timed out
 - `no session found`: no session for name in jwt token found, maybe Gradido Blockchain Connector was restarted since creating this jwt token or it was deleted because the time last access was longer than the configured `session.duration_seconds`
 - `coin color already exist, please choose another or keep empty`: this coin color already exist on Global Groups Blockchain
+- `cannot parse created`: created date cannot be parsed (Supported Formats)[https://docs.pocoproject.org/current/Poco.DateTimeFormat.html] look at details field for more infos
 - `error by requesting Gradido Node`: error in the communication with Gradido Node
 	- is the key `gradidoNode` filled correctly in Gradido Blockchain Connector Properties?
 	- is the Gradido Node running and the last Version?
@@ -196,14 +197,89 @@ For this request this error message are possible:
 	}
 	```
 	the response for pushing Gradido Transaction as iota message to iota don't contain `messageId` field, so maybe the api changed
+
+## Register address to blockchain or move from one blockchain to another
+- for registering new pubkey to blockchain and decide the type
+- also for moving an address from one blockchain to another, than it is a cross group transaction
+- only for HUMAN typed addresses Creation is allowed
+- ideally it is only one address registered for every human to prevent Creation fraud
+- currently only one signature, from the address themself is needed
+- for the Future it is planned that the community can decide if new user can join and therefore additional signature(s) are required depending on community configuration [More About Roles](https://github.com/gradido/gradido/blob/master/docu/Concepts/Snippets/1-Blockchain/Roles.md)
+- address from logged in user will be used
+
+### Request
+`POST http://localhost:1271/registerAddress`
+
+a jwt Token returned from a Login Request transfered as Authorization Header is mandatory
+
+```json
+{
+	"created":"2022-04-21T19:13:01.506Z",
+	"addressType":"HUMAN"
+}
+```
+- `addressType`: decide type of address 
+	- `HUMAN`: a address from a human, Creation is possible
+	- `PROJECT`: a address for a project or a company, no Creation is possible
+- `created`: The current date and time on creating this transaction
+
+### Possible errors
+Errors have the format like in [Error Reporting](#error_reporting) at the begin of file shown. 
+For this request this error message are possible:
+
+- `invalid ip`: the login which created this jwt token, came from another ip
+- `invalid jwt token`: jwt token couldn't be verified or don't contain expected data, or was timed out
+- `no session found`: no session for name in jwt token found, maybe Gradido Blockchain Connector was restarted since creating this jwt token or it was deleted because the time last access was longer than the configured `session.duration_seconds`
+- `cannot parse created`: created date cannot be parsed (Supported Formats)[https://docs.pocoproject.org/current/Poco.DateTimeFormat.html] look at details field for more infos
+- `error by requesting Gradido Node`: error in the communication with Gradido Node
+	- is the key `gradidoNode` filled correctly in Gradido Blockchain Connector Properties?
+	- is the Gradido Node running and the last Version?
+	- for more details look into console or log output from Gradido Blockchain Connector
+- `Internal Server Error`: something went wrong with Gradido Blockchain Connector, in this case look at the console output or in the logfile from Gradido Blockchain Connector
+- `cannot register address because it already exist`: this address was already registered or has received transactions on the target blockchain
+- `error by calling iota`: by calling iota an error occured, more infos can be found in details field from result
+	
+	```json
+	"details": {
+		"what": "no tips",
+		"url": "api.lb-0.h.chrysalis-devnet.iota.cafe/api/v1/tips"
+	}
+	```
+	iota hasn't returned previous iota transactions, if that ever happen I don't know what to do
+
+	```json
+	"details": {
+		"what": "error parsing request answer",
+		"parseErrorCode": "The document is empty.",
+		"parseErrorPosition": 0,
+		"src": "<iota response as raw text>"
+	}
+	```
+	iota returned invalid json, all possible rapidjson parse error codes: [rapidjson error codes](https://rapidjson.org/group___r_a_p_i_d_j_s_o_n___e_r_r_o_r_s.html#ga633f43fd92e6ed5ceb87dbf570647847)
+	
+	```json
+	"details": {
+		"what": "data member in response missing",
+		"url": "api.lb-0.h.chrysalis-devnet.iota.cafe/api/v1/messages"
+	}
+	```
+	the response for pushing Gradido Transaction as iota message to iota don't contain `data` field, so maybe the iota api changed
+	
+	```json
+	"details": {
+		"what": "messageId in response is missing or not a string",
+		"url": "api.lb-0.h.chrysalis-devnet.iota.cafe/api/v1/messages"
+	}
+	```
+	the response for pushing Gradido Transaction as iota message to iota don't contain `messageId` field, so maybe the api changed
+
 ## 
 /creation
 
 ## 
 /transfer
 
-## 
-/registerAddress
+
 
 
 

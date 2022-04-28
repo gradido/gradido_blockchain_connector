@@ -2,6 +2,7 @@
 #define __GRADIDO_BLOCKCHAIN_CONNECTOR_GRADIDO_NODE_RPC_H
 
 #include "gradido_blockchain/GradidoBlockchainException.h"
+#include <vector>
 
 namespace gradidoNodeRPC
 {
@@ -11,6 +12,8 @@ namespace gradidoNodeRPC
 		const std::string& groupAlias, 
 		uint32_t coinColor = 0
 	);
+
+	std::vector<uint64_t> getAddressTxids(const std::string& pubkeyHex, const std::string& groupAlias);
 
 	class GradidoNodeRPCException : public GradidoBlockchainException
 	{
