@@ -124,7 +124,10 @@ std::string JsonTransaction::signAndSendTransaction(std::unique_ptr<model::gradi
 	if (_groupAlias != GROUP_REGISTER_GROUP_ALIAS && !model::gradido::TransactionBase::isValidGroupAlias(_groupAlias)) {
 		throw model::gradido::TransactionValidationInvalidInputException("invalid group alias", "groupAlias", "string, [a-z0-9-]{3,120}");
 	}
-	validateApolloDecay(transaction.get());
+	if (mApolloCreatedDecay.size()) {
+		// throw an exception if apollo decay deviate to much from Gradido Node
+		validateApolloDecay(transaction.get());
+	}
 		
 	// send transaction to iota
 	auto raw_message = transaction->getSerialized();
@@ -145,7 +148,7 @@ std::string JsonTransaction::signAndSendTransaction(std::unique_ptr<model::gradi
 }
 
 bool JsonTransaction::validateApolloDecay(const model::gradido::GradidoTransaction* gradidoTransaction)
-{
+{	
 	auto transactionBody = gradidoTransaction->getTransactionBody();
 	std::string pubkeyHex;
 	if (transactionBody->isCreation()) {

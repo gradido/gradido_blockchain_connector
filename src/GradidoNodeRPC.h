@@ -15,6 +15,14 @@ namespace gradidoNodeRPC
 
 	std::vector<uint64_t> getAddressTxids(const std::string& pubkeyHex, const std::string& groupAlias);
 
+	std::string getCreationSumForMonth(
+		const std::string& pubkeyHex,
+		int month,
+		int year,
+		const std::string& startDateString,
+		const std::string& groupAlias
+	);
+
 	class GradidoNodeRPCException : public GradidoBlockchainException
 	{
 	public:
