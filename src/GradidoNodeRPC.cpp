@@ -128,11 +128,12 @@ namespace gradidoNodeRPC {
 				printf("result from Gradido Node: %s\n", output);
 				throw RapidjsonMissingMemberException("missing in result from getcreationsumformonth", "sum", "balance as string");
 			}
-			
+
 			std::string sumString = result["result"]["sum"].GetString();
 			return std::move(sumString);
 		}
 		catch (...) {
 			handleGradidoNodeRpcException();
 		}
+	}
 }

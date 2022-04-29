@@ -230,15 +230,15 @@ rapidjson::Document JsonTransaction::handleSignAndSendTransactionExceptions()
 		return stateError("Internal Server Error");
 	}
 	catch (model::gradido::TransactionValidationInvalidInputException& ex) {
-		return stateError("transaction validation failed", ex.getDetails());
+		return stateError("transaction validation failed", ex);
 	}
 	catch (IotaRequestException& ex) {
 		Poco::Logger::get("errorLog").error("error by calling iota: %s", ex.getFullString());
-		return stateError("error by calling iota", ex.getDetails());
+		return stateError("error by calling iota", ex);
 	}	
 	catch (RapidjsonParseErrorException& ex) {
 		Poco::Logger::get("errorLog").error("calling iota return invalid json: %s", ex.getFullString());
-		return stateError("error by calling iota", ex.getDetails());
+		return stateError("error by calling iota", ex);
 	}
 	catch (Ed25519SignException& ex) {
 		Poco::Logger::get("errorLog").error("error by signing a transaction: %s", ex.getFullString());
@@ -249,7 +249,7 @@ rapidjson::Document JsonTransaction::handleSignAndSendTransactionExceptions()
 		return stateError("error by requesting Gradido Node");
 	}
 	catch (ApolloDecayException& ex) {
-		return stateError("error with apollo decay", ex.getDetails());
+		return stateError("error with apollo decay", ex);
 	}
 
 	return Document();
@@ -272,16 +272,12 @@ std::string ApolloDecayException::getFullString() const
 }
 
 
-std::string ApolloDecayException::getDetails() const
+Value ApolloDecayException::getDetails(Document::AllocatorType& alloc) const
 {
-	Document detailsObjs(kObjectType);
-	auto alloc = detailsObjs.GetAllocator();
+	Value detailsObjs(kObjectType);
 	detailsObjs.AddMember("what", Value(what(), alloc), alloc);
 	detailsObjs.AddMember("startBalance", Value(mStartBalance.data(), alloc), alloc);
 	detailsObjs.AddMember("decay", Value(mDecay.data(), alloc), alloc);
-	StringBuffer buffer;
-	Writer<StringBuffer> writer(buffer);
-	detailsObjs.Accept(writer);
 
-	return std::string(buffer.GetString());
+	return std::move(detailsObjs);
 }
