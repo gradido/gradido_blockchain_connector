@@ -64,15 +64,43 @@ namespace gradidoNodeRPC {
 		}
 	}
 
+	std::string getAddressType(const std::string& pubkeyHex, const std::string& groupAlias)
+	{
+		try {
+			Value rpcParams(kObjectType);
+			JsonRPCRequest askForAddressType(ServerConfig::g_GradidoNodeUri);
+			auto alloc = askForAddressType.getJsonAllocator();
+			rpcParams.AddMember("pubkey", Value(pubkeyHex.data(), alloc), alloc);
+			rpcParams.AddMember("groupAlias", Value(groupAlias.data(), alloc), alloc);
+			auto result = askForAddressType.request("getaddresstype", rpcParams);
+			if (!result.HasMember("result")) {
+				throw RapidjsonMissingMemberException("missing result from getaddresstype", "result", "object");
+			}
+			if (!result["result"].HasMember("addressType")) {
+				StringBuffer buffer;
+				PrettyWriter<StringBuffer> writer(buffer);
+				result.Accept(writer);
+
+				const char* output = buffer.GetString();
+				printf("result from Gradido Node: %s\n", output);
+				throw RapidjsonMissingMemberException("missing in result from getaddressbalance", "addressType", "enum as string");
+			}
+			return std::move(std::string(result["result"]["addressType"].GetString()));
+		}
+		catch (...) {
+			handleGradidoNodeRpcException();
+		}
+	}
+
 	std::vector<uint64_t> getAddressTxids(const std::string& pubkeyHex, const std::string& groupAlias)
 	{
 		try {
 			Value rpcParams(kObjectType);
-			JsonRPCRequest askForAddressBalance(ServerConfig::g_GradidoNodeUri);
-			auto alloc = askForAddressBalance.getJsonAllocator();
+			JsonRPCRequest askForAddressTxids(ServerConfig::g_GradidoNodeUri);
+			auto alloc = askForAddressTxids.getJsonAllocator();
 			rpcParams.AddMember("pubkey", Value(pubkeyHex.data(), alloc), alloc);
 			rpcParams.AddMember("groupAlias", Value(groupAlias.data(), alloc), alloc);
-			auto result = askForAddressBalance.request("getaddresstxids", rpcParams);
+			auto result = askForAddressTxids.request("getaddresstxids", rpcParams);
 			if (!result.HasMember("result")) {
 				throw RapidjsonMissingMemberException("missing result from getaddresstxids", "result", "object");
 			}
