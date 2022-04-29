@@ -338,9 +338,9 @@ Request</h2>
 <li><code>amount</code>: amount as decimal number string, maximal 1000 per month and user</li>
 <li><code>targetDate</code>: target date for when is the Creation, maximal 3 month in the past, decay will be calculated from transaction date not from target date</li>
 <li><code>created</code>: The current date and time on creating this transaction</li>
-<li><code>apolloTransactionId</code>: transaction identifier from apollo</li>
-<li><code>apolloCreatedDecay</code>: decay from balance at apolloDecayStart to created</li>
-<li><code>apolloDecayStart</code>: date from last transaction, starting point for decay calculation</li>
+<li><code>apolloTransactionId</code>: (optional) transaction identifier from apollo</li>
+<li><code>apolloCreatedDecay</code>: (optional) decay from balance at apolloDecayStart to created</li>
+<li><code>apolloDecayStart</code>: (optional) date from last transaction, starting point for decay calculation</li>
 </ul>
 <h2><a class="anchor" id="autotoc_md17"></a>
 Response</h2>
@@ -357,6 +357,10 @@ Possible errors</h2>
 <li><code>invalid jwt token</code>: jwt token couldn't be verified or don't contain expected data, or was timed out</li>
 <li><code>no session found</code>: no session for name in jwt token found, maybe Gradido Blockchain Connector was restarted since creating this jwt token or it was deleted because the time last access was longer than the configured <code>session.duration_seconds</code></li>
 <li><code>cannot parse created</code>: created date cannot be parsed (Supported Formats)[<a href="https://docs.pocoproject.org/current/Poco.DateTimeFormat.html">https://docs.pocoproject.org/current/Poco.DateTimeFormat.html</a>] look at details field for more infos</li>
+<li><code>cannot parse targetDate</code>: target date cannot be parsed (Supported Formats)[<a href="https://docs.pocoproject.org/current/Poco.DateTimeFormat.html">https://docs.pocoproject.org/current/Poco.DateTimeFormat.html</a>] look at details field for more infos</li>
+<li><code>unknown recipient user</code>: couldn't find recipient user in db</li>
+<li><code>address isn't registered on blockchain</code>: please make a register address transaction before with this address</li>
+<li><code>address has the wrong type for creation</code>: address isn't registered as HUMAN address on blockchain, see actual type on Gradido Blockchain Connector console or in log file</li>
 <li><code>error with apollo decay</code>: decay calculation from apollo deviates more than 0.00001 from Gradido Node decay calculation</li>
 <li><code>error by requesting Gradido Node</code>: error in the communication with Gradido Node<ul>
 <li>is the key <code>gradidoNode</code> filled correctly in Gradido Blockchain Connector Properties?</li>
@@ -365,6 +369,13 @@ Possible errors</h2>
 </ul>
 </li>
 <li><code>Internal Server Error</code>: something went wrong with Gradido Blockchain Connector, in this case look at the console output or in the logfile from Gradido Blockchain Connector</li>
+<li><code>no coin color found, was this group already registered?</code>: (depracted) check if group alias is valid and registered on blockchain</li>
+<li><code>transaction validation failed</code>: transaction is invalid, more infos can be found in details field from result <div class="fragment"><div class="line">&quot;details&quot; : {</div>
+<div class="line">    &quot;what&quot;: &quot;to short, at least 3&quot;,</div>
+<div class="line">    &quot;fieldName&quot;: &quot;group_name&quot;,</div>
+<div class="line">    &quot;fieldType&quot;: &quot;string&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --></li>
 <li><p class="startli"><code>error by calling iota</code>: by calling iota an error occured, more infos can be found in details field from result</p>
 <div class="fragment"><div class="line">&quot;details&quot;: {</div>
 <div class="line">    &quot;what&quot;: &quot;no tips&quot;,</div>
