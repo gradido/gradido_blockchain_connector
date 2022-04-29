@@ -95,6 +95,17 @@ a jwt Token returned from a Login Request transfered as Authorization Header is 
 - `coinColor`: (optional) a unique 32 Bit Integer Number or a hex number with maximal 8 characters, will be choosen randomly if let empty
 - `created`: The current date and time on creating this transaction
 
+### Response
+
+If transaction was successfully send via Iota the result should be something like that:
+
+```json
+{
+     "state":"success",
+     "iotaMessageId":"c536f760a31621faf3efcbd07088168738bee4eda52945531e09ae646efc5c18"
+}
+```
+
 ### Possible errors
 Errors have the format like in [Error Reporting](#error_reporting) at the begin of file shown. 
 For this request this error message are possible:
@@ -215,13 +226,28 @@ a jwt Token returned from a Login Request transfered as Authorization Header is 
 ```json
 {
 	"created":"2022-04-21T19:13:01.506Z",
-	"addressType":"HUMAN"
+	"addressType":"HUMAN",
+	"currentGroupAlias": "testgroup1",
+	"newGroupAlias": ""
 }
 ```
 - `addressType`: decide type of address 
 	- `HUMAN`: a address from a human, Creation is possible
 	- `PROJECT`: a address for a project or a company, no Creation is possible
 - `created`: The current date and time on creating this transaction
+- `currentGroupAlias`: optional, only used for moving address, group alias from group where address is currently
+- `newGroupAlias`: optional, only used for moving address, group alias where address should move
+
+### Response
+
+If transaction was successfully send via Iota the result should be something like that:
+
+```json
+{
+     "state":"success",
+     "iotaMessageId":"07ec60fa60e0fd087bdf77bccb9c702942b61b1bf674fee17d3f258fed1fc8b0"
+}
+```
 
 ### Possible errors
 Errors have the format like in [Error Reporting](#error_reporting) at the begin of file shown. 
@@ -236,6 +262,8 @@ For this request this error message are possible:
 	- is the Gradido Node running and the last Version?
 	- for more details look into console or log output from Gradido Blockchain Connector
 - `Internal Server Error`: something went wrong with Gradido Blockchain Connector, in this case look at the console output or in the logfile from Gradido Blockchain Connector
+- `invalid character in currentGroupAlias, only ascii allowed`: invalid group alias, expected between 3 and 120 lowercase character, numbers or -
+- `invalid character in newGroupAlias, only ascii allowed`: invalid group alias, expected between 3 and 120 lowercase character, numbers or -
 - `cannot register address because it already exist`: this address was already registered or has received transactions on the target blockchain
 - `error by calling iota`: by calling iota an error occured, more infos can be found in details field from result
 	
@@ -273,8 +301,50 @@ For this request this error message are possible:
 	```
 	the response for pushing Gradido Transaction as iota message to iota don't contain `messageId` field, so maybe the api changed
 
-## 
-/creation
+## Creation Transaction
+- create new Gradidos for user
+- need one signature from another user as the target user
+- for the Future it is planned that the community decide who (singular or plural) confirm the Creation depending on community configuration [More About Roles](https://github.com/gradido/gradido/blob/master/docu/Concepts/Snippets/1-Blockchain/Roles.md)
+
+### Request
+`POST http://localhost:1271/creation`
+
+a jwt Token returned from a Login Request transfered as Authorization Header is mandatory
+
+```json
+{
+	"memo":"test creation",
+	"recipientName":"testUser1",
+	"amount":"1000",
+	"targetDate":"2022-02-01",
+	"created":"2022-04-21T20:08:53.406Z",
+	"apolloTransactionId":"1",
+	"apolloCreatedDecay": "0",
+	"apolloDecayStart": "2022-04-21T19:13:01.506Z"
+}
+```
+- `memo`: comment for transaction, will be encrypted on blockchain, at least 5 character long , maximal 334 character long
+- `recipientName`: name for lookup in users table to choose correct pubkey
+- `amount`: amount as decimal number string, maximal 1000 per month and user
+- `targetDate`: target date for when is the Creation, maximal 3 month in the past, decay will be calculated from transaction date not from target date
+- `created`: The current date and time on creating this transaction
+- `apolloTransactionId`: transaction identifier from apollo
+- `apolloCreatedDecay`: decay from balance at apolloDecayStart to created 
+- `apolloDecayStart`: date from last transaction, starting point for decay calculation
+
+### Response
+
+If transaction was successfully send via Iota the result should be something like that:
+
+```json
+{
+     "state":"success",
+     "iotaMessageId":"cabb3ff013267130177a93ef8931b9c8844e36fcd07961d7a285c200906d0512"
+}
+```
+
+### Possible errors
+- `error with apollo decay`: decay calculation from apollo deviates more than 0.00001 from Gradido Node decay calculation
 
 ## 
 /transfer

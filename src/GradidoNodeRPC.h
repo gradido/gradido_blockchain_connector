@@ -18,7 +18,7 @@ namespace gradidoNodeRPC
 	class GradidoNodeRPCException : public GradidoBlockchainException
 	{
 	public:
-		explicit GradidoNodeRPCException() noexcept : GradidoBlockchainException("") {};
+		explicit GradidoNodeRPCException(const char* what) noexcept : GradidoBlockchainException(what) {};
 		std::string getFullString() const { return std::string(what()); };
 	};
 }

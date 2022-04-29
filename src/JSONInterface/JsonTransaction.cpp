@@ -1,17 +1,23 @@
 #include "JsonTransaction.h"
 
 #include "gradido_blockchain/lib/DataTypeConverter.h"
+#include "gradido_blockchain/lib/Decay.h"
 #include "gradido_blockchain/http/RequestExceptions.h"
 #include "gradido_blockchain/http/IotaRequestExceptions.h"
 #include "gradido_blockchain/model/protobufWrapper/TransactionValidationExceptions.h"
 
 #include "SessionManager.h"
 #include "ServerConfig.h"
+#include "GradidoNodeRPC.h"
 #include "model/PendingTransactions.h"
 #include "model/table/Group.h"
 
 #include "Poco/DateTimeParser.h"
+#include "Poco/DateTimeFormatter.h"
 #include "Poco/Timezone.h"
+
+#include "rapidjson/writer.h"
+
 
 using namespace rapidjson;
 
@@ -118,6 +124,8 @@ std::string JsonTransaction::signAndSendTransaction(std::unique_ptr<model::gradi
 	if (_groupAlias != GROUP_REGISTER_GROUP_ALIAS && !model::gradido::TransactionBase::isValidGroupAlias(_groupAlias)) {
 		throw model::gradido::TransactionValidationInvalidInputException("invalid group alias", "groupAlias", "string, [a-z0-9-]{3,120}");
 	}
+	validateApolloDecay(transaction.get());
+		
 	// send transaction to iota
 	auto raw_message = transaction->getSerialized();
 
@@ -126,13 +134,87 @@ std::string JsonTransaction::signAndSendTransaction(std::unique_ptr<model::gradi
 
 	std::string index = "GRADIDO." + groupAlias;
 	auto iotaMessageId = ServerConfig::g_IotaRequestHandler->sendMessage(DataTypeConverter::binToHex(index), *hex_message);
-	model::PendingTransactions::getInstance()->pushNewTransaction(
+	auto pt = model::PendingTransactions::getInstance();
+	pt->pushNewTransaction(
 		iotaMessageId,
 		transaction->getTransactionBody()->getTransactionType(),
 		mApolloCreatedDecay,
 		mApolloDecayStart
 	);
 	return std::move(iotaMessageId);
+}
+
+bool JsonTransaction::validateApolloDecay(const model::gradido::GradidoTransaction* gradidoTransaction)
+{
+	auto transactionBody = gradidoTransaction->getTransactionBody();
+	std::string pubkeyHex;
+	if (transactionBody->isCreation()) {
+		pubkeyHex = DataTypeConverter::binToHex(
+			transactionBody->getCreationTransaction()->getRecipientPublicKeyString()
+		);
+	}
+	else if (transactionBody->isTransfer() || transactionBody->isDeferredTransfer()) {
+		pubkeyHex = DataTypeConverter::binToHex(
+			transactionBody->getTransferTransaction()->getSenderPublicKeyString()
+		);
+	}
+	else {
+		return true;
+	}
+	auto startBalanceString = gradidoNodeRPC::getAddressBalance(
+		pubkeyHex, 
+		Poco::DateTimeFormatter::format(mApolloDecayStart, Poco::DateTimeFormat::ISO8601_FRAC_FORMAT),
+		mSession->getGroupAlias()
+	);
+	auto balance = MathMemory::create();
+	auto startBalance = MathMemory::create();
+	if (mpfr_set_str(startBalance->getData(), startBalanceString.data(), 10, gDefaultRound)) {
+		std::string error = "invalid balance string " + startBalanceString;
+		throw gradidoNodeRPC::GradidoNodeRPCException(error.data());
+	}
+	// copy start balance value also into balance variable
+	mpfr_set(balance->getData(), startBalance->getData(), gDefaultRound);
+	auto decayTemp = MathMemory::create();
+	calculateDecayFactorForDuration(
+		decayTemp->getData(),
+		gDecayFactorGregorianCalender,
+		(mCreated - mApolloDecayStart).totalSeconds()
+	);
+	// balance contain the end balance after function call
+	calculateDecayFast(decayTemp->getData(), balance->getData());
+	// calculate decay between start and end balance
+	// decayTemp contain difference between end balance and start balance 
+	mpfr_sub(decayTemp->getData(), startBalance->getData(), balance->getData(), gDefaultRound);
+	// clear memory for start balance
+	startBalance.reset();
+	// compare with apollo value
+	if (mpfr_set_str(balance->getData(), mApolloCreatedDecay.data(), 10, gDefaultRound)) {
+		throw model::gradido::TransactionValidationInvalidInputException(
+			"cannot parse to number",
+			"apolloCreatedDecay",
+			"number as string"
+		);
+	}
+	// calculate difference between decay values
+	auto diff = MathMemory::create();
+	mpfr_sub(diff->getData(), balance->getData(), decayTemp->getData(), gDefaultRound);
+	mpfr_abs(diff->getData(), diff->getData(), gDefaultRound);
+	if (mpfr_cmp_d(diff->getData(), 0.00001) >= 0) {
+		std::string decayString;
+		model::gradido::TransactionBase::amountToString(&decayString, balance->getData());
+		throw ApolloDecayException(
+			"apollo decay deviates more than 0.00001 from Gradido Node decay",
+			startBalanceString,
+			decayString
+		);
+		/*throw model::gradido::TransactionValidationInvalidInputException(
+			"divergence is more than 0.00001",
+			"apolloCreatedDecay",
+			"number as string"
+		);*/
+	}
+	return true;
+
 }
 
 rapidjson::Document JsonTransaction::handleSignAndSendTransactionExceptions()
@@ -159,6 +241,44 @@ rapidjson::Document JsonTransaction::handleSignAndSendTransactionExceptions()
 		Poco::Logger::get("errorLog").error("error by signing a transaction: %s", ex.getFullString());
 		return stateError("Internal Server Error");
 	}
+	catch (gradidoNodeRPC::GradidoNodeRPCException& ex) {
+		Poco::Logger::get("errorLog").error("error by requesting Gradido Node: %s", ex.getFullString());
+		return stateError("error by requesting Gradido Node");
+	}
+	catch (ApolloDecayException& ex) {
+		return stateError("error with apollo decay", ex.getDetails());
+	}
 
 	return Document();
+}
+
+// *******************  Apollo Decay Exception ***********************
+ApolloDecayException::ApolloDecayException(const char* what, std::string startBalance, std::string decay) noexcept
+	: GradidoBlockchainException(what), mStartBalance(startBalance), mDecay(decay)
+{
+
+}
+
+std::string ApolloDecayException::getFullString() const
+{
+	std::string result;
+	result = what();
+	result += ", startBalance: " + mStartBalance;
+	result += ", decay: " + mDecay;
+	return result;
+}
+
+
+std::string ApolloDecayException::getDetails() const
+{
+	Document detailsObjs(kObjectType);
+	auto alloc = detailsObjs.GetAllocator();
+	detailsObjs.AddMember("what", Value(what(), alloc), alloc);
+	detailsObjs.AddMember("startBalance", Value(mStartBalance.data(), alloc), alloc);
+	detailsObjs.AddMember("decay", Value(mDecay.data(), alloc), alloc);
+	StringBuffer buffer;
+	Writer<StringBuffer> writer(buffer);
+	detailsObjs.Accept(writer);
+
+	return std::string(buffer.GetString());
 }
