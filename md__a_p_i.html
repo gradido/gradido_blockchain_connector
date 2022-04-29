@@ -351,8 +351,44 @@ Response</h2>
 <div class="line">}</div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md18"></a>
 Possible errors</h2>
+<p >Errors have the format like in <a href="#error_reporting">Error Reporting</a> at the begin of file shown. For this request this error message are possible:</p>
 <ul>
+<li><code>invalid ip</code>: the login which created this jwt token, came from another ip</li>
+<li><code>invalid jwt token</code>: jwt token couldn't be verified or don't contain expected data, or was timed out</li>
+<li><code>no session found</code>: no session for name in jwt token found, maybe Gradido Blockchain Connector was restarted since creating this jwt token or it was deleted because the time last access was longer than the configured <code>session.duration_seconds</code></li>
+<li><code>cannot parse created</code>: created date cannot be parsed (Supported Formats)[<a href="https://docs.pocoproject.org/current/Poco.DateTimeFormat.html">https://docs.pocoproject.org/current/Poco.DateTimeFormat.html</a>] look at details field for more infos</li>
 <li><code>error with apollo decay</code>: decay calculation from apollo deviates more than 0.00001 from Gradido Node decay calculation</li>
+<li><code>error by requesting Gradido Node</code>: error in the communication with Gradido Node<ul>
+<li>is the key <code>gradidoNode</code> filled correctly in Gradido Blockchain Connector Properties?</li>
+<li>is the Gradido Node running and the last Version?</li>
+<li>for more details look into console or log output from Gradido Blockchain Connector</li>
+</ul>
+</li>
+<li><code>Internal Server Error</code>: something went wrong with Gradido Blockchain Connector, in this case look at the console output or in the logfile from Gradido Blockchain Connector</li>
+<li><p class="startli"><code>error by calling iota</code>: by calling iota an error occured, more infos can be found in details field from result</p>
+<div class="fragment"><div class="line">&quot;details&quot;: {</div>
+<div class="line">    &quot;what&quot;: &quot;no tips&quot;,</div>
+<div class="line">    &quot;url&quot;: &quot;api.lb-0.h.chrysalis-devnet.iota.cafe/api/v1/tips&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><p> iota hasn't returned previous iota transactions, if that ever happen I don't know what to do</p>
+<div class="fragment"><div class="line">&quot;details&quot;: {</div>
+<div class="line">    &quot;what&quot;: &quot;error parsing request answer&quot;,</div>
+<div class="line">    &quot;parseErrorCode&quot;: &quot;The document is empty.&quot;,</div>
+<div class="line">    &quot;parseErrorPosition&quot;: 0,</div>
+<div class="line">    &quot;src&quot;: &quot;&lt;iota response as raw text&gt;&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><p> iota returned invalid json, all possible rapidjson parse error codes: <a href="https://rapidjson.org/group___r_a_p_i_d_j_s_o_n___e_r_r_o_r_s.html#ga633f43fd92e6ed5ceb87dbf570647847">rapidjson error codes</a></p>
+<div class="fragment"><div class="line">&quot;details&quot;: {</div>
+<div class="line">    &quot;what&quot;: &quot;data member in response missing&quot;,</div>
+<div class="line">    &quot;url&quot;: &quot;api.lb-0.h.chrysalis-devnet.iota.cafe/api/v1/messages&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><p> the response for pushing Gradido Transaction as iota message to iota don't contain <code>data</code> field, so maybe the iota api changed</p>
+<div class="fragment"><div class="line">&quot;details&quot;: {</div>
+<div class="line">    &quot;what&quot;: &quot;messageId in response is missing or not a string&quot;,</div>
+<div class="line">    &quot;url&quot;: &quot;api.lb-0.h.chrysalis-devnet.iota.cafe/api/v1/messages&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><p> the response for pushing Gradido Transaction as iota message to iota don't contain <code>messageId</code> field, so maybe the api changed</p>
+</li>
 </ul>
 <h1><a class="anchor" id="autotoc_md19"></a>
 autotoc_md19</h1>
