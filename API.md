@@ -344,7 +344,54 @@ If transaction was successfully send via Iota the result should be something lik
 ```
 
 ### Possible errors
+Errors have the format like in [Error Reporting](#error_reporting) at the begin of file shown. 
+For this request this error message are possible:
+
+- `invalid ip`: the login which created this jwt token, came from another ip
+- `invalid jwt token`: jwt token couldn't be verified or don't contain expected data, or was timed out
+- `no session found`: no session for name in jwt token found, maybe Gradido Blockchain Connector was restarted since creating this jwt token or it was deleted because the time last access was longer than the configured `session.duration_seconds`
+- `cannot parse created`: created date cannot be parsed (Supported Formats)[https://docs.pocoproject.org/current/Poco.DateTimeFormat.html] look at details field for more infos
 - `error with apollo decay`: decay calculation from apollo deviates more than 0.00001 from Gradido Node decay calculation
+- `error by requesting Gradido Node`: error in the communication with Gradido Node
+	- is the key `gradidoNode` filled correctly in Gradido Blockchain Connector Properties?
+	- is the Gradido Node running and the last Version?
+	- for more details look into console or log output from Gradido Blockchain Connector
+- `Internal Server Error`: something went wrong with Gradido Blockchain Connector, in this case look at the console output or in the logfile from Gradido Blockchain Connector
+- `error by calling iota`: by calling iota an error occured, more infos can be found in details field from result
+	
+	```json
+	"details": {
+		"what": "no tips",
+		"url": "api.lb-0.h.chrysalis-devnet.iota.cafe/api/v1/tips"
+	}
+	```
+	iota hasn't returned previous iota transactions, if that ever happen I don't know what to do
+
+	```json
+	"details": {
+		"what": "error parsing request answer",
+		"parseErrorCode": "The document is empty.",
+		"parseErrorPosition": 0,
+		"src": "<iota response as raw text>"
+	}
+	```
+	iota returned invalid json, all possible rapidjson parse error codes: [rapidjson error codes](https://rapidjson.org/group___r_a_p_i_d_j_s_o_n___e_r_r_o_r_s.html#ga633f43fd92e6ed5ceb87dbf570647847)
+	
+	```json
+	"details": {
+		"what": "data member in response missing",
+		"url": "api.lb-0.h.chrysalis-devnet.iota.cafe/api/v1/messages"
+	}
+	```
+	the response for pushing Gradido Transaction as iota message to iota don't contain `data` field, so maybe the iota api changed
+	
+	```json
+	"details": {
+		"what": "messageId in response is missing or not a string",
+		"url": "api.lb-0.h.chrysalis-devnet.iota.cafe/api/v1/messages"
+	}
+	```
+	the response for pushing Gradido Transaction as iota message to iota don't contain `messageId` field, so maybe the api changed
 
 ## 
 /transfer

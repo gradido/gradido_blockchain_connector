@@ -97,4 +97,42 @@ namespace gradidoNodeRPC {
 			handleGradidoNodeRpcException();
 		}
 	}
+
+	std::string getCreationSumForMonth(
+		const std::string& pubkeyHex,
+		int month,
+		int year,
+		const std::string& startDateString,
+		const std::string& groupAlias
+	)
+	{
+		try {
+			Value rpcParams(kObjectType);
+			JsonRPCRequest askForAddressBalance(ServerConfig::g_GradidoNodeUri);
+			auto alloc = askForAddressBalance.getJsonAllocator();
+			rpcParams.AddMember("pubkey", Value(pubkeyHex.data(), alloc), alloc);
+			rpcParams.AddMember("month", month, alloc);
+			rpcParams.AddMember("year", year, alloc);
+			rpcParams.AddMember("startSearchDate", Value(startDateString.data(), alloc), alloc);
+			rpcParams.AddMember("groupAlias", Value(groupAlias.data(), alloc), alloc);
+			auto result = askForAddressBalance.request("getcreationsumformonth", rpcParams);
+			if (!result.HasMember("result")) {
+				throw RapidjsonMissingMemberException("missing result from getcreationsumformonth", "result", "object");
+			}
+			if (!result["result"].HasMember("sum")) {
+				StringBuffer buffer;
+				PrettyWriter<StringBuffer> writer(buffer);
+				result.Accept(writer);
+
+				const char* output = buffer.GetString();
+				printf("result from Gradido Node: %s\n", output);
+				throw RapidjsonMissingMemberException("missing in result from getcreationsumformonth", "sum", "balance as string");
+			}
+			
+			std::string sumString = result["result"]["sum"].GetString();
+			return std::move(sumString);
+		}
+		catch (...) {
+			handleGradidoNodeRpcException();
+		}
 }
