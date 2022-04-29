@@ -65,6 +65,14 @@ Document JsonCreationTransaction::handle(const rapidjson::Document& params)
 	auto pubkeyHex = DataTypeConverter::binToHex(publicKeyBin);
 
 	try {
+		auto addressType = gradidoNodeRPC::getAddressType(pubkeyHex, mSession->getGroupAlias());
+		if (addressType != model::gradido::RegisterAddress::getAddressStringFromType(proto::gradido::RegisterAddress_AddressType_HUMAN)) {
+			Poco::Logger::get("errorLog").warning("address type: %s isn't allowed for creation", addressType);
+			if (addressType == model::gradido::RegisterAddress::getAddressStringFromType(proto::gradido::RegisterAddress_AddressType_NONE)) {
+				return stateError("address isn't registered on blockchain");
+			}
+			return stateError("address has the wrong type for creation");
+		}
 		auto sumString = gradidoNodeRPC::getCreationSumForMonth(
 			pubkeyHex, targetDate.month(), targetDate.year(),
 			Poco::DateTimeFormatter::format(mCreated, Poco::DateTimeFormat::ISO8601_FRAC_FORMAT),

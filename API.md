@@ -328,9 +328,9 @@ a jwt Token returned from a Login Request transfered as Authorization Header is 
 - `amount`: amount as decimal number string, maximal 1000 per month and user
 - `targetDate`: target date for when is the Creation, maximal 3 month in the past, decay will be calculated from transaction date not from target date
 - `created`: The current date and time on creating this transaction
-- `apolloTransactionId`: transaction identifier from apollo
-- `apolloCreatedDecay`: decay from balance at apolloDecayStart to created 
-- `apolloDecayStart`: date from last transaction, starting point for decay calculation
+- `apolloTransactionId`: (optional) transaction identifier from apollo
+- `apolloCreatedDecay`: (optional) decay from balance at apolloDecayStart to created 
+- `apolloDecayStart`: (optional) date from last transaction, starting point for decay calculation
 
 ### Response
 
@@ -351,12 +351,26 @@ For this request this error message are possible:
 - `invalid jwt token`: jwt token couldn't be verified or don't contain expected data, or was timed out
 - `no session found`: no session for name in jwt token found, maybe Gradido Blockchain Connector was restarted since creating this jwt token or it was deleted because the time last access was longer than the configured `session.duration_seconds`
 - `cannot parse created`: created date cannot be parsed (Supported Formats)[https://docs.pocoproject.org/current/Poco.DateTimeFormat.html] look at details field for more infos
+- `cannot parse targetDate`: target date cannot be parsed (Supported Formats)[https://docs.pocoproject.org/current/Poco.DateTimeFormat.html] look at details field for more infos
+- `unknown recipient user`: couldn't find recipient user in db
+- `address isn't registered on blockchain`: please make a register address transaction before with this address
+- `address has the wrong type for creation`: address isn't registered as HUMAN address on blockchain, see actual type on Gradido Blockchain Connector console or in log file
 - `error with apollo decay`: decay calculation from apollo deviates more than 0.00001 from Gradido Node decay calculation
 - `error by requesting Gradido Node`: error in the communication with Gradido Node
 	- is the key `gradidoNode` filled correctly in Gradido Blockchain Connector Properties?
 	- is the Gradido Node running and the last Version?
 	- for more details look into console or log output from Gradido Blockchain Connector
 - `Internal Server Error`: something went wrong with Gradido Blockchain Connector, in this case look at the console output or in the logfile from Gradido Blockchain Connector
+- `no coin color found, was this group already registered?`: (depracted) check if group alias is valid and registered on blockchain
+
+- `transaction validation failed`: transaction is invalid, more infos can be found in details field from result
+	```json 
+	"details" : {
+		"what": "to short, at least 3",
+		"fieldName": "group_name",
+		"fieldType": "string"
+	}
+	```
 - `error by calling iota`: by calling iota an error occured, more infos can be found in details field from result
 	
 	```json

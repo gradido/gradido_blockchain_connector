@@ -13,6 +13,8 @@ namespace gradidoNodeRPC
 		uint32_t coinColor = 0
 	);
 
+	std::string getAddressType(const std::string& pubkeyHex, const std::string& groupAlias);
+
 	std::vector<uint64_t> getAddressTxids(const std::string& pubkeyHex, const std::string& groupAlias);
 
 	std::string getCreationSumForMonth(
