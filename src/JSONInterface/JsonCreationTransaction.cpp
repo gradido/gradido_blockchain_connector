@@ -73,7 +73,7 @@ Document JsonCreationTransaction::handle(const rapidjson::Document& params)
 	}
 	catch (...) {
 		if(publicKeyBin) mm->releaseMemory(publicKeyBin);
-		throw;
+		return handleSignAndSendTransactionExceptions();
 	}
 
 }

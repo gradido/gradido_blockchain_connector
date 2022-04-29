@@ -42,6 +42,17 @@ Document JsonRegisterAddressTransaction::handle(const rapidjson::Document& param
 	getStringParameter(params, "currentGroupAlias", currentGroupAlias);
 	getStringParameter(params, "newGroupAlias", newGroupAlias);
 
+	if (currentGroupAlias.size()) {
+		if (!model::gradido::TransactionBase::isValidGroupAlias(currentGroupAlias)) {
+			return stateError("invalid character in currentGroupAlias, only ascii allowed");
+		}
+	}
+	if (newGroupAlias.size()) {
+		if (!model::gradido::TransactionBase::isValidGroupAlias(newGroupAlias)) {
+			return stateError("invalid character in newGroupAlias, only ascii allowed");
+		}
+	}
+
 	bool movingAddress = false;
 	if (currentGroupAlias.size() && newGroupAlias.size() && currentGroupAlias != newGroupAlias) {
 		movingAddress = true;
@@ -63,6 +74,7 @@ Document JsonRegisterAddressTransaction::handle(const rapidjson::Document& param
 		}
 	}
 	catch (gradidoNodeRPC::GradidoNodeRPCException& ex) {
+		Poco::Logger::get("errorLog").error("error by requesting Gradido Node: %s", ex.getFullString());
 		return stateError("error by requesting Gradido Node");
 	}
 
@@ -92,7 +104,7 @@ Document JsonRegisterAddressTransaction::handle(const rapidjson::Document& param
 	}
 	catch (...) {
 		if (userRootPubkey) { mm->releaseMemory(userRootPubkey); }
-		throw;
+		return handleSignAndSendTransactionExceptions();
 	}
 	
 }

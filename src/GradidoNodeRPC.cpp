@@ -16,16 +16,16 @@ namespace gradidoNodeRPC {
 		}
 		catch (GradidoBlockchainException& ex) {
 			Poco::Logger::get("errorLog").error("gradido blockchain exception by call to Gradido Node: %s", ex.getFullString());
-			throw GradidoNodeRPCException();
+			throw GradidoNodeRPCException("gradido blockchain exception");
 		}
 		catch (Poco::Exception& ex) {
 			Poco::Logger::get("errorLog").error("Poco exception by call to Gradido Node: %s", ex.displayText());
-			throw GradidoNodeRPCException();
+			throw GradidoNodeRPCException("Poco exception");
 		}
 		catch (std::exception& ex) {
 			std::string what = ex.what();
 			Poco::Logger::get("errorLog").error("std::exception by call to Gradido Node: %s", what);
-			throw GradidoNodeRPCException();
+			throw GradidoNodeRPCException("std exception");
 		}
 		
 	}
