@@ -30,7 +30,7 @@ class ApolloDecayException : public GradidoBlockchainException
 public:
 	explicit ApolloDecayException(const char* what, std::string startBalance, std::string decay) noexcept;
 	std::string getFullString() const;
-	std::string getDetails() const;
+	rapidjson::Value getDetails(rapidjson::Document::AllocatorType& alloc) const;
 
 protected:
 	std::string mStartBalance;
