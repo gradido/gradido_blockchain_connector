@@ -8,6 +8,7 @@
 #include "gradido_blockchain/model/CrossGroupTransactionBuilder.h"
 #include "gradido_blockchain/http/JsonRPCRequest.h"
 #include "gradido_blockchain/lib/Decay.h"
+#include "gradido_blockchain/crypto/AuthenticatedEncryption.h"
 
 using namespace rapidjson;
 
@@ -40,7 +41,7 @@ Document JsonTransferTransaction::handle(const rapidjson::Document& params)
 			targetGroupId = group->getId();
 		}
 		catch (model::table::RowNotFoundException& ex) {
-
+			return stateError("recipientGroupAlias not found");
 		}
 	}
 
@@ -58,6 +59,9 @@ Document JsonTransferTransaction::handle(const rapidjson::Document& params)
 
 	auto recipientPublicKey = mm->getMemory(KeyPairEd25519::getPublicKeySize());
 	recipientPublicKey->copyFromProtoBytes(recipientUser->getPublicKey());
+
+	// encrypt memo
+	mMemo = encryptMemo(mMemo, recipientPublicKey->data(), mSession->getKeyPair()->getPrivateKey());
 
 	// check if balance is enough on gradido node
 	try {

@@ -366,9 +366,37 @@ For this request this error message are possible:
 - `transaction validation failed`: transaction is invalid, more infos can be found in details field from result
 	```json 
 	"details" : {
-		"what": "to short, at least 3",
-		"fieldName": "group_name",
+		"what": "amount cannot be parsed to a number",
+		"fieldName": "amount",
 		"fieldType": "string"
+	}
+	```
+	```json 
+	"details" : {
+		"what": "creation amount to high, max 1000 per month",
+		"fieldName": "amount",
+		"fieldType": "string"
+	}
+	```
+	```json 
+	"details" : {
+		"what": "creation amount to low, min 1 GDD",
+		"fieldName": "amount",
+		"fieldType": "string"
+	}
+	```
+	```json 
+	"details" : {
+		"what": "cannot parse to number",
+		"fieldName": "apolloCreatedDecay",
+		"fieldType": "number as string"
+	}
+	```
+	```json 
+	"details" : {
+		"what": "creation more than 1.000 GDD per month not allowed",
+		"fieldName": "amount",
+		"fieldType": ""
 	}
 	```
 - `error by calling iota`: by calling iota an error occured, more infos can be found in details field from result

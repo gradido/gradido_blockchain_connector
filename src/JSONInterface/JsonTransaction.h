@@ -16,6 +16,10 @@ protected:
 	std::string signAndSendTransaction(std::unique_ptr<model::gradido::GradidoTransaction> transaction, const std::string& groupAlias);	
 	bool validateApolloDecay(const model::gradido::GradidoTransaction* gradidoTransaction);
 	rapidjson::Document handleSignAndSendTransactionExceptions();
+
+	//! \return base64 encoded encrypted memo
+	static std::string encryptMemo(const std::string& memo, const unsigned char* ed25519Pubkey, const MemoryBin* ed25519Privkey);
+	static std::string decryptMemo(const std::string& base64EncodedEncryptedMemo, const unsigned char* ed25519Pubkey, const MemoryBin* ed25519Privkey);
 	
 	std::string mMemo;
 	Poco::DateTime mCreated;

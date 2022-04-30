@@ -6,6 +6,9 @@
 #include "gradido_blockchain/http/IotaRequestExceptions.h"
 #include "gradido_blockchain/model/protobufWrapper/TransactionValidationExceptions.h"
 
+#include "gradido_blockchain/crypto/AuthenticatedEncryption.h"
+#include "gradido_blockchain/crypto/KeyPairEd25519.h"
+
 #include "SessionManager.h"
 #include "ServerConfig.h"
 #include "GradidoNodeRPC.h"
@@ -101,7 +104,6 @@ uint32_t JsonTransaction::readCoinColor(const Document& params)
 
 std::string JsonTransaction::signAndSendTransaction(std::unique_ptr<model::gradido::GradidoTransaction> transaction, const std::string& groupAlias)
 {
-	// TODO: encrypt and decrypt memo
 	transaction->setMemo(mMemo).setCreated(mCreated).setApolloTransactionId(mApolloTransactionId).updateBodyBytes();
 	auto transactionBody = transaction->getTransactionBody();
 	
@@ -253,6 +255,45 @@ rapidjson::Document JsonTransaction::handleSignAndSendTransactionExceptions()
 	}
 
 	return Document();
+}
+
+
+std::string JsonTransaction::encryptMemo(const std::string& memo, const unsigned char* ed25519Pubkey, const MemoryBin* ed25519Privkey)
+{
+	auto mm = MemoryManager::getInstance();
+	// encrypt memo
+	KeyPairEd25519 pubkey(ed25519Pubkey);
+	MemoryBin* privKeyx25519 = mm->getMemory(AuthenticatedEncryption::getPrivateKeySize());
+	crypto_sign_ed25519_sk_to_curve25519(privKeyx25519->data(), ed25519Privkey->data());
+	AuthenticatedEncryption senderKey(privKeyx25519);
+	AuthenticatedEncryption recipientKey(&pubkey);
+	auto encryptedMemoBin = senderKey.encrypt(memo, &recipientKey);
+	auto resultMemo = DataTypeConverter::binToBase64(encryptedMemoBin);
+	mm->releaseMemory(encryptedMemoBin);
+
+	// debug
+	printf("encrypt: %s with sender public: %s and recipient public: %s\n",
+		resultMemo.data(), pubkey.getPublicKeyHex().data(), pubkey.getPublicKeyHex().data());
+	return std::move(resultMemo);
+}
+
+std::string JsonTransaction::decryptMemo(const std::string& base64EncodedEncryptedMemo, const unsigned char* ed25519Pubkey, const MemoryBin* ed25519Privkey)
+{
+	auto mm = MemoryManager::getInstance();
+	auto encryptedMemoBin = DataTypeConverter::base64ToBin(base64EncodedEncryptedMemo);
+	KeyPairEd25519 pubkey(ed25519Pubkey);
+	MemoryBin* privKeyx25519 = mm->getMemory(AuthenticatedEncryption::getPrivateKeySize());
+	crypto_sign_ed25519_sk_to_curve25519(privKeyx25519->data(), ed25519Privkey->data());
+	AuthenticatedEncryption senderKey(&pubkey);
+	AuthenticatedEncryption recipientKey(privKeyx25519);
+	auto clearMemo = recipientKey.decrypt(encryptedMemoBin, &senderKey);
+	if (!clearMemo) {
+		return "";
+	}
+	auto clearMemoString = clearMemo->copyAsString();
+	std::string resultMemo((const char*)clearMemo->data(), clearMemo->size());
+	mm->releaseMemory(clearMemo);
+	return std::move(resultMemo);
 }
 
 // *******************  Apollo Decay Exception ***********************
