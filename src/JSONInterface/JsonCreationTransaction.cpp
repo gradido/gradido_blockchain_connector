@@ -9,6 +9,7 @@
 #include "gradido_blockchain/model/TransactionFactory.h"
 #include "gradido_blockchain/model/protobufWrapper/TransactionValidationExceptions.h"
 #include "gradido_blockchain/lib/Decay.h"
+#include "gradido_blockchain/crypto/AuthenticatedEncryption.h"
 
 using namespace rapidjson;
 
@@ -63,6 +64,9 @@ Document JsonCreationTransaction::handle(const rapidjson::Document& params)
 	auto publicKeyBin = mm->getMemory(32);
 	publicKeyBin->copyFromProtoBytes(recipientUser->getPublicKey());
 	auto pubkeyHex = DataTypeConverter::binToHex(publicKeyBin);
+
+	// encrypt memo
+	mMemo = encryptMemo(mMemo, publicKeyBin->data(), mSession->getKeyPair()->getPrivateKey());
 
 	try {
 		auto addressType = gradidoNodeRPC::getAddressType(pubkeyHex, mSession->getGroupAlias());
