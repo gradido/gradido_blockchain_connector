@@ -67,6 +67,7 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#pro-methods">Protected Member Functions</a> &#124;
+<a href="#pro-static-methods">Static Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="class_json_transaction-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">JsonTransaction Class Reference</div></div>
@@ -116,6 +117,14 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>validateApolloDecay</
 rapidjson::Document&#160;</td><td class="memItemRight" valign="bottom"><b>handleSignAndSendTransactionExceptions</b> ()</td></tr>
 <tr class="separator:adb859cd886c4b453c552520ae5622489"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-static-methods" name="pro-static-methods"></a>
+Static Protected Member Functions</h2></td></tr>
+<tr class="memitem:a970f35cc88c039a30f63d50eb55bc723"><td class="memItemLeft" align="right" valign="top">static std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_json_transaction.html#a970f35cc88c039a30f63d50eb55bc723">encryptMemo</a> (const std::string &amp;memo, const unsigned char *ed25519Pubkey, const <a class="elRef" href="class_memory_bin.html">MemoryBin</a> *ed25519Privkey)</td></tr>
+<tr class="separator:a970f35cc88c039a30f63d50eb55bc723"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade949cb5ba3833ea452988b7ae96ee26"><td class="memItemLeft" align="right" valign="top"><a id="ade949cb5ba3833ea452988b7ae96ee26" name="ade949cb5ba3833ea452988b7ae96ee26"></a>
+static std::string&#160;</td><td class="memItemRight" valign="bottom"><b>decryptMemo</b> (const std::string &amp;base64EncodedEncryptedMemo, const unsigned char *ed25519Pubkey, const <a class="elRef" href="class_memory_bin.html">MemoryBin</a> *ed25519Privkey)</td></tr>
+<tr class="separator:ade949cb5ba3833ea452988b7ae96ee26"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
 <tr class="memitem:a9113df0163e54f83bf8f2392e12c24a6"><td class="memItemLeft" align="right" valign="top"><a id="a9113df0163e54f83bf8f2392e12c24a6" name="a9113df0163e54f83bf8f2392e12c24a6"></a>
@@ -137,6 +146,50 @@ Poco::DateTime&#160;</td><td class="memItemRight" valign="bottom"><b>mApolloDeca
 Poco::SharedPtr&lt; <a class="el" href="classmodel_1_1_session.html">model::Session</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mSession</b></td></tr>
 <tr class="separator:a3c1a048aadca0c0bf5d03a36fa5b40eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="a970f35cc88c039a30f63d50eb55bc723" name="a970f35cc88c039a30f63d50eb55bc723"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a970f35cc88c039a30f63d50eb55bc723">&#9670;&nbsp;</a></span>encryptMemo()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::string JsonTransaction::encryptMemo </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>memo</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const unsigned char *&#160;</td>
+          <td class="paramname"><em>ed25519Pubkey</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="elRef" href="class_memory_bin.html">MemoryBin</a> *&#160;</td>
+          <td class="paramname"><em>ed25519Privkey</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>base64 encoded encrypted memo </dd></dl>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li>src/JSONInterface/<a class="el" href="_json_transaction_8h_source.html">JsonTransaction.h</a></li>
 <li>src/JSONInterface/JsonTransaction.cpp</li>

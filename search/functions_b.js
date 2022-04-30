@@ -1,5 +1,6 @@
 var searchData=
 [
-  ['updatebodybytes_0',['updateBodyBytes',['classmodel_1_1gradido_1_1_gradido_transaction.html#ad378fef62c33651f1d5f93a98cf1bb08',1,'model::gradido::GradidoTransaction']]],
-  ['updatetransaction_1',['updateTransaction',['../classmodel_1_1_pending_transactions.html#a7d0d174099a4f28ee1d2c5185636782f',1,'model::PendingTransactions']]]
+  ['tojson_0',['toJson',['classmodel_1_1gradido_1_1_gradido_block.html#a806e098e7f19aaa52c8d71157c16d5db',1,'model::gradido::GradidoBlock']]],
+  ['transactionentry_1',['TransactionEntry',['classmodel_1_1_transaction_entry.html#a6229e4482960a4469c65a1711162c01c',1,'model::TransactionEntry::TransactionEntry(std::unique_ptr&lt; std::string &gt; _serializedTransaction)'],['classmodel_1_1_transaction_entry.html#a7ba798c66070d6bc85a1f5f3b6acfbf2',1,'model::TransactionEntry::TransactionEntry(uint64_t transactionNr, uint8_t month, uint16_t year, uint32_t coinColor)']]],
+  ['transform_2',['transform',['class_passphrase.html#af895aeeb6ec48b27b5ce1edea3d41142',1,'Passphrase']]]
 ];

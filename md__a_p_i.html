@@ -371,9 +371,29 @@ Possible errors</h2>
 <li><code>Internal Server Error</code>: something went wrong with Gradido Blockchain Connector, in this case look at the console output or in the logfile from Gradido Blockchain Connector</li>
 <li><code>no coin color found, was this group already registered?</code>: (depracted) check if group alias is valid and registered on blockchain</li>
 <li><code>transaction validation failed</code>: transaction is invalid, more infos can be found in details field from result <div class="fragment"><div class="line">&quot;details&quot; : {</div>
-<div class="line">    &quot;what&quot;: &quot;to short, at least 3&quot;,</div>
-<div class="line">    &quot;fieldName&quot;: &quot;group_name&quot;,</div>
+<div class="line">    &quot;what&quot;: &quot;amount cannot be parsed to a number&quot;,</div>
+<div class="line">    &quot;fieldName&quot;: &quot;amount&quot;,</div>
 <div class="line">    &quot;fieldType&quot;: &quot;string&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --> <div class="fragment"><div class="line">&quot;details&quot; : {</div>
+<div class="line">    &quot;what&quot;: &quot;creation amount to high, max 1000 per month&quot;,</div>
+<div class="line">    &quot;fieldName&quot;: &quot;amount&quot;,</div>
+<div class="line">    &quot;fieldType&quot;: &quot;string&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --> <div class="fragment"><div class="line">&quot;details&quot; : {</div>
+<div class="line">    &quot;what&quot;: &quot;creation amount to low, min 1 GDD&quot;,</div>
+<div class="line">    &quot;fieldName&quot;: &quot;amount&quot;,</div>
+<div class="line">    &quot;fieldType&quot;: &quot;string&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --> <div class="fragment"><div class="line">&quot;details&quot; : {</div>
+<div class="line">    &quot;what&quot;: &quot;cannot parse to number&quot;,</div>
+<div class="line">    &quot;fieldName&quot;: &quot;apolloCreatedDecay&quot;,</div>
+<div class="line">    &quot;fieldType&quot;: &quot;number as string&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --> <div class="fragment"><div class="line">&quot;details&quot; : {</div>
+<div class="line">    &quot;what&quot;: &quot;creation more than 1.000 GDD per month not allowed&quot;,</div>
+<div class="line">    &quot;fieldName&quot;: &quot;amount&quot;,</div>
+<div class="line">    &quot;fieldType&quot;: &quot;&quot;</div>
 <div class="line">}</div>
 </div><!-- fragment --></li>
 <li><p class="startli"><code>error by calling iota</code>: by calling iota an error occured, more infos can be found in details field from result</p>
