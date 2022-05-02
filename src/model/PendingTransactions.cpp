@@ -9,11 +9,12 @@ namespace model {
 		const std::string& _iotaMessageId, 
 		model::gradido::TransactionType _transactionType,
 		const std::string& _apolloCreatedDecay,
-		Poco::DateTime _apolloDecayStart
+		Poco::DateTime _apolloDecayStart,
+		uint64_t	   _apolloTransactionId
 	)
 		: iotaMessageId(_iotaMessageId), transactionType(_transactionType), 
 		  state(State::SENDED), 
-		  apolloCreatedDecay(_apolloCreatedDecay), apolloDecayStart(_apolloDecayStart)
+		  apolloCreatedDecay(_apolloCreatedDecay), apolloDecayStart(_apolloDecayStart), apolloTransactionId(_apolloTransactionId)
 	{
 
 	}
@@ -44,20 +45,10 @@ namespace model {
 		return &one;
 	}
 
-	void PendingTransactions::pushNewTransaction(
-		const std::string& iotaMessageId,
-			model::gradido::TransactionType transactionType,
-			const std::string& apolloCreatedDecay,
-			Poco::DateTime apolloDecayStart
-		)
+	void PendingTransactions::pushNewTransaction(PendingTransaction pendingTransaction) 
 	{
 		std::scoped_lock<std::recursive_mutex> _lock(mWorkMutex);
-		mPendingTransactions.push_back(std::move(PendingTransaction(
-			iotaMessageId, 
-			transactionType,
-			apolloCreatedDecay,
-			apolloDecayStart
-		)));
+		mPendingTransactions.push_back(std::move(pendingTransaction));
 		while (mPendingTransactions.size() > MAX_PENDING_TRANSACTIONS_IN_LIST) {
 			mPendingTransactions.pop_front();
 		}

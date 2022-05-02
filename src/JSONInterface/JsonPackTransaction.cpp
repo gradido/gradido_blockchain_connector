@@ -36,10 +36,7 @@ Document JsonPackTransaction::handle(const Document& params)
 	else if (transactionType == "registerAddress") {
 		return registerAddress(params);
 	} 
-	else if (transactionType == "groupAdd") {
-		return groupAdd(params);
-	}
-
+	
 	return stateError("transaction_type unknown");
 
 }
@@ -53,13 +50,12 @@ Document JsonPackTransaction::transfer(const Document& params)
 		"senderPubkey":"131c7f68dd94b2be4c913400ff7ff4cdc03ac2bda99c2d29edcacb3b065c67e6",
 		"recipientPubkey":"eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd",
 		"amount": "100",
-		"coinColor": "ffffffff",
+		"groupId": "550e8400-e29b-11d4-a716-446655440000",
 		"senderGroupAlias": "gdd1",
 		"recipientGroupAlias":"gdd2"
 	}
 	*/
 	std::string senderPubkey, recipientPubkey, senderGroupAlias, recipientGroupAlias, amount;
-	Poco::UInt32 coinColor = 0;
 
 	auto paramError = getStringParameter(params, "senderPubkey", senderPubkey);
 	if (paramError.IsObject()) { return paramError; }
@@ -82,7 +78,7 @@ Document JsonPackTransaction::transfer(const Document& params)
 	auto baseTransaction = TransactionFactory::createTransactionTransfer(
 		senderPubkeyBin,
 		amount,
-		readCoinColor(params),
+		readCoinGroupId(params),
 		recipientPubkeyBin
 	);
 
@@ -112,7 +108,7 @@ Document JsonPackTransaction::creation(const Document& params)
 		"memo": "AGE September 2021",
 		"recipientPubkey":"eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd",
 		"amount": "100",
-		"coinColor": "ffffffff",
+		"groupId": "550e8400-e29b-11d4-a716-446655440000",
 		"targetDate": "2021-09-01 01:00:00",
 	}
 	*/
@@ -142,7 +138,7 @@ Document JsonPackTransaction::creation(const Document& params)
 
 	std::vector<TransactionGroupAlias> transactions;
 	try {
-		auto creation = TransactionFactory::createTransactionCreation(recipientPubkeyBin, amount, readCoinColor(params), targetDate);
+		auto creation = TransactionFactory::createTransactionCreation(recipientPubkeyBin, amount, readCoinGroupId(params), targetDate);
 		transactions.push_back({ creation.release(), "" });
 	}
 	catch (...) {
@@ -225,29 +221,6 @@ Document JsonPackTransaction::registerAddress(const Document& params)
 
 }
 
-rapidjson::Document JsonPackTransaction::groupAdd(const rapidjson::Document& params)
-{
-	/*
-	* coinColor: uint32 or hex format
-	{
-		"transactionType": "groupAdd",
-		"created":"2021-01-10 10:00:00",
-		"groupName": "Gradido Academy Community",
-		"groupAlias":"gdd1",
-		"coinColor":"ff0000ff"
-	}
-	*/
-	std::string groupName, groupAlias, coinColorHex;
-
-	auto paramError = getStringParameter(params, "groupName", groupName);
-	if (paramError.IsObject()) { return paramError; }
-	paramError = getStringParameter(params, "groupAlias", groupAlias);
-	if (paramError.IsObject()) { return paramError; }
-	
-	auto transaction = TransactionFactory::createGlobalGroupAdd(groupName, groupAlias, readCoinColor(params));	
-	return resultBase64Transactions({ { transaction.release(), ""} });
-}
-
 
 Document JsonPackTransaction::resultBase64Transactions(std::vector<TransactionGroupAlias> transactions)
 {	
@@ -282,25 +255,16 @@ Document JsonPackTransaction::resultBase64Transactions(std::vector<TransactionGr
 	result.AddMember("transactions", transactionsJsonArray, alloc);
 	return result;
 }
-
-uint32_t JsonPackTransaction::readCoinColor(const rapidjson::Document& params)
+std::string JsonPackTransaction::readCoinGroupId(const rapidjson::Document& params)
 {
-	auto coinColor = params.FindMember("coinColor");
-	if (coinColor == params.MemberEnd()) {
-		return 0;
+	auto groupId = params.FindMember("coinGroupId");
+	if (groupId == params.MemberEnd()) {
+		return "";
 	}
-	if (coinColor->value.IsString()) {
-		std::string coinColorString = coinColor->value.GetString();
-		auto coinColorBin = DataTypeConverter::hexToBin(coinColorString);
-		if (!coinColorBin || coinColorBin->size() != sizeof(uint32_t)) {
-			throw HandleRequestException("coinColor isn't a valid hex string");
-		}
-		uint32_t result;
-		memcpy(&result, *coinColorBin, sizeof(uint32_t));
-		return result;		
+	if (groupId->value.IsString()) {
+		std::string coinColorString = groupId->value.GetString();
+		return std::move(coinColorString);
 	}
-	else if (coinColor->value.IsUint()) {
-		return coinColor->value.GetUint();
-	} 
-	throw HandleRequestException("coinColor has unknown type");
+
+	throw HandleRequestException("groupId has unknown type");
 }

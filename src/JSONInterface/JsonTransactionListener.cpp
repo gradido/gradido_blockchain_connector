@@ -23,25 +23,6 @@ Document JsonTransactionListener::handle(const Document& params)
 		 else {
 			 model::gradido::GradidoBlock gradidoBlock(&bin);
 			 auto transactionBody = gradidoBlock.getGradidoTransaction()->getTransactionBody();
-			 if (transactionBody->isGlobalGroupAdd()) {
-				 auto globalGroupAdd = transactionBody->getGlobalGroupAdd();
-				 std::unique_ptr<model::table::Group> group;
-				 try {
-					 group = model::table::Group::load(globalGroupAdd->getGroupAlias());
-					 group->setName(globalGroupAdd->getGroupName());
-					 group->setCoinColor(globalGroupAdd->getCoinColor());
-				 }
-				 catch (model::table::RowNotFoundException& ex) {
-					 group = std::make_unique<model::table::Group>(
-						 globalGroupAdd->getGroupName(),
-						 globalGroupAdd->getGroupAlias(),
-						 "",
-						 globalGroupAdd->getCoinColor()
-						 );
-				 }
-				 auto dbSession = ConnectionManager::getInstance()->getConnection();
-				 group->save(dbSession);
-			 }
 			 pt->updateTransaction(gradidoBlock.getMessageIdHex(), true);
 		 }
 	}
