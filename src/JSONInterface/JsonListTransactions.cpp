@@ -60,30 +60,31 @@ Document JsonListTransactions::handle(const Document& params)
 			auto pubkeyStringHex = std::string(linkedUserIt->value["pubkey"].GetString(), linkedUserIt->value["pubkey"].GetStringLength());
 			linkedUserIt->value.RemoveMember("pubkey");
 			auto userNameIt = mHexPubkeyUserNames.find(pubkeyStringHex);
+			auto typeIdIt = it->FindMember("typeId");
 			if (userNameIt != mHexPubkeyUserNames.end()) {
-				linkedUserIt->value.RemoveMember("firstName");
-				linkedUserIt->value.AddMember("firstName", Value(userNameIt->second.data(), alloc), alloc);
+				bool swapFirstName = true;
+				if (typeIdIt != it->MemberEnd()) {
+					std::string typeId = typeIdIt->value.GetString();
+					if (typeId == "CREATE") swapFirstName = false;
+				}
+				if (swapFirstName) {
+					linkedUserIt->value.RemoveMember("firstName");
+					linkedUserIt->value.AddMember("firstName", Value(userNameIt->second.data(), alloc), alloc);
+				}
 			}
 			// check memo for encryption
 			auto memoIt = it->FindMember("memo");
-			auto typeIdIt = it->FindMember("typeId");
 			if (memoIt != it->MemberEnd() && typeIdIt != it->MemberEnd()) {
 				auto memo = memoIt->value.GetString();
 				std::string typeId = typeIdIt->value.GetString();
 				if (g_base64RegExp.match(memo)) {
-					
-					auto pubkey = DataTypeConverter::hexToBin(pubkeyStringHex);
+					MemoryBin* pubkey = DataTypeConverter::hexToBin(pubkeyStringHex);
+					if(!pubkey) continue;
 					auto clearMemo = decryptMemo(memo, pubkey->data(), mSession->getKeyPair()->getPrivateKey());
 					
 					if (clearMemo.size()) {
 						it->RemoveMember("memo");
 						it->AddMember("memo", Value(clearMemo.data(), alloc), alloc);
-						printf("success decryption of: %s with sender public: %s and recipient public: %s, typeid: %s\n",
-							memo, pubkeyStringHex.data(), mSession->getPublicKeyHex().data(), typeId.data());
-					}
-					else {
-						printf("failed decryption of: %s with sender public: %s and recipient public: %s, typeid: %s\n",
-							memo, pubkeyStringHex.data(), mSession->getPublicKeyHex().data(), typeId.data());
 					}
 					mm->releaseMemory(pubkey);
 				}

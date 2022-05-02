@@ -270,10 +270,6 @@ std::string JsonTransaction::encryptMemo(const std::string& memo, const unsigned
 	auto encryptedMemoBin = senderKey.encrypt(memo, &recipientKey);
 	auto resultMemo = DataTypeConverter::binToBase64(encryptedMemoBin);
 	mm->releaseMemory(encryptedMemoBin);
-
-	// debug
-	printf("encrypt: %s with sender public: %s and recipient public: %s\n",
-		resultMemo.data(), pubkey.getPublicKeyHex().data(), pubkey.getPublicKeyHex().data());
 	return std::move(resultMemo);
 }
 

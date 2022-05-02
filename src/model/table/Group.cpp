@@ -42,6 +42,25 @@ namespace model {
 			return std::move(group);
 		}
 
+		std::unique_ptr<Group> Group::load(uint64_t id)
+		{
+			auto dbSession = ConnectionManager::getInstance()->getConnection();
+			Poco::Data::Statement select(dbSession);
+
+			GroupTuple groupTuple;
+
+			select << "SELECT id, name, groupAlias, description, coinColor, created "
+				<< " from `" << getTableName() << "`"
+				<< " where id = ?",
+				into(groupTuple), useRef(id);
+
+			if (!select.execute()) {
+				throw RowNotFoundException("couldn't load group", getTableName(), "where id = " + id);
+			}
+			auto group = std::make_unique<Group>(groupTuple);
+			return std::move(group);
+		}
+
 		void Group::save(Poco::Data::Session& dbSession)
 		{
 

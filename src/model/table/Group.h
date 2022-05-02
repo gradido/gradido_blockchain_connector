@@ -29,6 +29,7 @@ namespace model {
 			Group(const GroupTuple& group);
 
 			static std::unique_ptr<Group> load(const std::string& alias);
+			static std::unique_ptr<Group> load(uint64_t id);
 
 			// insert or update if id is != 0
 			void save(Poco::Data::Session& dbSession);
