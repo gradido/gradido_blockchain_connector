@@ -31,7 +31,6 @@ namespace model {
 		bool signTransaction(model::gradido::GradidoTransaction* gradidoTransaction);
 
 	protected:
-		std::unique_ptr<model::table::Group> askForGroupDetails();
 		void createNewUser(const std::string& userName, const std::string& groupAlias, Poco::Data::Session& dbSession);
 
 		std::string mUserName;

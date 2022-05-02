@@ -51,7 +51,8 @@ Document JsonTransferTransaction::handle(const rapidjson::Document& params)
 	paramError = getStringParameter(params, "amount", amountString);
 	if (paramError.IsObject()) { return paramError; }
 
-	auto coinGroupId = readCoinGroupId(params);
+	std::string coinGroupId;
+	getStringParameter(params, "coinGroupId", coinGroupId);
 
 	auto recipientUser = model::table::User::load(recipientName, targetGroupId);
 	if (!recipientUser) {

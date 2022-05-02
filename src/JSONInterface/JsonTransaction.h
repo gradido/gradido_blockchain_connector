@@ -12,7 +12,6 @@ class JsonTransaction : public JsonRequestHandlerJwt
 public:
 protected:
 	rapidjson::Document readSharedParameter(const rapidjson::Document& params);
-	std::string readCoinGroupId(const rapidjson::Document& params);
 	std::string signAndSendTransaction(std::unique_ptr<model::gradido::GradidoTransaction> transaction, const std::string& groupAlias);	
 	bool validateApolloDecay(const model::gradido::GradidoTransaction* gradidoTransaction);
 	rapidjson::Document handleSignAndSendTransactionExceptions();

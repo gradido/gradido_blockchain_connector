@@ -68,22 +68,6 @@ Document JsonTransaction::readSharedParameter(const Document& params)
 	return Document();
 }
 
-std::string JsonTransaction::readCoinGroupId(const Document& params)
-{
-	auto coinColor = params.FindMember("coinGroupId");
-	if (coinColor == params.MemberEnd()) {
-		return mSession->getGroupAlias();
-	}
-	if (coinColor->value.IsString()) {
-		auto mm = MemoryManager::getInstance();
-		std::string coinColorString = coinColor->value.GetString();
-		if (!coinColorString.size()) return 0;
-		return std::move(coinColorString);
-	}
-	
-	throw HandleRequestException("coinColor has unknown type");
-}
-
 std::string JsonTransaction::signAndSendTransaction(std::unique_ptr<model::gradido::GradidoTransaction> transaction, const std::string& groupAlias)
 {
 	transaction->setMemo(mMemo).setCreated(mCreated).updateBodyBytes();

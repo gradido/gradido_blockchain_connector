@@ -40,10 +40,8 @@ Document JsonCreationTransaction::handle(const rapidjson::Document& params)
 	paramError = getStringParameter(params, "amount", amountString);
 	if (paramError.IsObject()) { return paramError;}
 
-	auto coinGroupId = readCoinGroupId(params);
-	if (!coinGroupId.size()) {
-		return stateError("no coin color found, was this group already registered?");
-	}
+	std::string coinGroupId;
+	getStringParameter(params, "coinGroupId", coinGroupId);
 
 	Poco::DateTime targetDate;
 	paramError = getStringParameter(params, "targetDate", targetDateString);
