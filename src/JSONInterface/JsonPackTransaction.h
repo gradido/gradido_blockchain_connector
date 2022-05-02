@@ -21,13 +21,11 @@ protected:
 
 	rapidjson::Document transfer(const rapidjson::Document& params);
 	rapidjson::Document creation(const rapidjson::Document& params);
-	rapidjson::Document registerAddress(const rapidjson::Document& params);
-	rapidjson::Document groupAdd(const rapidjson::Document& params);
-	
+	rapidjson::Document registerAddress(const rapidjson::Document& params);	
 
 	rapidjson::Document resultBase64Transactions(std::vector<TransactionGroupAlias> transactions);
 
-	uint32_t readCoinColor(const rapidjson::Document& params);
+	std::string readCoinGroupId(const rapidjson::Document& params);
 
 	std::string mMemo;
 	Poco::DateTime mCreated;

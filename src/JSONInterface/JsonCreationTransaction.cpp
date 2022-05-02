@@ -40,8 +40,8 @@ Document JsonCreationTransaction::handle(const rapidjson::Document& params)
 	paramError = getStringParameter(params, "amount", amountString);
 	if (paramError.IsObject()) { return paramError;}
 
-	auto coinColor = readCoinColor(params);
-	if (!coinColor) {
+	auto coinGroupId = readCoinGroupId(params);
+	if (!coinGroupId.size()) {
 		return stateError("no coin color found, was this group already registered?");
 	}
 
@@ -104,7 +104,7 @@ Document JsonCreationTransaction::handle(const rapidjson::Document& params)
 			);
 		}
 
-		auto creation = TransactionFactory::createTransactionCreation(publicKeyBin, amountString, coinColor, targetDate);
+		auto creation = TransactionFactory::createTransactionCreation(publicKeyBin, amountString, coinGroupId, targetDate);
 		mm->releaseMemory(publicKeyBin);
 		publicKeyBin = nullptr;
 

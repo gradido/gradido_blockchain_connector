@@ -34,13 +34,13 @@ namespace gradidoNodeRPC {
 		const std::string& pubkeyHex,
 		const std::string& dateString,
 		const std::string& groupAlias,
-		uint32_t coinColor /*= 0*/
+		const std::string& coinGroupId/* = "" */
 	) {
 		try {	
 			Value rpcParams(kObjectType);
 			JsonRPCRequest askForAddressBalance(ServerConfig::g_GradidoNodeUri);
 			auto alloc = askForAddressBalance.getJsonAllocator();
-			rpcParams.AddMember("coinColor", coinColor, alloc);
+			rpcParams.AddMember("coinGroupId", Value(coinGroupId.data(), alloc), alloc);
 			rpcParams.AddMember("date", Value(dateString.data(), alloc), alloc);
 			rpcParams.AddMember("pubkey", Value(pubkeyHex.data(), alloc), alloc);
 			rpcParams.AddMember("groupAlias", Value(groupAlias.data(), alloc), alloc);

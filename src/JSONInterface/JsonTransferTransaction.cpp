@@ -51,7 +51,7 @@ Document JsonTransferTransaction::handle(const rapidjson::Document& params)
 	paramError = getStringParameter(params, "amount", amountString);
 	if (paramError.IsObject()) { return paramError; }
 
-	auto coinColor = readCoinColor(params);
+	auto coinGroupId = readCoinGroupId(params);
 
 	auto recipientUser = model::table::User::load(recipientName, targetGroupId);
 	if (!recipientUser) {
@@ -79,7 +79,7 @@ Document JsonTransferTransaction::handle(const rapidjson::Document& params)
 		// check if balance is enough on gradido node
 		std::string created;
 		getStringParameter(params, "created", created);
-		auto balanceString = gradidoNodeRPC::getAddressBalance(mSession->getPublicKeyHex(), created, mSession->getGroupAlias(), coinColor);
+		auto balanceString = gradidoNodeRPC::getAddressBalance(mSession->getPublicKeyHex(), created, mSession->getGroupAlias(), coinGroupId);
 		auto balance = MathMemory::create();
 		if (mpfr_set_str(balance->getData(), balanceString.data(), 10, gDefaultRound)) {
 			Poco::Logger::get("errorLog").critical("cannot parse balance string from gradido node: %s", balanceString);
@@ -100,7 +100,7 @@ Document JsonTransferTransaction::handle(const rapidjson::Document& params)
 
 	try {
 		std::string lastIotaMessageId;
-		auto baseTransaction = TransactionFactory::createTransactionTransfer(senderPublicKey, amountString, coinColor, recipientPublicKey);
+		auto baseTransaction = TransactionFactory::createTransactionTransfer(senderPublicKey, amountString, coinGroupId, recipientPublicKey);
 		mm->releaseMemory(senderPublicKey);
 		senderPublicKey = nullptr;
 

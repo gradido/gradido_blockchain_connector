@@ -9,8 +9,8 @@ namespace gradidoNodeRPC
 	std::string getAddressBalance(
 		const std::string& pubkeyHex, 
 		const std::string& dateString, 
-		const std::string& groupAlias, 
-		uint32_t coinColor = 0
+		const std::string& groupAlias,
+		const std::string& coinGroupId = ""
 	);
 
 	std::string getAddressType(const std::string& pubkeyHex, const std::string& groupAlias);
