@@ -44,6 +44,9 @@ Document JsonTransferTransaction::handle(const rapidjson::Document& params)
 			return stateError("recipientGroupAlias not found");
 		}
 	}
+	else {
+		recipientGroupAlias = mSession->getGroupAlias();
+	}
 
 	paramError = getStringParameter(params, "amount", amountString);
 	if (paramError.IsObject()) { return paramError; }
@@ -63,8 +66,17 @@ Document JsonTransferTransaction::handle(const rapidjson::Document& params)
 	// encrypt memo
 	mMemo = encryptMemo(mMemo, recipientPublicKey->data(), mSession->getKeyPair()->getPrivateKey());
 
-	// check if balance is enough on gradido node
+	
 	try {
+		// check if recipient exist
+		auto recipientPubkeyHex = DataTypeConverter::binToHex(recipientPublicKey);
+
+		auto addressType = gradidoNodeRPC::getAddressType(recipientPubkeyHex, recipientGroupAlias);
+		if (addressType == model::gradido::RegisterAddress::getAddressStringFromType(proto::gradido::RegisterAddress_AddressType_NONE)) {
+			return stateError("address isn't registered on blockchain");
+		}
+		
+		// check if balance is enough on gradido node
 		std::string created;
 		getStringParameter(params, "created", created);
 		auto balanceString = gradidoNodeRPC::getAddressBalance(mSession->getPublicKeyHex(), created, mSession->getGroupAlias(), coinColor);
