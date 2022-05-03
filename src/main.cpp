@@ -7,6 +7,8 @@
 #include "Poco/DateTimeParser.h"
 #include "Poco/DateTimeFormatter.h"
 
+#include "iota_rust_clib.h"
+
 #ifndef _TEST_BUILD
 
 
@@ -17,6 +19,7 @@ int main(int argc, char** argv)
 		printf("error initializing sodium, early exit\n");
 		return -1;
 	}
+	print_hello();
 
 	std::string dateTimeString = __DATE__;
 	//printf("Building date time string: %s\n", dateTimeString.data());

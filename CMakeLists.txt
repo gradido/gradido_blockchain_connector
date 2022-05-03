@@ -24,6 +24,7 @@ include_directories(
 	"dependencies/gradido_blockchain/dependencies/protobuf/src"
 	"build"
 	"build/dependencies/gradido_blockchain/include"
+	"iota_rust_clib/include"
 	"src"
 )
 
@@ -105,6 +106,12 @@ endif()
 
 add_executable(GradidoBlockchainConnector ${LOCAL_SRCS})
 
+############################# add rust and iota.rs ####################
+# https://webdevolutions.blob.core.windows.net/blog/pdf/insider-series-using-rust-code-in-a-cc-project-with-cmake.pdf
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+enable_language(Rust)
+include(CMakeCargo)
+add_subdirectory(iota_rust_clib)
 ######################################################################
 
 if(WIN32)
@@ -123,7 +130,11 @@ if(WIN32)
 	target_link_libraries(GradidoBlockchainConnector ${CONAN_LIBS} libprotobuf)
 endif()
 
-target_link_libraries(GradidoBlockchainConnector $<TARGET_OBJECTS:GradidoBlockchain>)
+target_link_libraries(GradidoBlockchainConnector $<TARGET_OBJECTS:GradidoBlockchain> iota_rust_clib)
+if(WIN32)
+	# needed for windows if linking to a rust lib
+	target_link_libraries(GradidoBlockchainConnector ws2_32 userenv)
+endif()
 
 ############################## build gradido blockchain connector ###################################
 

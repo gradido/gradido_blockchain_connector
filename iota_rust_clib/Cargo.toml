@@ -1,0 +1,8 @@
+[package]
+name = "iota_rust_clib"
+version = "0.1.0"
+edition = "2018"
+authors = ["einhornimmond <info@einhornimmond.de>"]
+
+[lib]
+crate-type = ["staticlib"]

@@ -1,0 +1,1 @@
+cargo_build(NAME iota_rust_clib)
