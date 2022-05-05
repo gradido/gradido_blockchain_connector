@@ -19,7 +19,7 @@ int main(int argc, char** argv)
 		printf("error initializing sodium, early exit\n");
 		return -1;
 	}
-	print_hello();
+	//print_hello();
 
 	std::string dateTimeString = __DATE__;
 	//printf("Building date time string: %s\n", dateTimeString.data());

@@ -1,8 +1,15 @@
 [package]
 name = "iota_rust_clib"
 version = "0.1.0"
-edition = "2018"
+edition = "2021"
 authors = ["einhornimmond <info@einhornimmond.de>"]
 
 [lib]
-crate-type = ["staticlib"]
+crate-type = ["cdylib"]
+
+[dependencies]
+iota-client = "1.1.1"
+iota-crypto = { version = "=0.9.1", default-features = false }
+# asynchronous runtime
+tokio = { version = "1.12.0", features = ["full"] }
+async-ffi = "0.4.0"

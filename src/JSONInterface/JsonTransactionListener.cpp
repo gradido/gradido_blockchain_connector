@@ -11,6 +11,7 @@ Document JsonTransactionListener::handle(const Document& params)
 {
 	std::string transactionBase64, error, iotaMessageId;
 	getStringParameter(params, "transactionBase64", transactionBase64);
+	printf("transaction base 64: \n%s\n", transactionBase64.data());
 	getStringParameter(params, "error", error);
 	getStringParameter(params, "messageId", iotaMessageId);
 
