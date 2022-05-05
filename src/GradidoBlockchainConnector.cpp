@@ -23,6 +23,8 @@
 #include <sodium.h>
 #include <google/protobuf/stubs/common.h>
 
+#include "iota_rust_clib.h"
+
 GradidoBlockchainConnector::GradidoBlockchainConnector()
 	: _helpRequested(false)
 {
@@ -197,6 +199,20 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 		json_srv.start();
 
 		std::clog << "[GradidoBlockchainConnector::main] started in " << usedTime.string().data() << std::endl;
+
+		std::clog << "try out iota" << std::endl;
+		auto uri = ServerConfig::g_IotaRequestHandler->getRequestUri();
+		auto iotaUrl = "http://" + uri.getHost() + ":" + std::to_string(uri.getPort());
+		//iotaUrl = "https://api.lb-0.h.chrysalis-devnet.iota.cafe";
+		std::clog << "iota: " << iotaUrl << std::endl;
+		auto result = iota_send_indiced_transaction(
+			iotaUrl.data(),
+			"GRADIDO", 
+			"Message"
+		);
+		printf("return with: %s\n", result);
+		free_rust_string(result);
+
 		// wait for CTRL-C or kill
 		waitForTerminationRequest();
 

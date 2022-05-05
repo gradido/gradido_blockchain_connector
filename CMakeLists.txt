@@ -130,10 +130,13 @@ if(WIN32)
 	target_link_libraries(GradidoBlockchainConnector ${CONAN_LIBS} libprotobuf)
 endif()
 
-target_link_libraries(GradidoBlockchainConnector $<TARGET_OBJECTS:GradidoBlockchain> iota_rust_clib)
+target_link_libraries(GradidoBlockchainConnector $<TARGET_OBJECTS:GradidoBlockchain> )
 if(WIN32)
 	# needed for windows if linking to a rust lib
-	target_link_libraries(GradidoBlockchainConnector ws2_32 userenv)
+	find_library(IOTA_RUST_C_LIB iota_rust_clib.dll.lib PATHS "build/iota_rust_clib/x86_64-pc-windows-msvc/debug" REQUIRED)
+	target_link_libraries(GradidoBlockchainConnector ${IOTA_RUST_C_LIB} ws2_32 userenv)
+else() 
+	target_link_libraries(GradidoBlockchainConnector iota_rust_clib)
 endif()
 
 ############################## build gradido blockchain connector ###################################
