@@ -422,30 +422,131 @@ Possible errors</h2>
 </li>
 </ul>
 <h1><a class="anchor" id="autotoc_md19"></a>
-autotoc_md19</h1>
-<p >/transfer</p>
-<h1><a class="anchor" id="autotoc_md20"></a>
-autotoc_md20</h1>
+Transfer Transaction</h1>
+<ul>
+<li>send gradidos from one address to another</li>
+<li>need one signature from the sender user</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md20"></a>
+Request</h2>
+<p ><code>POST <a href="http://localhost:1271/transfer">http://localhost:1271/transfer</a></code></p>
+<p >a jwt Token returned from a Login Request transfered as Authorization Header is mandatory</p>
+<div class="fragment"><div class="line">{</div>
+<div class="line">    &quot;memo&quot;:&quot;test transfer&quot;,</div>
+<div class="line">    &quot;recipientName&quot;:&quot;testUser1&quot;,</div>
+<div class="line">    &quot;amount&quot;:&quot;100&quot;,</div>
+<div class="line">    &quot;created&quot;:&quot;2022-04-21T20:08:53.406Z&quot;,</div>
+<div class="line">    &quot;apolloTransactionId&quot;:&quot;1&quot;,</div>
+<div class="line">    &quot;apolloCreatedDecay&quot;: &quot;0&quot;,</div>
+<div class="line">    &quot;apolloDecayStart&quot;: &quot;2022-04-21T19:13:01.506Z&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><ul>
+<li><code>memo</code>: comment for transaction, will be encrypted on blockchain, at least 5 character long , maximal 334 character long</li>
+<li><code>recipientName</code>: name for lookup in users table to choose correct pubkey</li>
+<li><code>amount</code>: amount as decimal number string</li>
+<li><code>created</code>: The current date and time on creating this transaction</li>
+<li><code>apolloTransactionId</code>: (optional) transaction identifier from apollo</li>
+<li><code>apolloCreatedDecay</code>: (optional) decay from balance at apolloDecayStart to created</li>
+<li><code>apolloDecayStart</code>: (optional) date from last transaction, starting point for decay calculation</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md21"></a>
+Response</h2>
+<p >If transaction was successfully send via Iota the result should be something like that:</p>
+<div class="fragment"><div class="line">{</div>
+<div class="line">     &quot;state&quot;:&quot;success&quot;,</div>
+<div class="line">     &quot;iotaMessageId&quot;:&quot;cabb3ff013267130177a93ef8931b9c8844e36fcd07961d7a285c200906d0512&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md22"></a>
+Possible errors</h2>
+<p >Errors have the format like in <a href="#error_reporting">Error Reporting</a> at the begin of file shown. For this request this error message are possible:</p>
+<ul>
+<li><code>invalid ip</code>: the login which created this jwt token, came from another ip</li>
+<li><code>invalid jwt token</code>: jwt token couldn't be verified or don't contain expected data, or was timed out</li>
+<li><code>no session found</code>: no session for name in jwt token found, maybe Gradido Blockchain Connector was restarted since creating this jwt token or it was deleted because the time last access was longer than the configured <code>session.duration_seconds</code></li>
+<li><code>cannot parse created</code>: created date cannot be parsed (Supported Formats)[<a href="https://docs.pocoproject.org/current/Poco.DateTimeFormat.html">https://docs.pocoproject.org/current/Poco.DateTimeFormat.html</a>] look at details field for more infos</li>
+<li><code>cannot parse apollo decay start</code>: decay start date cannot be parsed (Supported Formats)[<a href="https://docs.pocoproject.org/current/Poco.DateTimeFormat.html">https://docs.pocoproject.org/current/Poco.DateTimeFormat.html</a>] look at details field for more infos</li>
+<li><code>unknown recipient user</code>: couldn't find recipient user in db</li>
+<li><code>address isn't registered on blockchain</code>: please make a register address transaction before with this address</li>
+<li><code>cannot parse amount to number</code>: amount isn't a valid number for mpfr string to number parser</li>
+<li><code>insufficient balance</code>: according to gradido node, the sender user hasn't enough gradidos for sending the desired amount</li>
+<li><code>error with apollo decay</code>: decay calculation from apollo deviates more than 0.00001 from Gradido Node decay calculation</li>
+<li><code>sender and recipient are the same</code>: if sender and recipient are the same address</li>
+<li><code>error by requesting Gradido Node</code>: error in the communication with Gradido Node<ul>
+<li>is the key <code>gradidoNode</code> filled correctly in Gradido Blockchain Connector Properties?</li>
+<li>is the Gradido Node running and the last Version?</li>
+<li>for more details look into console or log output from Gradido Blockchain Connector</li>
+</ul>
+</li>
+<li><code>Internal Server Error</code>: something went wrong with Gradido Blockchain Connector, in this case look at the console output or in the logfile from Gradido Blockchain Connector</li>
+<li><p class="startli"><code>transaction validation failed</code>: transaction is invalid, more infos can be found in details field from result</p>
+<div class="fragment"><div class="line">&quot;details&quot; : {</div>
+<div class="line">    &quot;what&quot;: &quot;amount cannot be parsed to a number&quot;,</div>
+<div class="line">    &quot;fieldName&quot;: &quot;amount&quot;,</div>
+<div class="line">    &quot;fieldType&quot;: &quot;string&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --> <div class="fragment"><div class="line">&quot;details&quot; : {</div>
+<div class="line">    &quot;what&quot;: &quot;amount is empty&quot;,</div>
+<div class="line">    &quot;fieldName&quot;: &quot;amount&quot;,</div>
+<div class="line">    &quot;fieldType&quot;: &quot;string&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --> <div class="fragment"><div class="line">&quot;details&quot; : {</div>
+<div class="line">    &quot;what&quot;: &quot;zero or negative amount&quot;,</div>
+<div class="line">    &quot;fieldName&quot;: &quot;amount&quot;,</div>
+<div class="line">    &quot;fieldType&quot;: &quot;string&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --> <div class="fragment"><div class="line">&quot;details&quot; : {</div>
+<div class="line">    &quot;what&quot;: &quot;cannot parse to number&quot;,</div>
+<div class="line">    &quot;fieldName&quot;: &quot;apolloCreatedDecay&quot;,</div>
+<div class="line">    &quot;fieldType&quot;: &quot;number as string&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --></li>
+<li><p class="startli"><code>error by calling iota</code>: by calling iota an error occured, more infos can be found in details field from result</p>
+<div class="fragment"><div class="line">&quot;details&quot;: {</div>
+<div class="line">    &quot;what&quot;: &quot;no tips&quot;,</div>
+<div class="line">    &quot;url&quot;: &quot;api.lb-0.h.chrysalis-devnet.iota.cafe/api/v1/tips&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><p> iota hasn't returned previous iota transactions, if that ever happen I don't know what to do</p>
+<div class="fragment"><div class="line">&quot;details&quot;: {</div>
+<div class="line">    &quot;what&quot;: &quot;error parsing request answer&quot;,</div>
+<div class="line">    &quot;parseErrorCode&quot;: &quot;The document is empty.&quot;,</div>
+<div class="line">    &quot;parseErrorPosition&quot;: 0,</div>
+<div class="line">    &quot;src&quot;: &quot;&lt;iota response as raw text&gt;&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><p> iota returned invalid json, all possible rapidjson parse error codes: <a href="https://rapidjson.org/group___r_a_p_i_d_j_s_o_n___e_r_r_o_r_s.html#ga633f43fd92e6ed5ceb87dbf570647847">rapidjson error codes</a></p>
+<div class="fragment"><div class="line">&quot;details&quot;: {</div>
+<div class="line">    &quot;what&quot;: &quot;data member in response missing&quot;,</div>
+<div class="line">    &quot;url&quot;: &quot;api.lb-0.h.chrysalis-devnet.iota.cafe/api/v1/messages&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><p> the response for pushing Gradido Transaction as iota message to iota don't contain <code>data</code> field, so maybe the iota api changed</p>
+<div class="fragment"><div class="line">&quot;details&quot;: {</div>
+<div class="line">    &quot;what&quot;: &quot;messageId in response is missing or not a string&quot;,</div>
+<div class="line">    &quot;url&quot;: &quot;api.lb-0.h.chrysalis-devnet.iota.cafe/api/v1/messages&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><p> the response for pushing Gradido Transaction as iota message to iota don't contain <code>messageId</code> field, so maybe the api changed</p>
+</li>
+</ul>
+<h1><a class="anchor" id="autotoc_md23"></a>
+autotoc_md23</h1>
 <p >/notify</p>
-<h1><a class="anchor" id="autotoc_md21"></a>
-autotoc_md21</h1>
+<h1><a class="anchor" id="autotoc_md24"></a>
+autotoc_md24</h1>
 <p >/listTransactions</p>
-<h1><a class="anchor" id="autotoc_md22"></a>
-autotoc_md22</h1>
+<h1><a class="anchor" id="autotoc_md25"></a>
+autotoc_md25</h1>
 <p >/listPending</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md24"></a>
+<h1><a class="anchor" id="autotoc_md27"></a>
 Old Api v1</h1>
-<h1><a class="anchor" id="autotoc_md25"></a>
+<h1><a class="anchor" id="autotoc_md28"></a>
 Pack Transaction</h1>
 <p >Pack Transaction as protobuf Array, ready for signing The returned bodyBytes are in base64 format. They must be at first unpacked in a binary array. Than they can be signed with sodium.crypto_sign_detached (<a href="https://sodium-friends.github.io/docs/docs/signing#crypto_sign_detached">https://sodium-friends.github.io/docs/docs/signing#crypto_sign_detached</a>) m ist the binary body bytes buffer sk is the private key of the user</p>
 <p >currently every transaction need only one signature but this maybe change in future, or new transaction types added which need more than one signature</p>
 <p >After signing sendTransactionIota can be called for every transaction which consists of bodyBytes and a signature public key pair list and with the corresponding group alias</p>
 <p >For transactions which belong to two blockchains actually two transactions are generated and need to be signed and send</p>
-<h2><a class="anchor" id="autotoc_md26"></a>
+<h2><a class="anchor" id="autotoc_md29"></a>
 Request</h2>
 <p ><code>POST <a href="http://localhost/login_api/packTransaction">http://localhost/login_api/packTransaction</a></code></p>
-<h3><a class="anchor" id="autotoc_md27"></a>
+<h3><a class="anchor" id="autotoc_md30"></a>
 Transfer</h3>
 <p >Needed to be signed from sender user</p>
 <div class="fragment"><div class="line">{   </div>
@@ -456,7 +557,7 @@ Transfer</h3>
 <div class="line">    &quot;recipientPubkey&quot;:&quot;eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd&quot;,</div>
 <div class="line">    &quot;amount&quot;: 1000000,</div>
 <div class="line">}</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md28"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md31"></a>
 Cross-Group Transfer</h3>
 <p >Needed to be signed from sender user</p>
 <div class="fragment"><div class="line">{   </div>
@@ -469,7 +570,7 @@ Cross-Group Transfer</h3>
 <div class="line">    &quot;senderGroupAlias&quot;: &quot;gdd1&quot;,</div>
 <div class="line">    &quot;recipientGroupAlias&quot;:&quot;gdd2&quot;</div>
 <div class="line">}</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md29"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md32"></a>
 Creation</h3>
 <p >Needed to be signed from another user from this group which isn't the recipient After implementing roles on blockchain, the signing person need to have the correct role for this</p>
 <div class="fragment"><div class="line">{   </div>
@@ -480,7 +581,7 @@ Creation</h3>
 <div class="line">    &quot;amount&quot;: 10000000,</div>
 <div class="line">    &quot;targetDate&quot;: &quot;2021-09-01 01:00:00&quot;,</div>
 <div class="line">}</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md30"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md33"></a>
 Group Member Add</h3>
 <p >Needed to be signed from the user to add</p>
 <div class="fragment"><div class="line">{</div>
@@ -488,7 +589,7 @@ Group Member Add</h3>
 <div class="line">    &quot;created&quot;:&quot;2021-01-10 10:00:00&quot;,</div>
 <div class="line">    &quot;userRootPubkey&quot;:&quot;eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd&quot;,</div>
 <div class="line">}</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md31"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md34"></a>
 Group Member Move</h3>
 <p >Needed to be signed from the user to move</p>
 <div class="fragment"><div class="line">{</div>
@@ -511,7 +612,7 @@ Group Member Move</h3>
 <li><code>currentGroupAlias</code>: only needed for moving user, group alias from where the user is from</li>
 <li><code>newGroupAlias</code>: only needed for moving user, group alias from the user where they are moving to</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md32"></a>
+<h2><a class="anchor" id="autotoc_md35"></a>
 Response</h2>
 <p >For Local Transactions which happen only on this group</p>
 <div class="fragment"><div class="line">{</div>
@@ -533,9 +634,9 @@ Response</h2>
 <div class="line">        }</div>
 <div class="line">    ]</div>
 <div class="line">}</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md33"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md36"></a>
 Send Transaction</h1>
-<h2><a class="anchor" id="autotoc_md34"></a>
+<h2><a class="anchor" id="autotoc_md37"></a>
 Request</h2>
 <p ><code>POST <a href="http://localhost/login_api/sendTransactionIota">http://localhost/login_api/sendTransactionIota</a></code></p>
 <p >with </p><div class="fragment"><div class="line">{</div>
@@ -548,7 +649,7 @@ Request</h2>
 <div class="line">    ],</div>
 <div class="line">    &quot;groupAlias&quot;:&quot;gdd1&quot;</div>
 <div class="line">}</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md35"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md38"></a>
 Response</h2>
 <div class="fragment"><div class="line">{</div>
 <div class="line">    &quot;state&quot;: &quot;success&quot;,</div>
