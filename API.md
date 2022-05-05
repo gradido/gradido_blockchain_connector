@@ -464,7 +464,6 @@ a jwt Token returned from a Login Request transfered as Authorization Header is 
 - `apolloDecayStart`: (optional) date from last transaction, starting point for decay calculation
 
 ### Response
-
 If transaction was successfully send via Iota the result should be something like that:
 
 ```json
@@ -561,11 +560,135 @@ For this request this error message are possible:
 	```
 	the response for pushing Gradido Transaction as iota message to iota don't contain `messageId` field, so maybe the api changed
 
-##
-/notify
+## Notify Gradido Blockchain Connector for a new processed transaction
+- usually called from Gradido Node
+- inform Gradido Blockchain Connector about the resultat from a from Gradido Node checked transaction
+- update [PendingTransaction](https://gradido.github.io/gradido_blockchain_connector/structmodel_1_1_pending_transactions_1_1_pending_transaction.html) if transaction was found, else ignore
 
-##
-/listTransactions
+### Request
+`POST http://localhost:1271/notify`
+
+```json
+{
+	"transactionBase64":"CAYSkgIKZgpkCiCxCkrYc4xCM/KyT/Fz5w/b1aimrayiCGmWjxGhLH3G7xJAR6h5ZOC19rN+FMKAVLixcGe59Xo2AA00vmzqnh6EPzTqRwLpozBWoAHD4Q8PpyeBZv14fn7uFDpAWJz1ZEPmDxKnAQpMU0MxMzVzWHlPYzYxaUkwZW1iWVlCd0lYWXB4V0EvcUFvLzA1NkNHd1dlWXZHREI3ZFBOcjdvUUxUdUVaUGdOZ1dvWUt2Qm5taUE9PRIGCMHczpMGGgMzLjIySgomCiCxCkrYc4xCM/KyT/Fz5w/b1aimrayiCGmWjxGhLH3G7xICMTASIKD2C4nfxCHGlgc32lshdSRAfBA6NsnQ+wwmSp0yn3LfGgYIydzOkwYiAzMuMSog/zQje4z6N4iXo+XvTZBZC5tde0diNp/yNWTRn7DHizMyIGUZpGix3iMWYToefRdAkGRV1QyEHbdFUTpbRPdm7aT6Oi0yOTc0Ljg1NjE3MTUyOTIwMTkzOTEwMDU3MDQ3OTcxMTAzMzExMjc0MDc3Nzg=",
+	"error":"testUser1",
+	"messageId":"100",
+}
+```
+- `transactionBase64`: Gradido Block serialized and base64 encoded
+- `error`: contain error text, only set if an error occured
+- `messageId`: iota message id for identify transaction, only set if an error occured
+
+### Response
+Response always with:
+
+```json
+{
+     "state":"success"
+}
+```
+
+## List all transaction from a user
+- retrieve transaction list from Gradido Node
+- replace all pubkey with name from db if found
+- decrypt memos
+- pagination
+- don't request gdt balance
+- format oriented on frontend list transaction format
+- take user and group alias from session
+
+### Request
+`POST http://localhost:1271/listTransactions`
+
+a jwt Token returned from a Login Request transfered as Authorization Header is mandatory
+
+```json
+{
+	"currentPage": 1,
+	"pageSize": 25,
+	"orderDESC": true,
+	"onlyCreations": false
+}
+```
+
+- `currentPage`: Page for pagination
+- `pageSize`: how many entries should be on a page
+- `orderDESC`: order of entries
+- `onlyCreations`: if true return only creation transactions
+
+### Response 
+```json
+{
+	"state": "success",
+	"transactionList": {
+		"balanceGDT": "0",
+		"linkCount": 0,
+		"count": 2,
+		"transactions": [
+			{
+				"typeId": "DECAY",
+				"amount": "-0.00031014282695195957122893225557679155061163564",
+				"balance": "19.999689857173048040428771067744423208449388",
+				"memo": "",
+				"id": -1,
+				"linkedUser": {
+					"__typename": "User",
+					"firstName": "",
+					"lastName": ""
+				},
+				"balanceDate": "2022-05-05T11:12:11.252Z",
+				"decay": {
+					"decay": "-0.00031014282695195957122893225557679155061163564",
+					"start": "2022-05-05T11:00:25.000Z",
+					"end": "2022-05-05T11:12:11.252Z",
+					"duration": 706,
+					"__typename": "Decay"
+				},
+				"firstTransaction": false,
+				"__typename": "Transaction"
+			},
+			{
+				"typeId": "RECEIVE",
+				"amount": "10",
+				"balance": "20",
+				"__typename": "Transaction",
+				"id": 7,
+				"linkedUser": {
+					"__typename": "User",
+					"lastName": "",
+					"firstName": "DarioFrodo"
+				},
+				"balanceDate": "2022-05-05T11:00:25.000Z",
+				"decay": {
+					"decay": "0",
+					"start": "2022-05-05T11:00:25.000Z",
+					"end": "2022-05-05T11:00:25.000Z",
+					"duration": 0,
+					"__typename": "Decay"
+				},
+				"firstTransaction": false,
+				"memo": "test transfer 1"
+			},
+			{
+				"typeId": "RECEIVE",
+				"amount": "10",
+				"balance": "10",
+				"__typename": "Transaction",
+				"id": 6,
+				"linkedUser": {
+					"__typename": "User",
+					"lastName": "",
+					"firstName": "DarioFrodo"
+				},
+				"balanceDate": "2022-05-05T11:00:25.000Z",
+				"firstTransaction": true,
+				"memo": "test transfer 1"
+			}
+		],
+		"balance": "19.999689857173048040428771067744423208449388"
+	}
+}
+```
 
 ##
 /listPending
