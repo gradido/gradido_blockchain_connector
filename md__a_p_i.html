@@ -526,27 +526,146 @@ Possible errors</h2>
 </li>
 </ul>
 <h1><a class="anchor" id="autotoc_md23"></a>
-autotoc_md23</h1>
-<p >/notify</p>
-<h1><a class="anchor" id="autotoc_md24"></a>
-autotoc_md24</h1>
-<p >/listTransactions</p>
-<h1><a class="anchor" id="autotoc_md25"></a>
-autotoc_md25</h1>
+Notify Gradido Blockchain Connector for a new processed transaction</h1>
+<ul>
+<li>usually called from Gradido Node</li>
+<li>inform Gradido Blockchain Connector about the resultat from a from Gradido Node checked transaction</li>
+<li>update <a href="https://gradido.github.io/gradido_blockchain_connector/structmodel_1_1_pending_transactions_1_1_pending_transaction.html">PendingTransaction</a> if transaction was found, else ignore</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md24"></a>
+Request</h2>
+<p ><code>POST <a href="http://localhost:1271/notify">http://localhost:1271/notify</a></code></p>
+<div class="fragment"><div class="line">{</div>
+<div class="line">    &quot;transactionBase64&quot;:&quot;CAYSkgIKZgpkCiCxCkrYc4xCM/KyT/Fz5w/b1aimrayiCGmWjxGhLH3G7xJAR6h5ZOC19rN+FMKAVLixcGe59Xo2AA00vmzqnh6EPzTqRwLpozBWoAHD4Q8PpyeBZv14fn7uFDpAWJz1ZEPmDxKnAQpMU0MxMzVzWHlPYzYxaUkwZW1iWVlCd0lYWXB4V0EvcUFvLzA1NkNHd1dlWXZHREI3ZFBOcjdvUUxUdUVaUGdOZ1dvWUt2Qm5taUE9PRIGCMHczpMGGgMzLjIySgomCiCxCkrYc4xCM/KyT/Fz5w/b1aimrayiCGmWjxGhLH3G7xICMTASIKD2C4nfxCHGlgc32lshdSRAfBA6NsnQ+wwmSp0yn3LfGgYIydzOkwYiAzMuMSog/zQje4z6N4iXo+XvTZBZC5tde0diNp/yNWTRn7DHizMyIGUZpGix3iMWYToefRdAkGRV1QyEHbdFUTpbRPdm7aT6Oi0yOTc0Ljg1NjE3MTUyOTIwMTkzOTEwMDU3MDQ3OTcxMTAzMzExMjc0MDc3Nzg=&quot;,</div>
+<div class="line">    &quot;error&quot;:&quot;testUser1&quot;,</div>
+<div class="line">    &quot;messageId&quot;:&quot;100&quot;,</div>
+<div class="line">}</div>
+</div><!-- fragment --><ul>
+<li><code>transactionBase64</code>: Gradido Block serialized and base64 encoded</li>
+<li><code>error</code>: contain error text, only set if an error occured</li>
+<li><code>messageId</code>: iota message id for identify transaction, only set if an error occured</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md25"></a>
+Response</h2>
+<p >Response always with:</p>
+<div class="fragment"><div class="line">{</div>
+<div class="line">     &quot;state&quot;:&quot;success&quot;</div>
+<div class="line">}</div>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md26"></a>
+List all transaction from a user</h1>
+<ul>
+<li>retrieve transaction list from Gradido Node</li>
+<li>replace all pubkey with name from db if found</li>
+<li>decrypt memos</li>
+<li>pagination</li>
+<li>don't request gdt balance</li>
+<li>format oriented on frontend list transaction format</li>
+<li>take user and group alias from session</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md27"></a>
+Request</h2>
+<p ><code>POST <a href="http://localhost:1271/listTransactions">http://localhost:1271/listTransactions</a></code></p>
+<p >a jwt Token returned from a Login Request transfered as Authorization Header is mandatory</p>
+<div class="fragment"><div class="line">{</div>
+<div class="line">    &quot;currentPage&quot;: 1,</div>
+<div class="line">    &quot;pageSize&quot;: 25,</div>
+<div class="line">    &quot;orderDESC&quot;: true,</div>
+<div class="line">    &quot;onlyCreations&quot;: false</div>
+<div class="line">}</div>
+</div><!-- fragment --><ul>
+<li><code>currentPage</code>: Page for pagination</li>
+<li><code>pageSize</code>: how many entries should be on a page</li>
+<li><code>orderDESC</code>: order of entries</li>
+<li><code>onlyCreations</code>: if true return only creation transactions</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md28"></a>
+Response</h2>
+<div class="fragment"><div class="line">{</div>
+<div class="line">    &quot;state&quot;: &quot;success&quot;,</div>
+<div class="line">    &quot;transactionList&quot;: {</div>
+<div class="line">        &quot;balanceGDT&quot;: &quot;0&quot;,</div>
+<div class="line">        &quot;linkCount&quot;: 0,</div>
+<div class="line">        &quot;count&quot;: 2,</div>
+<div class="line">        &quot;transactions&quot;: [</div>
+<div class="line">            {</div>
+<div class="line">                &quot;typeId&quot;: &quot;DECAY&quot;,</div>
+<div class="line">                &quot;amount&quot;: &quot;-0.00031014282695195957122893225557679155061163564&quot;,</div>
+<div class="line">                &quot;balance&quot;: &quot;19.999689857173048040428771067744423208449388&quot;,</div>
+<div class="line">                &quot;memo&quot;: &quot;&quot;,</div>
+<div class="line">                &quot;id&quot;: -1,</div>
+<div class="line">                &quot;linkedUser&quot;: {</div>
+<div class="line">                    &quot;__typename&quot;: &quot;User&quot;,</div>
+<div class="line">                    &quot;firstName&quot;: &quot;&quot;,</div>
+<div class="line">                    &quot;lastName&quot;: &quot;&quot;</div>
+<div class="line">                },</div>
+<div class="line">                &quot;balanceDate&quot;: &quot;2022-05-05T11:12:11.252Z&quot;,</div>
+<div class="line">                &quot;decay&quot;: {</div>
+<div class="line">                    &quot;decay&quot;: &quot;-0.00031014282695195957122893225557679155061163564&quot;,</div>
+<div class="line">                    &quot;start&quot;: &quot;2022-05-05T11:00:25.000Z&quot;,</div>
+<div class="line">                    &quot;end&quot;: &quot;2022-05-05T11:12:11.252Z&quot;,</div>
+<div class="line">                    &quot;duration&quot;: 706,</div>
+<div class="line">                    &quot;__typename&quot;: &quot;Decay&quot;</div>
+<div class="line">                },</div>
+<div class="line">                &quot;firstTransaction&quot;: false,</div>
+<div class="line">                &quot;__typename&quot;: &quot;Transaction&quot;</div>
+<div class="line">            },</div>
+<div class="line">            {</div>
+<div class="line">                &quot;typeId&quot;: &quot;RECEIVE&quot;,</div>
+<div class="line">                &quot;amount&quot;: &quot;10&quot;,</div>
+<div class="line">                &quot;balance&quot;: &quot;20&quot;,</div>
+<div class="line">                &quot;__typename&quot;: &quot;Transaction&quot;,</div>
+<div class="line">                &quot;id&quot;: 7,</div>
+<div class="line">                &quot;linkedUser&quot;: {</div>
+<div class="line">                    &quot;__typename&quot;: &quot;User&quot;,</div>
+<div class="line">                    &quot;lastName&quot;: &quot;&quot;,</div>
+<div class="line">                    &quot;firstName&quot;: &quot;DarioFrodo&quot;</div>
+<div class="line">                },</div>
+<div class="line">                &quot;balanceDate&quot;: &quot;2022-05-05T11:00:25.000Z&quot;,</div>
+<div class="line">                &quot;decay&quot;: {</div>
+<div class="line">                    &quot;decay&quot;: &quot;0&quot;,</div>
+<div class="line">                    &quot;start&quot;: &quot;2022-05-05T11:00:25.000Z&quot;,</div>
+<div class="line">                    &quot;end&quot;: &quot;2022-05-05T11:00:25.000Z&quot;,</div>
+<div class="line">                    &quot;duration&quot;: 0,</div>
+<div class="line">                    &quot;__typename&quot;: &quot;Decay&quot;</div>
+<div class="line">                },</div>
+<div class="line">                &quot;firstTransaction&quot;: false,</div>
+<div class="line">                &quot;memo&quot;: &quot;test transfer 1&quot;</div>
+<div class="line">            },</div>
+<div class="line">            {</div>
+<div class="line">                &quot;typeId&quot;: &quot;RECEIVE&quot;,</div>
+<div class="line">                &quot;amount&quot;: &quot;10&quot;,</div>
+<div class="line">                &quot;balance&quot;: &quot;10&quot;,</div>
+<div class="line">                &quot;__typename&quot;: &quot;Transaction&quot;,</div>
+<div class="line">                &quot;id&quot;: 6,</div>
+<div class="line">                &quot;linkedUser&quot;: {</div>
+<div class="line">                    &quot;__typename&quot;: &quot;User&quot;,</div>
+<div class="line">                    &quot;lastName&quot;: &quot;&quot;,</div>
+<div class="line">                    &quot;firstName&quot;: &quot;DarioFrodo&quot;</div>
+<div class="line">                },</div>
+<div class="line">                &quot;balanceDate&quot;: &quot;2022-05-05T11:00:25.000Z&quot;,</div>
+<div class="line">                &quot;firstTransaction&quot;: true,</div>
+<div class="line">                &quot;memo&quot;: &quot;test transfer 1&quot;</div>
+<div class="line">            }</div>
+<div class="line">        ],</div>
+<div class="line">        &quot;balance&quot;: &quot;19.999689857173048040428771067744423208449388&quot;</div>
+<div class="line">    }</div>
+<div class="line">}</div>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md29"></a>
+autotoc_md29</h1>
 <p >/listPending</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md27"></a>
+<h1><a class="anchor" id="autotoc_md31"></a>
 Old Api v1</h1>
-<h1><a class="anchor" id="autotoc_md28"></a>
+<h1><a class="anchor" id="autotoc_md32"></a>
 Pack Transaction</h1>
 <p >Pack Transaction as protobuf Array, ready for signing The returned bodyBytes are in base64 format. They must be at first unpacked in a binary array. Than they can be signed with sodium.crypto_sign_detached (<a href="https://sodium-friends.github.io/docs/docs/signing#crypto_sign_detached">https://sodium-friends.github.io/docs/docs/signing#crypto_sign_detached</a>) m ist the binary body bytes buffer sk is the private key of the user</p>
 <p >currently every transaction need only one signature but this maybe change in future, or new transaction types added which need more than one signature</p>
 <p >After signing sendTransactionIota can be called for every transaction which consists of bodyBytes and a signature public key pair list and with the corresponding group alias</p>
 <p >For transactions which belong to two blockchains actually two transactions are generated and need to be signed and send</p>
-<h2><a class="anchor" id="autotoc_md29"></a>
+<h2><a class="anchor" id="autotoc_md33"></a>
 Request</h2>
 <p ><code>POST <a href="http://localhost/login_api/packTransaction">http://localhost/login_api/packTransaction</a></code></p>
-<h3><a class="anchor" id="autotoc_md30"></a>
+<h3><a class="anchor" id="autotoc_md34"></a>
 Transfer</h3>
 <p >Needed to be signed from sender user</p>
 <div class="fragment"><div class="line">{   </div>
@@ -557,7 +676,7 @@ Transfer</h3>
 <div class="line">    &quot;recipientPubkey&quot;:&quot;eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd&quot;,</div>
 <div class="line">    &quot;amount&quot;: 1000000,</div>
 <div class="line">}</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md31"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md35"></a>
 Cross-Group Transfer</h3>
 <p >Needed to be signed from sender user</p>
 <div class="fragment"><div class="line">{   </div>
@@ -570,7 +689,7 @@ Cross-Group Transfer</h3>
 <div class="line">    &quot;senderGroupAlias&quot;: &quot;gdd1&quot;,</div>
 <div class="line">    &quot;recipientGroupAlias&quot;:&quot;gdd2&quot;</div>
 <div class="line">}</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md32"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md36"></a>
 Creation</h3>
 <p >Needed to be signed from another user from this group which isn't the recipient After implementing roles on blockchain, the signing person need to have the correct role for this</p>
 <div class="fragment"><div class="line">{   </div>
@@ -581,7 +700,7 @@ Creation</h3>
 <div class="line">    &quot;amount&quot;: 10000000,</div>
 <div class="line">    &quot;targetDate&quot;: &quot;2021-09-01 01:00:00&quot;,</div>
 <div class="line">}</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md33"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md37"></a>
 Group Member Add</h3>
 <p >Needed to be signed from the user to add</p>
 <div class="fragment"><div class="line">{</div>
@@ -589,7 +708,7 @@ Group Member Add</h3>
 <div class="line">    &quot;created&quot;:&quot;2021-01-10 10:00:00&quot;,</div>
 <div class="line">    &quot;userRootPubkey&quot;:&quot;eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd&quot;,</div>
 <div class="line">}</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md34"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md38"></a>
 Group Member Move</h3>
 <p >Needed to be signed from the user to move</p>
 <div class="fragment"><div class="line">{</div>
@@ -612,7 +731,7 @@ Group Member Move</h3>
 <li><code>currentGroupAlias</code>: only needed for moving user, group alias from where the user is from</li>
 <li><code>newGroupAlias</code>: only needed for moving user, group alias from the user where they are moving to</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md35"></a>
+<h2><a class="anchor" id="autotoc_md39"></a>
 Response</h2>
 <p >For Local Transactions which happen only on this group</p>
 <div class="fragment"><div class="line">{</div>
@@ -634,9 +753,9 @@ Response</h2>
 <div class="line">        }</div>
 <div class="line">    ]</div>
 <div class="line">}</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md36"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md40"></a>
 Send Transaction</h1>
-<h2><a class="anchor" id="autotoc_md37"></a>
+<h2><a class="anchor" id="autotoc_md41"></a>
 Request</h2>
 <p ><code>POST <a href="http://localhost/login_api/sendTransactionIota">http://localhost/login_api/sendTransactionIota</a></code></p>
 <p >with </p><div class="fragment"><div class="line">{</div>
@@ -649,7 +768,7 @@ Request</h2>
 <div class="line">    ],</div>
 <div class="line">    &quot;groupAlias&quot;:&quot;gdd1&quot;</div>
 <div class="line">}</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md38"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md42"></a>
 Response</h2>
 <div class="fragment"><div class="line">{</div>
 <div class="line">    &quot;state&quot;: &quot;success&quot;,</div>
