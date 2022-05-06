@@ -33,9 +33,7 @@ pub async fn send_message(iota_url: String, index: String, message: String) -> R
         .with_local_pow(true)
         .finish()
         .await?;
-    let info = iota.get_info().await?;
-    //println!("Nodeinfo: {:?}", info);
-/*
+    
     let message = iota
         .message()
         .with_index(&index)
@@ -43,27 +41,24 @@ pub async fn send_message(iota_url: String, index: String, message: String) -> R
         .finish()
         .await?;
 
-    println!(
-        "Message sent https://explorer.iota.org/testnet/message/{}\n",
-        message.id().0
-    );
-*/
-  //  println!("Message sent {}", message.id().0);
-    Ok(format!("Nodeinfo: {:?}", info))
+    Ok(message.id().0.to_string())
 }
 
 #[no_mangle]
 pub extern fn iota_send_indiced_transaction(iota_url: *const c_char, index: *const c_char, message: *const c_char) -> *mut c_char 
 {        
     let future = async move {
+        // run actually function
         return send_message(my_string_safe(iota_url), my_string_safe(index), my_string_safe(message)).await;
     };
     
+    // use tokio runtime to run and wait on async future
     let res = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
             .unwrap()
-            .block_on(future);    
+            .block_on(future);   
+    // put result in json object 
     let json_result: JsonReturn; 
     match res {
         Ok(s) => {
@@ -92,7 +87,7 @@ pub extern fn iota_send_indiced_transaction(iota_url: *const c_char, index: *con
             c_string = CString::new(format!("error with encoding result json: {}", error)).expect("CString::new failed");
        }
    }
-
+   // return as char*, accessable from c, but it must be freed with a call to free_rust_string afterwards
    return c_string.into_raw();
 }
 
