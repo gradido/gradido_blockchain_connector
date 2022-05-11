@@ -203,7 +203,6 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 		std::clog << "try out iota" << std::endl;
 		auto uri = ServerConfig::g_IotaRequestHandler->getRequestUri();
 		auto iotaUrl = "http://" + uri.getHost() + ":" + std::to_string(uri.getPort());
-		//iotaUrl = "https://api.lb-0.h.chrysalis-devnet.iota.cafe";
 		std::clog << "iota: " << iotaUrl << std::endl;
 		auto result = iota_send_indiced_transaction(
 			iotaUrl.data(),
