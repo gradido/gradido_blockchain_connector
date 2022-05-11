@@ -68,20 +68,12 @@ Document JsonSendTransactionIota::handle(const Document& params)
 	
 	}
 
-	// add apollo transaction id
-	if (apolloTransactionId) {
-		transaction->setApolloTransactionId(apolloTransactionId);
-	}
-
 	transaction->validate(model::gradido::TRANSACTION_VALIDATION_SINGLE);
 	if (transaction->getSignCount() < transactionBody->getTransactionBase()->getMinSignatureCount()) {
 		return stateError("missing signatures");
 	}
-	// update target group alias if it is a global group add transaction
-	if (transaction->getTransactionBody()->isGlobalGroupAdd()) {
-		groupAlias = GROUP_REGISTER_GROUP_ALIAS;
-	}
-	if (groupAlias != GROUP_REGISTER_GROUP_ALIAS && !model::gradido::TransactionBase::isValidGroupAlias(groupAlias)) {
+	
+	if (!model::gradido::TransactionBase::isValidGroupAlias(groupAlias)) {
 		return stateError("invalid group alias");
 	}
 	// send transaction to iota

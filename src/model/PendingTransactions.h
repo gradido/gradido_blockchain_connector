@@ -61,7 +61,8 @@ namespace model {
 				const std::string& _iotaMessageId, 
 				model::gradido::TransactionType _transactionType,
 				const std::string& _apolloCreatedDecay,
-				Poco::DateTime _apolloDecayStart
+				Poco::DateTime _apolloDecayStart,
+				uint64_t	   _apolloTransactionId
 			);
 
 			/*! transaction state enum
@@ -97,7 +98,9 @@ namespace model {
 
 			//! apollos decay calculation from last transaction to created date
 			std::string apolloCreatedDecay;
-			Poco::DateTime apolloDecayStart;
+			Poco::DateTime apolloDecayStart; 
+			//! apollo transaction id, his identifier for this transaction
+			uint64_t apolloTransactionId;
 		};
 
 		~PendingTransactions() {};
@@ -111,12 +114,7 @@ namespace model {
 			\param transactionType type of transaction
 			\param apolloCreatedDecay apollos decay calculation from last transaction to created date
 		 */
-		void pushNewTransaction(
-			const std::string& iotaMessageId,
-			model::gradido::TransactionType transactionType,
-			const std::string& apolloCreatedDecay,
-			Poco::DateTime apolloDecayStart
-		);
+		void pushNewTransaction(PendingTransaction pendingTransaction);
 		/*! \brief Update state of pending transaction.
 		 
 		 	Traverse list from end to begin, because the probability is high that the searched transaction is the last or one of the last. <br>

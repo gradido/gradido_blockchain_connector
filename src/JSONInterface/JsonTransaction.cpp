@@ -68,43 +68,9 @@ Document JsonTransaction::readSharedParameter(const Document& params)
 	return Document();
 }
 
-uint32_t JsonTransaction::readCoinColor(const Document& params)
-{
-	auto coinColor = params.FindMember("coinColor");
-	if (coinColor == params.MemberEnd()) {
-		auto group = model::table::Group::load(mSession->getGroupAlias());
-		return group->getCoinColor();
-	}
-	if (coinColor->value.IsString()) {
-		auto mm = MemoryManager::getInstance();
-		std::string coinColorString = coinColor->value.GetString();
-		if (!coinColorString.size()) return 0;
-		MemoryBin* coinColorBin = nullptr;
-		// TODO: Check seems to be not working correctly
-		if (coinColorString.substr(0, 2) == "0x") {
-			coinColorBin = DataTypeConverter::hexToBin(coinColorString.substr(2));
-		}
-		else {
-			coinColorBin = DataTypeConverter::hexToBin(coinColorString);
-		}
-		if (!coinColorBin || coinColorBin->size() != sizeof(uint32_t)) {
-			if (coinColorBin) mm->releaseMemory(coinColorBin);
-			throw HandleRequestException("coinColor isn't a valid hex string");
-		}
-		uint32_t result;
-		memcpy(&result, *coinColorBin, sizeof(uint32_t));
-		mm->releaseMemory(coinColorBin);
-		return result;
-	}
-	else if (coinColor->value.IsUint()) {
-		return coinColor->value.GetUint();
-	}
-	throw HandleRequestException("coinColor has unknown type");
-}
-
 std::string JsonTransaction::signAndSendTransaction(std::unique_ptr<model::gradido::GradidoTransaction> transaction, const std::string& groupAlias)
 {
-	transaction->setMemo(mMemo).setCreated(mCreated).setApolloTransactionId(mApolloTransactionId).updateBodyBytes();
+	transaction->setMemo(mMemo).setCreated(mCreated).updateBodyBytes();
 	auto transactionBody = transaction->getTransactionBody();
 	
 	if (!mSession->signTransaction(transaction.get())) {
@@ -119,11 +85,8 @@ std::string JsonTransaction::signAndSendTransaction(std::unique_ptr<model::gradi
 	}
 	
 	std::string _groupAlias = groupAlias;
-	// update target group alias if it is a global group add transaction
-	if (transaction->getTransactionBody()->isGlobalGroupAdd()) {
-		_groupAlias = GROUP_REGISTER_GROUP_ALIAS;
-	}
-	if (_groupAlias != GROUP_REGISTER_GROUP_ALIAS && !model::gradido::TransactionBase::isValidGroupAlias(_groupAlias)) {
+	
+	if (!model::gradido::TransactionBase::isValidGroupAlias(_groupAlias)) {
 		throw model::gradido::TransactionValidationInvalidInputException("invalid group alias", "groupAlias", "string, [a-z0-9-]{3,120}");
 	}
 	if (mApolloCreatedDecay.size()) {
@@ -140,12 +103,13 @@ std::string JsonTransaction::signAndSendTransaction(std::unique_ptr<model::gradi
 	std::string index = "GRADIDO." + groupAlias;
 	auto iotaMessageId = ServerConfig::g_IotaRequestHandler->sendMessage(DataTypeConverter::binToHex(index), *hex_message);
 	auto pt = model::PendingTransactions::getInstance();
-	pt->pushNewTransaction(
+	pt->pushNewTransaction(std::move(model::PendingTransactions::PendingTransaction(
 		iotaMessageId,
 		transaction->getTransactionBody()->getTransactionType(),
 		mApolloCreatedDecay,
-		mApolloDecayStart
-	);
+		mApolloDecayStart,
+		mApolloTransactionId
+	)));
 	return std::move(iotaMessageId);
 }
 
