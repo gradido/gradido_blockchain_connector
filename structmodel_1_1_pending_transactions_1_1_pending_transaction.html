@@ -91,9 +91,9 @@ Public Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:af4ca1c1e377f5ea08283b30c91ad17ff"><td class="memItemLeft" align="right" valign="top"><a id="af4ca1c1e377f5ea08283b30c91ad17ff" name="af4ca1c1e377f5ea08283b30c91ad17ff"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>PendingTransaction</b> (const std::string &amp;_iotaMessageId, model::gradido::TransactionType _transactionType, const std::string &amp;_apolloCreatedDecay, Poco::DateTime _apolloDecayStart)</td></tr>
-<tr class="separator:af4ca1c1e377f5ea08283b30c91ad17ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3d5ad4f3ecddd221eedec70ffdf1aa1f"><td class="memItemLeft" align="right" valign="top"><a id="a3d5ad4f3ecddd221eedec70ffdf1aa1f" name="a3d5ad4f3ecddd221eedec70ffdf1aa1f"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>PendingTransaction</b> (const std::string &amp;_iotaMessageId, model::gradido::TransactionType _transactionType, const std::string &amp;_apolloCreatedDecay, Poco::DateTime _apolloDecayStart, uint64_t _apolloTransactionId)</td></tr>
+<tr class="separator:a3d5ad4f3ecddd221eedec70ffdf1aa1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5cfdfec4cf14d7dc862092eba0848090"><td class="memItemLeft" align="right" valign="top"><a id="a5cfdfec4cf14d7dc862092eba0848090" name="a5cfdfec4cf14d7dc862092eba0848090"></a>
 const char *&#160;</td><td class="memItemRight" valign="bottom"><b>getStateString</b> () const</td></tr>
 <tr class="separator:a5cfdfec4cf14d7dc862092eba0848090"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -133,6 +133,10 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><b>apolloCreatedD
 <tr class="memitem:a1919962ee5ffd8b2065eccec8894d297"><td class="memItemLeft" align="right" valign="top"><a id="a1919962ee5ffd8b2065eccec8894d297" name="a1919962ee5ffd8b2065eccec8894d297"></a>
 Poco::DateTime&#160;</td><td class="memItemRight" valign="bottom"><b>apolloDecayStart</b></td></tr>
 <tr class="separator:a1919962ee5ffd8b2065eccec8894d297"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acc31019f7213c57e8ed145726c77ed1f"><td class="memItemLeft" align="right" valign="top"><a id="acc31019f7213c57e8ed145726c77ed1f" name="acc31019f7213c57e8ed145726c77ed1f"></a>
+uint64_t&#160;</td><td class="memItemRight" valign="bottom"><b>apolloTransactionId</b></td></tr>
+<tr class="memdesc:acc31019f7213c57e8ed145726c77ed1f"><td class="mdescLeft">&#160;</td><td class="mdescRight">apollo transaction id, his identifier for this transaction <br /></td></tr>
+<tr class="separator:acc31019f7213c57e8ed145726c77ed1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p >Container for a Pending Transaction</p><ul>
