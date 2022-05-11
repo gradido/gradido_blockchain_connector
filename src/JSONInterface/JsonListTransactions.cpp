@@ -36,7 +36,13 @@ Document JsonListTransactions::handle(const Document& params)
 	auto pubkeyHex = DataTypeConverter::binToHex(mSession->getPublicKey(), KeyPairEd25519::getPublicKeySize());
 	jsonRpcParams.AddMember("pubkey", Value(pubkeyHex.data(), alloc), alloc);
 	jsonRpcParams.AddMember("groupAlias", Value(mSession->getGroupAlias().data(), alloc), alloc);		
-	auto jsonAnswear = gradidoNodeRequest.request("listtransactions", jsonRpcParams);
+	Document jsonAnswear;
+	try {
+		jsonAnswear = gradidoNodeRequest.request("listtransactions", jsonRpcParams);
+	} catch(GradidoBlockchainException& ex) {
+		Poco::Logger::get("errorLog").error("gradido blockchain exception: %s", ex.getFullString());
+		return stateError("error by requesting Gradido Node");
+	}
 	auto resultIt = jsonAnswear.FindMember("result");
 	auto transactionListIt = resultIt->value.FindMember("transactionList");
 	auto transactionsIt = transactionListIt->value.FindMember("transactions");

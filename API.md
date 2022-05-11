@@ -435,18 +435,260 @@ For this request this error message are possible:
 	```
 	the response for pushing Gradido Transaction as iota message to iota don't contain `messageId` field, so maybe the api changed
 
-## 
-/transfer
+## Transfer Transaction
+- send gradidos from one address to another
+- need one signature from the sender user
 
+### Request
+`POST http://localhost:1271/transfer`
 
+a jwt Token returned from a Login Request transfered as Authorization Header is mandatory
 
+```json
+{
+	"memo":"test transfer",
+	"recipientName":"testUser1",
+	"amount":"100",
+	"created":"2022-04-21T20:08:53.406Z",
+	"apolloTransactionId":"1",
+	"apolloCreatedDecay": "0",
+	"apolloDecayStart": "2022-04-21T19:13:01.506Z"
+}
+```
+- `memo`: comment for transaction, will be encrypted on blockchain, at least 5 character long , maximal 334 character long
+- `recipientName`: name for lookup in users table to choose correct pubkey
+- `amount`: amount as decimal number string
+- `created`: The current date and time on creating this transaction
+- `apolloTransactionId`: (optional) transaction identifier from apollo
+- `apolloCreatedDecay`: (optional) decay from balance at apolloDecayStart to created 
+- `apolloDecayStart`: (optional) date from last transaction, starting point for decay calculation
 
+### Response
+If transaction was successfully send via Iota the result should be something like that:
 
-##
-/notify
+```json
+{
+     "state":"success",
+     "iotaMessageId":"cabb3ff013267130177a93ef8931b9c8844e36fcd07961d7a285c200906d0512"
+}
+```
 
-##
-/listTransactions
+### Possible errors
+Errors have the format like in [Error Reporting](#error_reporting) at the begin of file shown. 
+For this request this error message are possible:
+
+- `invalid ip`: the login which created this jwt token, came from another ip
+- `invalid jwt token`: jwt token couldn't be verified or don't contain expected data, or was timed out
+- `no session found`: no session for name in jwt token found, maybe Gradido Blockchain Connector was restarted since creating this jwt token or it was deleted because the time last access was longer than the configured `session.duration_seconds`
+- `cannot parse created`: created date cannot be parsed (Supported Formats)[https://docs.pocoproject.org/current/Poco.DateTimeFormat.html] look at details field for more infos
+- `cannot parse apollo decay start`: decay start date cannot be parsed (Supported Formats)[https://docs.pocoproject.org/current/Poco.DateTimeFormat.html] look at details field for more infos
+- `unknown recipient user`: couldn't find recipient user in db
+- `address isn't registered on blockchain`: please make a register address transaction before with this address
+- `cannot parse amount to number`: amount isn't a valid number for mpfr string to number parser
+- `insufficient balance`: according to gradido node, the sender user hasn't enough gradidos for sending the desired amount
+- `error with apollo decay`: decay calculation from apollo deviates more than 0.00001 from Gradido Node decay calculation
+- `sender and recipient are the same`: if sender and recipient are the same address
+- `error by requesting Gradido Node`: error in the communication with Gradido Node
+	- is the key `gradidoNode` filled correctly in Gradido Blockchain Connector Properties?
+	- is the Gradido Node running and the last Version?
+	- for more details look into console or log output from Gradido Blockchain Connector
+- `Internal Server Error`: something went wrong with Gradido Blockchain Connector, in this case look at the console output or in the logfile from Gradido Blockchain Connector
+- `transaction validation failed`: transaction is invalid, more infos can be found in details field from result
+
+	```json 
+	"details" : {
+		"what": "amount cannot be parsed to a number",
+		"fieldName": "amount",
+		"fieldType": "string"
+	}
+	```
+	```json 
+	"details" : {
+		"what": "amount is empty",
+		"fieldName": "amount",
+		"fieldType": "string"
+	}
+	```
+	```json 
+	"details" : {
+		"what": "zero or negative amount",
+		"fieldName": "amount",
+		"fieldType": "string"
+	}
+	```
+	```json 
+	"details" : {
+		"what": "cannot parse to number",
+		"fieldName": "apolloCreatedDecay",
+		"fieldType": "number as string"
+	}
+	```
+
+- `error by calling iota`: by calling iota an error occured, more infos can be found in details field from result
+	
+	```json
+	"details": {
+		"what": "no tips",
+		"url": "api.lb-0.h.chrysalis-devnet.iota.cafe/api/v1/tips"
+	}
+	```
+	iota hasn't returned previous iota transactions, if that ever happen I don't know what to do
+
+	```json
+	"details": {
+		"what": "error parsing request answer",
+		"parseErrorCode": "The document is empty.",
+		"parseErrorPosition": 0,
+		"src": "<iota response as raw text>"
+	}
+	```
+	iota returned invalid json, all possible rapidjson parse error codes: [rapidjson error codes](https://rapidjson.org/group___r_a_p_i_d_j_s_o_n___e_r_r_o_r_s.html#ga633f43fd92e6ed5ceb87dbf570647847)
+	
+	```json
+	"details": {
+		"what": "data member in response missing",
+		"url": "api.lb-0.h.chrysalis-devnet.iota.cafe/api/v1/messages"
+	}
+	```
+	the response for pushing Gradido Transaction as iota message to iota don't contain `data` field, so maybe the iota api changed
+	
+	```json
+	"details": {
+		"what": "messageId in response is missing or not a string",
+		"url": "api.lb-0.h.chrysalis-devnet.iota.cafe/api/v1/messages"
+	}
+	```
+	the response for pushing Gradido Transaction as iota message to iota don't contain `messageId` field, so maybe the api changed
+
+## Notify Gradido Blockchain Connector for a new processed transaction
+- usually called from Gradido Node
+- inform Gradido Blockchain Connector about the resultat from a from Gradido Node checked transaction
+- update [PendingTransaction](https://gradido.github.io/gradido_blockchain_connector/structmodel_1_1_pending_transactions_1_1_pending_transaction.html) if transaction was found, else ignore
+
+### Request
+`POST http://localhost:1271/notify`
+
+```json
+{
+	"transactionBase64":"CAYSkgIKZgpkCiCxCkrYc4xCM/KyT/Fz5w/b1aimrayiCGmWjxGhLH3G7xJAR6h5ZOC19rN+FMKAVLixcGe59Xo2AA00vmzqnh6EPzTqRwLpozBWoAHD4Q8PpyeBZv14fn7uFDpAWJz1ZEPmDxKnAQpMU0MxMzVzWHlPYzYxaUkwZW1iWVlCd0lYWXB4V0EvcUFvLzA1NkNHd1dlWXZHREI3ZFBOcjdvUUxUdUVaUGdOZ1dvWUt2Qm5taUE9PRIGCMHczpMGGgMzLjIySgomCiCxCkrYc4xCM/KyT/Fz5w/b1aimrayiCGmWjxGhLH3G7xICMTASIKD2C4nfxCHGlgc32lshdSRAfBA6NsnQ+wwmSp0yn3LfGgYIydzOkwYiAzMuMSog/zQje4z6N4iXo+XvTZBZC5tde0diNp/yNWTRn7DHizMyIGUZpGix3iMWYToefRdAkGRV1QyEHbdFUTpbRPdm7aT6Oi0yOTc0Ljg1NjE3MTUyOTIwMTkzOTEwMDU3MDQ3OTcxMTAzMzExMjc0MDc3Nzg=",
+	"error":"testUser1",
+	"messageId":"100",
+}
+```
+- `transactionBase64`: Gradido Block serialized and base64 encoded
+- `error`: contain error text, only set if an error occured
+- `messageId`: iota message id for identify transaction, only set if an error occured
+
+### Response
+Response always with:
+
+```json
+{
+     "state":"success"
+}
+```
+
+## List all transaction from a user
+- retrieve transaction list from Gradido Node
+- replace all pubkey with name from db if found
+- decrypt memos
+- pagination
+- don't request gdt balance
+- format oriented on frontend list transaction format
+- take user and group alias from session
+
+### Request
+`POST http://localhost:1271/listTransactions`
+
+a jwt Token returned from a Login Request transfered as Authorization Header is mandatory
+
+```json
+{
+	"currentPage": 1,
+	"pageSize": 25,
+	"orderDESC": true,
+	"onlyCreations": false
+}
+```
+
+- `currentPage`: Page for pagination
+- `pageSize`: how many entries should be on a page
+- `orderDESC`: order of entries
+- `onlyCreations`: if true return only creation transactions
+
+### Response 
+```json
+{
+	"state": "success",
+	"transactionList": {
+		"balanceGDT": "0",
+		"linkCount": 0,
+		"count": 2,
+		"transactions": [
+			{
+				"typeId": "DECAY",
+				"amount": "-0.00031014282695195957122893225557679155061163564",
+				"balance": "19.999689857173048040428771067744423208449388",
+				"memo": "",
+				"id": -1,
+				"linkedUser": {
+					"__typename": "User",
+					"firstName": "",
+					"lastName": ""
+				},
+				"balanceDate": "2022-05-05T11:12:11.252Z",
+				"decay": {
+					"decay": "-0.00031014282695195957122893225557679155061163564",
+					"start": "2022-05-05T11:00:25.000Z",
+					"end": "2022-05-05T11:12:11.252Z",
+					"duration": 706,
+					"__typename": "Decay"
+				},
+				"firstTransaction": false,
+				"__typename": "Transaction"
+			},
+			{
+				"typeId": "RECEIVE",
+				"amount": "10",
+				"balance": "20",
+				"__typename": "Transaction",
+				"id": 7,
+				"linkedUser": {
+					"__typename": "User",
+					"lastName": "",
+					"firstName": "DarioFrodo"
+				},
+				"balanceDate": "2022-05-05T11:00:25.000Z",
+				"decay": {
+					"decay": "0",
+					"start": "2022-05-05T11:00:25.000Z",
+					"end": "2022-05-05T11:00:25.000Z",
+					"duration": 0,
+					"__typename": "Decay"
+				},
+				"firstTransaction": false,
+				"memo": "test transfer 1"
+			},
+			{
+				"typeId": "RECEIVE",
+				"amount": "10",
+				"balance": "10",
+				"__typename": "Transaction",
+				"id": 6,
+				"linkedUser": {
+					"__typename": "User",
+					"lastName": "",
+					"firstName": "DarioFrodo"
+				},
+				"balanceDate": "2022-05-05T11:00:25.000Z",
+				"firstTransaction": true,
+				"memo": "test transfer 1"
+			}
+		],
+		"balance": "19.999689857173048040428771067744423208449388"
+	}
+}
+```
 
 ##
 /listPending
