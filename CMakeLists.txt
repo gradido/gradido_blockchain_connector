@@ -120,10 +120,18 @@ if(WIN32)
 	#message("libsodium lib dir from conan: ${CONAN_LIB_DIRS_LIBSODIUM}")
 	#message("conan lib debugs: ${CONAN_LIBS_DEBUG}")
 	#message("conan build modules path: ${CONAN_BUILD_MODULES_PATHS}")
-	target_link_libraries(GradidoBlockchainConnector ${CONAN_LIBS} libprotobuf)
+
+	# needed for windows if linking to a rust lib
+	find_library(IOTA_RUST_C_LIB iota_rust_clib.dll.lib PATHS 
+		"build/dependencies/gradido_blockchain/iota_rust_clib/x86_64-pc-windows-msvc/${CMAKE_BUILD_TYPE}" 
+		"build/dependencies/gradido_blockchain/iota_rust_clib/x86_64-pc-windows-msvc/debug" 
+		"build/dependencies/gradido_blockchain/iota_rust_clib/x86_64-pc-windows-msvc/release" 
+		REQUIRED)
+	target_link_libraries(GradidoBlockchainConnector ${CONAN_LIBS} libprotobuf ${IOTA_RUST_C_LIB} ws2_32 userenv)
 endif()
 
-target_link_libraries(GradidoBlockchainConnector $<TARGET_OBJECTS:GradidoBlockchain>)
+target_link_libraries(GradidoBlockchainConnector GradidoBlockchain)
+
 
 ############################## build gradido blockchain connector ###################################
 
@@ -131,7 +139,7 @@ target_link_libraries(GradidoBlockchainConnector $<TARGET_OBJECTS:GradidoBlockch
 
 # install 
 if(UNIX)
-	target_link_libraries(GradidoBlockchainConnector ${POCO_LIBS} sodium ${MPFR_LIBRARIES} libprotobuf)
+	target_link_libraries(GradidoBlockchainConnector ${POCO_LIBS} sodium ${MPFR_LIBRARIES} libprotobuf iota_rust_clib)
 	install(TARGETS GradidoBlockchainConnector RUNTIME DESTINATION /usr/local/bin)
 	get_target_property(OUT GradidoBlockchainConnector LINK_LIBRARIES)
 	message(STATUS ${OUT})

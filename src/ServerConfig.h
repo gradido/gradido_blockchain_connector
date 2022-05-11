@@ -35,7 +35,6 @@ namespace ServerConfig {
 	};
 
 	extern Poco::Net::Context::Ptr g_SSL_CLient_Context;
-	extern IotaRequest* g_IotaRequestHandler;
 	extern Poco::URI    g_GradidoNodeUri;
 	extern std::string g_versionString;
 	extern ServerSetupType g_ServerSetupType;
@@ -49,7 +48,6 @@ namespace ServerConfig {
 
 	bool initServerCrypto(const Poco::Util::LayeredConfiguration& cfg);
 	bool initSSLClientContext();
-	bool initIota(const Poco::Util::LayeredConfiguration& cfg);
 	bool initMysql(const Poco::Util::LayeredConfiguration& cfg);
 
 	void writeToFile(std::istream& datas, std::string fileName);

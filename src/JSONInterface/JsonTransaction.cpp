@@ -4,13 +4,13 @@
 #include "gradido_blockchain/lib/Decay.h"
 #include "gradido_blockchain/http/RequestExceptions.h"
 #include "gradido_blockchain/http/IotaRequestExceptions.h"
+#include "gradido_blockchain/http/ServerConfig.h"
 #include "gradido_blockchain/model/protobufWrapper/TransactionValidationExceptions.h"
 
 #include "gradido_blockchain/crypto/AuthenticatedEncryption.h"
 #include "gradido_blockchain/crypto/KeyPairEd25519.h"
 
 #include "SessionManager.h"
-#include "ServerConfig.h"
 #include "GradidoNodeRPC.h"
 #include "model/PendingTransactions.h"
 #include "model/table/Group.h"
