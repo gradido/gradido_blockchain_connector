@@ -186,6 +186,7 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 
 		ServerConfig::initMysql(config());
 		ServerConfig::initIota(config());
+		ServerConfig::g_GradidoNodeUri = Poco::URI(config().getString("gradidoNode", "http://127.0.0.1:8340"));
 		ServerConfig::readUnsecureFlags(config());
 
 		model::table::VersionsManager::getInstance()->migrate();

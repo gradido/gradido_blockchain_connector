@@ -1,11 +1,6 @@
-src/cpsp/lib*
-src/cpsp/cpspc
-src/cpsp/compile_unix.sh
-src/cpsp/*.h
-src/cpsp/*.cpp
-src/cpp/proto/
 build*/
 
 src/LOCALE/messages.pot
 /Doxyfile.bak
 inline_umlgraph_cache_all.pu
+/.vscode

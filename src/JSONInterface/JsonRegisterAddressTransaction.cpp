@@ -2,7 +2,7 @@
 #include "gradido_blockchain/model/protobufWrapper/RegisterAddress.h"
 #include "gradido_blockchain/model/CrossGroupTransactionBuilder.h"
 #include "gradido_blockchain/model/TransactionFactory.h"
-
+#include "GradidoNodeRPC.h"
 
 /*
 	* addressType: human | project | subaccount
@@ -29,10 +29,9 @@ Document JsonRegisterAddressTransaction::handle(const rapidjson::Document& param
 	auto paramError = readSharedParameter(params);
 	if (paramError.IsObject()) { return paramError; }
 
-	std::string userName, addressTypeString;
+	std::string addressTypeString;
 	std::string currentGroupAlias, newGroupAlias;
 
-	getStringParameter(params, "userName", userName);
 	paramError = getStringParameter(params, "addressType", addressTypeString);
 	if (paramError.IsObject()) { return paramError; }
 	auto addressType = model::gradido::RegisterAddress::getAddressTypeFromString(addressTypeString);
@@ -43,14 +42,47 @@ Document JsonRegisterAddressTransaction::handle(const rapidjson::Document& param
 	getStringParameter(params, "currentGroupAlias", currentGroupAlias);
 	getStringParameter(params, "newGroupAlias", newGroupAlias);
 
+	if (currentGroupAlias.size()) {
+		if (!model::gradido::TransactionBase::isValidGroupAlias(currentGroupAlias)) {
+			return stateError("invalid character in currentGroupAlias, only ascii allowed");
+		}
+	}
+	if (newGroupAlias.size()) {
+		if (!model::gradido::TransactionBase::isValidGroupAlias(newGroupAlias)) {
+			return stateError("invalid character in newGroupAlias, only ascii allowed");
+		}
+	}
+
+	bool movingAddress = false;
+	if (currentGroupAlias.size() && newGroupAlias.size() && currentGroupAlias != newGroupAlias) {
+		movingAddress = true;
+	}
+
 	MemoryBin* userRootPubkey = mm->getMemory(KeyPairEd25519::getPublicKeySize());
 	memcpy(*userRootPubkey, mSession->getKeyPair()->getPublicKey(), KeyPairEd25519::getPublicKeySize());
+
+	try {
+		std::vector<uint64_t> addressTxids;
+		if (movingAddress) {
+			addressTxids = gradidoNodeRPC::getAddressTxids(*userRootPubkey->convertToHex().get(), newGroupAlias);
+		}
+		else {
+			addressTxids = gradidoNodeRPC::getAddressTxids(*userRootPubkey->convertToHex().get(), mSession->getGroupAlias());
+		}
+		if (addressTxids.size()) {
+			return stateError("cannot register address because it already exist");
+		}
+	}
+	catch (gradidoNodeRPC::GradidoNodeRPCException& ex) {
+		Poco::Logger::get("errorLog").error("error by requesting Gradido Node: %s", ex.getFullString());
+		return stateError("error by requesting Gradido Node");
+	}
 
 	try {
 		std::string lastIotaMessageId;
 		auto baseTransaction = TransactionFactory::createRegisterAddress(userRootPubkey, addressType);
 
-		if (currentGroupAlias.size() && newGroupAlias.size() && currentGroupAlias != newGroupAlias) {
+		if (movingAddress) {
 			CrossGroupTransactionBuilder builder(std::move(baseTransaction));
 
 			lastIotaMessageId = signAndSendTransaction(std::move(builder.createOutboundTransaction(newGroupAlias)), currentGroupAlias);			
@@ -72,7 +104,7 @@ Document JsonRegisterAddressTransaction::handle(const rapidjson::Document& param
 	}
 	catch (...) {
 		if (userRootPubkey) { mm->releaseMemory(userRootPubkey); }
-		throw;
+		return handleSignAndSendTransactionExceptions();
 	}
 	
 }

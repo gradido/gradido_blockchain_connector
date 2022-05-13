@@ -29,10 +29,7 @@ using Poco::Net::RejectCertificateHandler;
 using Poco::SharedPtr;
 
 namespace ServerConfig {
-
-		
 	Context::Ptr g_SSL_CLient_Context = nullptr;
-	IotaRequest* g_IotaRequestHandler = nullptr;
 	Poco::URI    g_GradidoNodeUri;
 	std::string g_versionString = "";
 	ServerSetupType g_ServerSetupType = SERVER_TYPE_PRODUCTION;
@@ -130,17 +127,6 @@ namespace ServerConfig {
 #endif
 		SSLManager::instance().initializeClient(0, pCert, g_SSL_CLient_Context);
 
-
-		return true;
-	}
-
-	bool initIota(const Poco::Util::LayeredConfiguration& cfg)
-	{
-		std::string iota_host = cfg.getString("iota.host", "api.lb-0.h.chrysalis-devnet.iota.cafe");
-		int iota_port = cfg.getInt("iota.port", 443);
-		g_IotaRequestHandler = new IotaRequest(iota_host, iota_port, "/api/v1/");
-
-		g_GradidoNodeUri = Poco::URI(cfg.getString("gradidoNode", "http://127.0.0.1:8340"));
 
 		return true;
 	}
