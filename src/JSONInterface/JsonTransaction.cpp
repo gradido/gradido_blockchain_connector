@@ -24,6 +24,12 @@
 
 using namespace rapidjson;
 
+JsonTransaction::JsonTransaction()
+	: mApolloTransactionId(0), mArchiveTransaction(false), mTransactionNr(0)
+{
+
+}
+
 Document JsonTransaction::readSharedParameter(const Document& params)
 {
 	getStringParameter(params, "memo", mMemo);
@@ -40,6 +46,7 @@ Document JsonTransaction::readSharedParameter(const Document& params)
 	catch (Poco::Exception& ex) {
 		return stateError("cannot parse created", ex.what());
 	}
+
 	try {
 		if (apollo_decay_start_string.size()) {
 			mApolloDecayStart = Poco::DateTimeParser::parse(apollo_decay_start_string, timezoneDifferential);
@@ -48,9 +55,15 @@ Document JsonTransaction::readSharedParameter(const Document& params)
 	catch (Poco::Exception& ex) {
 		return stateError("cannot parse apollo decay start", ex.what());
 	}
-	mApolloTransactionId = 0;
 	getUInt64Parameter(params, "apolloTransactionId", mApolloTransactionId);
+	getUInt64Parameter(params, "transactionNr", mTransactionNr);
 	getStringParameter(params, "apolloCreatedDecay", mApolloCreatedDecay);
+
+	// if transaction is older than 1 h and a transaction nr was given, it will be treated as archived transaction
+	if (Poco::Timespan(Poco::DateTime() - mCreated).totalSeconds() > 60 * 60 * 60 && mTransactionNr) {
+		mArchiveTransaction = true;
+	}
+
 	try {
 		mSession = SessionManager::getInstance()->getSession(getJwtToken(), mClientIp.toString());
 	}
@@ -93,15 +106,33 @@ std::string JsonTransaction::signAndSendTransaction(std::unique_ptr<model::gradi
 		// throw an exception if apollo decay deviate to much from Gradido Node
 		validateApolloDecay(transaction.get());
 	}
-		
+	
+	
 	// send transaction to iota
 	auto raw_message = transaction->getSerialized();
+	std::string iotaMessageId;
+	
+	// send archive transactions direct to gradido node
+	if (mArchiveTransaction) {
+		// calculate hash with blake2b
+		unsigned char hash[crypto_generichash_BYTES];
+		crypto_generichash(
+			hash, sizeof hash,
+			(const unsigned char*)raw_message->data(), 
+			raw_message->size(),
+			NULL, 0
+		);
+		iotaMessageId = DataTypeConverter::binToHex(hash, sizeof hash);
+	}
+	else {
+		// finale to hex for iota
+		auto hex_message = DataTypeConverter::binToHex(std::move(raw_message));
 
-	// finale to hex for iota
-	auto hex_message = DataTypeConverter::binToHex(std::move(raw_message));
+		std::string index = "GRADIDO." + groupAlias;
+		iotaMessageId = ServerConfig::g_IotaRequestHandler->sendMessage(DataTypeConverter::binToHex(index), *hex_message);
+	}
 
-	std::string index = "GRADIDO." + groupAlias;
-	auto iotaMessageId = ServerConfig::g_IotaRequestHandler->sendMessage(DataTypeConverter::binToHex(index), *hex_message);
+	
 	auto pt = model::PendingTransactions::getInstance();
 	pt->pushNewTransaction(std::move(model::PendingTransactions::PendingTransaction(
 		iotaMessageId,

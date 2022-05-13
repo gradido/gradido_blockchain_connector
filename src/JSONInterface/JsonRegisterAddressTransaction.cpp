@@ -63,14 +63,17 @@ Document JsonRegisterAddressTransaction::handle(const rapidjson::Document& param
 
 	try {
 		std::vector<uint64_t> addressTxids;
-		if (movingAddress) {
-			addressTxids = gradidoNodeRPC::getAddressTxids(*userRootPubkey->convertToHex().get(), newGroupAlias);
-		}
-		else {
-			addressTxids = gradidoNodeRPC::getAddressTxids(*userRootPubkey->convertToHex().get(), mSession->getGroupAlias());
-		}
-		if (addressTxids.size()) {
-			return stateError("cannot register address because it already exist");
+		if (!mArchiveTransaction)
+		{
+			if (movingAddress) {
+				addressTxids = gradidoNodeRPC::getAddressTxids(*userRootPubkey->convertToHex().get(), newGroupAlias);
+			}
+			else {
+				addressTxids = gradidoNodeRPC::getAddressTxids(*userRootPubkey->convertToHex().get(), mSession->getGroupAlias());
+			}
+			if (addressTxids.size()) {
+				return stateError("cannot register address because it already exist");
+			}
 		}
 	}
 	catch (gradidoNodeRPC::GradidoNodeRPCException& ex) {

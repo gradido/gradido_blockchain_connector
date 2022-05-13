@@ -69,30 +69,33 @@ Document JsonTransferTransaction::handle(const rapidjson::Document& params)
 
 	
 	try {
-		// check if recipient exist
-		auto recipientPubkeyHex = DataTypeConverter::binToHex(recipientPublicKey);
+		if (!mArchiveTransaction)
+		{
+			// check if recipient exist
+			auto recipientPubkeyHex = DataTypeConverter::binToHex(recipientPublicKey);
 
-		auto addressType = gradidoNodeRPC::getAddressType(recipientPubkeyHex, recipientGroupAlias);
-		if (addressType == model::gradido::RegisterAddress::getAddressStringFromType(proto::gradido::RegisterAddress_AddressType_NONE)) {
-			return stateError("address isn't registered on blockchain");
-		}
-		
-		// check if balance is enough on gradido node
-		std::string created;
-		getStringParameter(params, "created", created);
-		auto balanceString = gradidoNodeRPC::getAddressBalance(mSession->getPublicKeyHex(), created, mSession->getGroupAlias(), coinGroupId);
-		auto balance = MathMemory::create();
-		if (mpfr_set_str(balance->getData(), balanceString.data(), 10, gDefaultRound)) {
-			Poco::Logger::get("errorLog").critical("cannot parse balance string from gradido node: %s", balanceString);
-			return stateError("error by requesting Gradido Node");
-		}
-		auto amount = MathMemory::create();
-		if (mpfr_set_str(amount->getData(), amountString.data(), 10, gDefaultRound)) {
-			return stateError("cannot parse amount to number");
-		}
-		if (mpfr_cmp(amount->getData(), balance->getData()) > 0) {
-			// if op1 > op2
-			return stateError("insufficient balance");
+			auto addressType = gradidoNodeRPC::getAddressType(recipientPubkeyHex, recipientGroupAlias);
+			if (addressType == model::gradido::RegisterAddress::getAddressStringFromType(proto::gradido::RegisterAddress_AddressType_NONE)) {
+				return stateError("address isn't registered on blockchain");
+			}
+
+			// check if balance is enough on gradido node
+			std::string created;
+			getStringParameter(params, "created", created);
+			auto balanceString = gradidoNodeRPC::getAddressBalance(mSession->getPublicKeyHex(), created, mSession->getGroupAlias(), coinGroupId);
+			auto balance = MathMemory::create();
+			if (mpfr_set_str(balance->getData(), balanceString.data(), 10, gDefaultRound)) {
+				Poco::Logger::get("errorLog").critical("cannot parse balance string from gradido node: %s", balanceString);
+				return stateError("error by requesting Gradido Node");
+			}
+			auto amount = MathMemory::create();
+			if (mpfr_set_str(amount->getData(), amountString.data(), 10, gDefaultRound)) {
+				return stateError("cannot parse amount to number");
+			}
+			if (mpfr_cmp(amount->getData(), balance->getData()) > 0) {
+				// if op1 > op2
+				return stateError("insufficient balance");
+			}
 		}
 	}
 	catch (gradidoNodeRPC::GradidoNodeRPCException& ex) {

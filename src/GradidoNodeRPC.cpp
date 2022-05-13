@@ -164,4 +164,23 @@ namespace gradidoNodeRPC {
 			handleGradidoNodeRpcException();
 		}
 	}
+
+	void putTransaction(const std::string& base64Transaction, uint64_t transactionNr, const std::string& groupAlias)
+	{
+		try {
+			Value rpcParams(kObjectType);
+			JsonRPCRequest askForAddressBalance(ServerConfig::g_GradidoNodeUri);
+			auto alloc = askForAddressBalance.getJsonAllocator();
+			rpcParams.AddMember("transaction", Value(base64Transaction.data(), alloc), alloc);
+			rpcParams.AddMember("transactionNr", transactionNr, alloc);
+			rpcParams.AddMember("groupAlias", Value(groupAlias.data(), alloc), alloc);
+			auto result = askForAddressBalance.request("puttransaction", rpcParams);
+			if (!result.HasMember("result")) {
+				throw RapidjsonMissingMemberException("missing result from puttransaction", "result", "object");
+			}
+		}
+		catch (...) {
+			handleGradidoNodeRpcException();
+		}
+	}
 }

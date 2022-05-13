@@ -10,6 +10,7 @@
 class JsonTransaction : public JsonRequestHandlerJwt
 {
 public:
+	JsonTransaction();
 protected:
 	rapidjson::Document readSharedParameter(const rapidjson::Document& params);
 	std::string signAndSendTransaction(std::unique_ptr<model::gradido::GradidoTransaction> transaction, const std::string& groupAlias);	
@@ -25,6 +26,8 @@ protected:
 	uint64_t	mApolloTransactionId;
 	std::string mApolloCreatedDecay;
 	Poco::DateTime  mApolloDecayStart;
+	bool		mArchiveTransaction;
+	uint64_t    mTransactionNr;
 	Poco::SharedPtr<model::Session> mSession;
 };
 

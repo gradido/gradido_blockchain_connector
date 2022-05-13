@@ -67,39 +67,43 @@ Document JsonCreationTransaction::handle(const rapidjson::Document& params)
 	mMemo = encryptMemo(mMemo, publicKeyBin->data(), mSession->getKeyPair()->getPrivateKey());
 
 	try {
-		auto addressType = gradidoNodeRPC::getAddressType(pubkeyHex, mSession->getGroupAlias());
-		if (addressType != model::gradido::RegisterAddress::getAddressStringFromType(proto::gradido::RegisterAddress_AddressType_HUMAN)) {
-			Poco::Logger::get("errorLog").warning("address type: %s isn't allowed for creation", addressType);
-			if (addressType == model::gradido::RegisterAddress::getAddressStringFromType(proto::gradido::RegisterAddress_AddressType_NONE)) {
-				return stateError("address isn't registered on blockchain");
+		if (!mArchiveTransaction) 
+		{
+			auto addressType = gradidoNodeRPC::getAddressType(pubkeyHex, mSession->getGroupAlias());
+			if (addressType != model::gradido::RegisterAddress::getAddressStringFromType(proto::gradido::RegisterAddress_AddressType_HUMAN)) {
+				Poco::Logger::get("errorLog").warning("address type: %s isn't allowed for creation", addressType);
+				if (addressType == model::gradido::RegisterAddress::getAddressStringFromType(proto::gradido::RegisterAddress_AddressType_NONE)) {
+					return stateError("address isn't registered on blockchain");
+				}
+				return stateError("address has the wrong type for creation");
 			}
-			return stateError("address has the wrong type for creation");
-		}
-		auto sumString = gradidoNodeRPC::getCreationSumForMonth(
-			pubkeyHex, targetDate.month(), targetDate.year(),
-			Poco::DateTimeFormatter::format(mCreated, Poco::DateTimeFormat::ISO8601_FRAC_FORMAT),
-			mSession->getGroupAlias()
-		);
+		
+			auto sumString = gradidoNodeRPC::getCreationSumForMonth(
+				pubkeyHex, targetDate.month(), targetDate.year(),
+				Poco::DateTimeFormatter::format(mCreated, Poco::DateTimeFormat::ISO8601_FRAC_FORMAT),
+				mSession->getGroupAlias()
+			);
 
-		auto sum = MathMemory::create();
-		if (mpfr_set_str(sum->getData(), sumString.data(), 10, gDefaultRound)) {
-			std::string error = "cannot parse sum from Gradido Node: %s" + sumString;
-			throw gradidoNodeRPC::GradidoNodeRPCException(error.data());
-		}
-		auto amount = MathMemory::create();
-		if (mpfr_set_str(amount->getData(), amountString.data(), 10, gDefaultRound)) {
-			throw model::gradido::TransactionValidationInvalidInputException(
-				"amount cannot be parsed to a number", 
-				"amount", "amount as string"
-			);
-		}
-		mpfr_add(sum->getData(), sum->getData(), amount->getData(), gDefaultRound);
-		// if sum > 1000
-		if (mpfr_cmp_d(sum->getData(), 1000.0) > 0) {
-			throw model::gradido::TransactionValidationInvalidInputException(
-				"creation more than 1.000 GDD per month not allowed", 
-				"amount"
-			);
+			auto sum = MathMemory::create();
+			if (mpfr_set_str(sum->getData(), sumString.data(), 10, gDefaultRound)) {
+				std::string error = "cannot parse sum from Gradido Node: %s" + sumString;
+				throw gradidoNodeRPC::GradidoNodeRPCException(error.data());
+			}
+			auto amount = MathMemory::create();
+			if (mpfr_set_str(amount->getData(), amountString.data(), 10, gDefaultRound)) {
+				throw model::gradido::TransactionValidationInvalidInputException(
+					"amount cannot be parsed to a number",
+					"amount", "amount as string"
+				);
+			}
+			mpfr_add(sum->getData(), sum->getData(), amount->getData(), gDefaultRound);
+			// if sum > 1000
+			if (mpfr_cmp_d(sum->getData(), 1000.0) > 0) {
+				throw model::gradido::TransactionValidationInvalidInputException(
+					"creation more than 1.000 GDD per month not allowed",
+					"amount"
+				);
+			}
 		}
 
 		auto creation = TransactionFactory::createTransactionCreation(publicKeyBin, amountString, coinGroupId, targetDate);
