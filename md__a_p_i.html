@@ -144,7 +144,8 @@ Request</h2>
 <div class="line">    &quot;created&quot;:&quot;2022-04-21T19:13:01.506Z&quot;,</div>
 <div class="line">    &quot;addressType&quot;:&quot;HUMAN&quot;,</div>
 <div class="line">    &quot;currentGroupAlias&quot;: &quot;testgroup1&quot;,</div>
-<div class="line">    &quot;newGroupAlias&quot;: &quot;&quot;</div>
+<div class="line">    &quot;newGroupAlias&quot;: &quot;&quot;,</div>
+<div class="line">    &quot;transactionNr&quot;: 1</div>
 <div class="line">}</div>
 </div><!-- fragment --><ul>
 <li><code>addressType</code>: decide type of address<ul>
@@ -155,6 +156,7 @@ Request</h2>
 <li><code>created</code>: The current date and time on creating this transaction</li>
 <li><code>currentGroupAlias</code>: optional, only used for moving address, group alias from group where address is currently</li>
 <li><code>newGroupAlias</code>: optional, only used for moving address, group alias where address should move</li>
+<li><code>transactionNr</code>: optional, only for already sorted transactions from the past</li>
 </ul>
 <h2><a class="anchor" id="autotoc_md9"></a>
 Response</h2>
@@ -225,7 +227,8 @@ Request</h2>
 <div class="line">    &quot;created&quot;:&quot;2022-04-21T20:08:53.406Z&quot;,</div>
 <div class="line">    &quot;apolloTransactionId&quot;:&quot;1&quot;,</div>
 <div class="line">    &quot;apolloCreatedDecay&quot;: &quot;0&quot;,</div>
-<div class="line">    &quot;apolloDecayStart&quot;: &quot;2022-04-21T19:13:01.506Z&quot;</div>
+<div class="line">    &quot;apolloDecayStart&quot;: &quot;2022-04-21T19:13:01.506Z&quot;,</div>
+<div class="line">    &quot;transactionNr: 2</div>
 <div class="line">}</div>
 </div><!-- fragment --><ul>
 <li><code>memo</code>: comment for transaction, will be encrypted on blockchain, at least 5 character long , maximal 334 character long</li>
@@ -236,6 +239,7 @@ Request</h2>
 <li><code>apolloTransactionId</code>: (optional) transaction identifier from apollo</li>
 <li><code>apolloCreatedDecay</code>: (optional) decay from balance at apolloDecayStart to created</li>
 <li><code>apolloDecayStart</code>: (optional) date from last transaction, starting point for decay calculation</li>
+<li><code>transactionNr</code>: optional, only for already sorted transactions from the past</li>
 </ul>
 <h2><a class="anchor" id="autotoc_md13"></a>
 Response</h2>
@@ -333,7 +337,8 @@ Request</h2>
 <div class="line">    &quot;created&quot;:&quot;2022-04-21T20:08:53.406Z&quot;,</div>
 <div class="line">    &quot;apolloTransactionId&quot;:&quot;1&quot;,</div>
 <div class="line">    &quot;apolloCreatedDecay&quot;: &quot;0&quot;,</div>
-<div class="line">    &quot;apolloDecayStart&quot;: &quot;2022-04-21T19:13:01.506Z&quot;</div>
+<div class="line">    &quot;apolloDecayStart&quot;: &quot;2022-04-21T19:13:01.506Z&quot;,</div>
+<div class="line">    &quot;transactionNr&quot;: 3</div>
 <div class="line">}</div>
 </div><!-- fragment --><ul>
 <li><code>memo</code>: comment for transaction, will be encrypted on blockchain, at least 5 character long , maximal 334 character long</li>
@@ -343,6 +348,7 @@ Request</h2>
 <li><code>apolloTransactionId</code>: (optional) transaction identifier from apollo</li>
 <li><code>apolloCreatedDecay</code>: (optional) decay from balance at apolloDecayStart to created</li>
 <li><code>apolloDecayStart</code>: (optional) date from last transaction, starting point for decay calculation</li>
+<li><code>transactionNr</code>: optional, only for already sorted transactions from the past</li>
 </ul>
 <h2><a class="anchor" id="autotoc_md17"></a>
 Response</h2>
