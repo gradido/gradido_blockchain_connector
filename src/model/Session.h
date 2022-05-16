@@ -27,10 +27,10 @@ namespace model {
 		uint64_t getGroupId(Poco::Data::Session& dbSession);
 
 		inline const unsigned char* getPublicKey() const { return !mUserKeyPair ? nullptr : mUserKeyPair->getPublicKey(); }
+		std::string getPublicKeyHex() const { return !mUserKeyPair ? nullptr : std::move(mUserKeyPair->getPublicKeyHex()); }
 		bool signTransaction(model::gradido::GradidoTransaction* gradidoTransaction);
 
 	protected:
-		std::unique_ptr<model::table::Group> askForGroupDetails();
 		void createNewUser(const std::string& userName, const std::string& groupAlias, Poco::Data::Session& dbSession);
 
 		std::string mUserName;

@@ -54,30 +54,13 @@ Result should be something like that:
 ```
 On success the request return a jwt token which must be used on the other requests.
 
-After successfully logged in your can register the group if it not already exist on blockchain:
-```bash
-curl -X POST \
-     -H 'Content-Type: application/json' \
-     -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2NTA1NjY5MzIuMTU1MTg0LCJpYXQiOjE2NTA1NjYzMzIuMTU1MTg0LCJuYW1lIjoidGVzdFVzZXIxIiwicHVia2V5IjoiMjVhZGMzZWEwYmZmZmE3ZDAwYmEyMjY4OTJlMDA1MWU5ODJlNGMxOGZiZDM4ZDRjNTE2NzIyMjRkNzM1NGY1YiIsInN1YiI6ImxvZ2luIn0.YsL4F7BUeBa-_yV1mF3aK9DSybwpj_eJH6fOaY_Tn9c' \
-     -d '{"groupName":"test Gruppe ","groupAlias":"testgroup1","coinColor":"","created":"2022-04-21T18:57:59.073Z"}' \
-     http://localhost:1271/globalGroupAdd
-``` 
-
-If transaction was successfully send via Iota the result should be something like that:
-```json
-{
-     "state":"success",
-     "iotaMessageId":"c536f760a31621faf3efcbd07088168738bee4eda52945531e09ae646efc5c18"
-}
-```
-With the iotaMessageId the transaction can be found on Iota Tangle.
-
 Now you can register your public key (generated from GradidoBlockchainConnector) on the blockchain
+
 ```bash
 curl -X POST \
      -H 'Content-Type: application/json' \
      -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2NTA1NjY5MzIuMTU1MTg0LCJpYXQiOjE2NTA1NjYzMzIuMTU1MTg0LCJuYW1lIjoidGVzdFVzZXIxIiwicHVia2V5IjoiMjVhZGMzZWEwYmZmZmE3ZDAwYmEyMjY4OTJlMDA1MWU5ODJlNGMxOGZiZDM4ZDRjNTE2NzIyMjRkNzM1NGY1YiIsInN1YiI6ImxvZ2luIn0.YsL4F7BUeBa-_yV1mF3aK9DSybwpj_eJH6fOaY_Tn9c' \
-     -d '{"created":"2022-04-21T19:13:01.506Z","userName":"testUser1","addressType":"HUMAN"}' \
+     -d '{"created":"2022-04-21T19:13:01.506Z","addressType":"HUMAN"}' \
      http://localhost:1271/registerAddress
 ```
 
