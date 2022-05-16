@@ -1,5 +1,6 @@
 #include "GradidoNodeRPC.h"
 #include "gradido_blockchain/http/JsonRPCRequest.h"
+#include "gradido_blockchain/http/RequestExceptions.h"
 #include "gradido_blockchain/model/protobufWrapper/TransactionValidationExceptions.h"
 #include "ServerConfig.h"
 
@@ -14,18 +15,21 @@ namespace gradidoNodeRPC {
 		try {
 			throw; // assume it was called from catch clause
 		}
+		catch (RequestResponseErrorException& ex) {
+			throw;
+		}
 		catch (GradidoBlockchainException& ex) {
 			Poco::Logger::get("errorLog").error("gradido blockchain exception by call to Gradido Node: %s", ex.getFullString());
-			throw GradidoNodeRPCException("gradido blockchain exception");
+			throw GradidoNodeRPCException("gradido blockchain exception", ex.getFullString());
 		}
 		catch (Poco::Exception& ex) {
 			Poco::Logger::get("errorLog").error("Poco exception by call to Gradido Node: %s", ex.displayText());
-			throw GradidoNodeRPCException("Poco exception");
+			throw GradidoNodeRPCException("Poco exception", ex.displayText());
 		}
 		catch (std::exception& ex) {
 			std::string what = ex.what();
 			Poco::Logger::get("errorLog").error("std::exception by call to Gradido Node: %s", what);
-			throw GradidoNodeRPCException("std exception");
+			throw GradidoNodeRPCException("std exception", what);
 		}
 		
 	}
@@ -183,4 +187,19 @@ namespace gradidoNodeRPC {
 			handleGradidoNodeRpcException();
 		}
 	}
+
+	// Exceptions
+	GradidoNodeRPCException::GradidoNodeRPCException(const char* what, const std::string& details) noexcept 
+		: GradidoBlockchainException(what), mDetails(details)
+	{
+	}
+	std::string GradidoNodeRPCException::getFullString() const
+	{ 
+		std::string result = what();
+		if (mDetails.size()) {
+			result += ", details: " + mDetails;
+		}		
+		return std::move(result);
+	}
+	
 }

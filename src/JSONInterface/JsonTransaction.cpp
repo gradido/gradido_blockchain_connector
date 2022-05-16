@@ -123,6 +123,9 @@ std::string JsonTransaction::signAndSendTransaction(std::unique_ptr<model::gradi
 			NULL, 0
 		);
 		iotaMessageId = DataTypeConverter::binToHex(hash, sizeof hash);
+		auto base64Transaction = DataTypeConverter::binToBase64(std::move(raw_message));
+		gradidoNodeRPC::putTransaction(*base64Transaction.get(), mTransactionNr, groupAlias);		
+		
 	}
 	else {
 		// finale to hex for iota
@@ -178,7 +181,7 @@ bool JsonTransaction::validateApolloDecay(const model::gradido::GradidoTransacti
 	calculateDecayFactorForDuration(
 		decayTemp->getData(),
 		gDecayFactorGregorianCalender,
-		(mCreated - mApolloDecayStart).totalSeconds()
+		mApolloDecayStart, mCreated
 	);
 	// balance contain the end balance after function call
 	calculateDecayFast(decayTemp->getData(), balance->getData());
@@ -233,6 +236,9 @@ rapidjson::Document JsonTransaction::handleSignAndSendTransactionExceptions()
 		Poco::Logger::get("errorLog").error("error by calling iota: %s", ex.getFullString());
 		return stateError("error by calling iota", ex);
 	}	
+	catch (RequestResponseErrorException& ex) {
+		return stateError("request response exception", ex);
+	}
 	catch (RapidjsonParseErrorException& ex) {
 		Poco::Logger::get("errorLog").error("calling iota return invalid json: %s", ex.getFullString());
 		return stateError("error by calling iota", ex);
@@ -243,7 +249,7 @@ rapidjson::Document JsonTransaction::handleSignAndSendTransactionExceptions()
 	}
 	catch (gradidoNodeRPC::GradidoNodeRPCException& ex) {
 		Poco::Logger::get("errorLog").error("error by requesting Gradido Node: %s", ex.getFullString());
-		return stateError("error by requesting Gradido Node");
+		return stateError("error by requesting Gradido Node", ex.getFullString());
 	}
 	catch (ApolloDecayException& ex) {
 		return stateError("error with apollo decay", ex);
