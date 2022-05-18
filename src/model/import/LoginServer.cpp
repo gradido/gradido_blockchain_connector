@@ -3,10 +3,12 @@
 #include "ConnectionManager.h"
 #include "../table/BaseTable.h"
 
+using namespace Poco::Data::Keywords;
+
 namespace model {
 	namespace import {
 
-		using namespace Poco::Data::Keywords;
+		
 
 		LoginServer::LoginServer()
 		{

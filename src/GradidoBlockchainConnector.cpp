@@ -215,6 +215,13 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 		catch (GradidoBlockchainException& ex) {
 			printf("error by importing from login server: %s\n", ex.getFullString().data());
 		}
+		model::import::CommunityServer communityServerImport;
+		try {
+			communityServerImport.loadStateUsers();
+		}
+		catch (GradidoBlockchainException& ex) {
+			printf("error by importing from community server: %s\n", ex.getFullString().data());
+		}
 
 		std::clog << "[GradidoBlockchainConnector::main] started in " << usedTime.string().data() << std::endl;
 		// wait for CTRL-C or kill
