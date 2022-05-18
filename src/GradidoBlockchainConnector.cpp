@@ -218,6 +218,7 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 		model::import::CommunityServer communityServerImport;
 		try {
 			communityServerImport.loadStateUsers();
+			communityServerImport.loadTransactionsIntoTransactionManager("gdd1");
 		}
 		catch (GradidoBlockchainException& ex) {
 			printf("error by importing from community server: %s\n", ex.getFullString().data());
