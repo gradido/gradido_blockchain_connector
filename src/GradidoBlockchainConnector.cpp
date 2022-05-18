@@ -24,7 +24,7 @@
 #include <google/protobuf/stubs/common.h>
 
 // TODO: move
-#include "gradido_blockchain/TransactionsManager.h"
+#include "gradido_blockchain/model/TransactionsManager.h"
 #include "model/import/LoginServer.h"
 #include "model/import/CommunityServer.h"
 
@@ -151,6 +151,7 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 
 		// speed logginh
 		createConsoleFileAsyncLogger("speedLog", log_Path + "speedLog.txt");
+		Poco::Logger& speedLog = Poco::Logger::get("speedLog");
 
 
 		// *************** load from config ********************************************
@@ -218,13 +219,14 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 		model::import::CommunityServer communityServerImport;
 		try {
 			communityServerImport.loadStateUsers();
+			communityServerImport.loadStateUserBalances();
 			communityServerImport.loadTransactionsIntoTransactionManager("gdd1");
 		}
 		catch (GradidoBlockchainException& ex) {
 			printf("error by importing from community server: %s\n", ex.getFullString().data());
 		}
 
-		std::clog << "[GradidoBlockchainConnector::main] started in " << usedTime.string().data() << std::endl;
+		speedLog.information("[GradidoBlockchainConnector::main] started in %s", usedTime.string());
 		// wait for CTRL-C or kill
 		waitForTerminationRequest();
 

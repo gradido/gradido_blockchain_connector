@@ -9,6 +9,19 @@ using namespace Poco::Data::Keywords;
 
 namespace model {
 	namespace import {
+
+		CommunityServer::StateBalance::StateBalance(const StateBalanceTuple& tuple)
+			: recordDate(tuple.get<1>()), amountGddCent(tuple.get<2>())
+		{
+
+		}
+
+		CommunityServer::StateUserTransaction::StateUserTransaction(const StateUserTransactionTuple& tuple)
+			: userId(tuple.get<0>()), transactionId(tuple.get<1>()), balanceGddCent(tuple.get<2>()), balanceDate(tuple.get<3>())
+		{
+
+		}
+
 		CommunityServer::CommunityServer()
 		{
 
@@ -42,6 +55,7 @@ namespace model {
 			Profiler sortStateUsersTime;
 			std::for_each(stateUsersList.begin(), stateUsersList.end(), [&](const StateUserTuple& stateUser) {
 				mStateUserIdPublicKey.insert({ stateUser.get<0>(), stateUser.get<1>() });
+				mPublicKeyStateUserId.insert({ stateUser.get<1>(), stateUser.get<0>() });
 			});
 
 			speedLog.information("sorted state users in map: %s", sortStateUsersTime.string());
@@ -63,9 +77,9 @@ namespace model {
 			std::list<CreationTransactionTuple> creationTransactions;
 
 			select << "select t.id, t.memo, FROM_UNIXTIME(t.received), tc.state_user_id, tc.amount, FROM_UNIXTIME(tc.target_date) "
-				   << "from transaction_creations as tc "
-				   << "JOIN transactions as t "
-				   << "ON t.id = tc.transaction_id; ", into(creationTransactions);
+				<< "from transaction_creations as tc "
+				<< "JOIN transactions as t "
+				<< "ON t.id = tc.transaction_id; ", into(creationTransactions);
 
 			if (!select.execute()) {
 				throw table::RowNotFoundException("couldn't load creation transactions joined with transactions", "creation_transactions JOIN transactions", "");
@@ -89,7 +103,7 @@ namespace model {
 				creationTransactionObj->setCreated(creationTransaction.get<2>());
 				tm->pushGradidoTransaction(groupAlias, creationTransaction.get<0>(), std::move(creationTransactionObj));
 				mm->releaseMemory(userPubkey);
-			});
+				});
 			creationTransactions.clear();
 			speedLog.information("put creation transactions into TransactionManager in: %s", putCreationsIntoTransactionManagerTime.string());
 
@@ -111,7 +125,7 @@ namespace model {
 			// put transfer transaction into TransactionsManager
 			Profiler putTransfersIntoTransactionManagerTime;
 			std::for_each(transferTransactions.begin(), transferTransactions.end(), [&](const TransferTransactionTuple& transfer) {
-				
+
 				auto senderUserPubkey = getUserPubkey(transfer.get<3>(), transfer.get<0>());
 				if (!senderUserPubkey) return;
 
@@ -133,10 +147,58 @@ namespace model {
 
 				mm->releaseMemory(senderUserPubkey);
 				mm->releaseMemory(recipientUserPubkey);
-			});
+				});
 			transferTransactions.clear();
 			speedLog.information("put transfer transactions into TransactionManager in: %s", putTransfersIntoTransactionManagerTime.string());
 			speedLog.information("[CommunityServer::loadTransactionsIntoTransactionManager] time: %s", timeUsedAll.string());
+
+		}
+
+		void CommunityServer::loadStateUserBalances()
+		{
+			Profiler timeUsed; 
+			auto dbSession = ConnectionManager::getInstance()->getConnection();
+			Poco::Data::Statement select(dbSession);
+			Poco::Logger& speedLog = Poco::Logger::get("speedLog");
+
+			std::list<StateBalanceTuple> stateBalances;
+
+			select << "select state_user_id, record_date, amount "
+				<< "from state_balances ", into(stateBalances);
+			
+			if (!select.execute()) {
+				throw table::RowNotFoundException("couldn't load state balances", "state_balances", "");
+			}
+			std::for_each(stateBalances.begin(), stateBalances.end(), [&](const StateBalanceTuple& stateBalance) {
+				mStateBalances.insert({ stateBalance.get<0>(), stateBalance });
+			});
+			stateBalances.clear();
+
+			std::list<StateUserTransactionTuple> stateUserTransactions;
+			select.reset(dbSession);
+
+			select << "select state_user_id, transaction_id, balance, FROM_UNIXTIME(balance_date) "
+				   << "from state_user_transactions ", into(stateUserTransactions);
+
+			if (!select.execute()) {
+				throw table::RowNotFoundException("couldn't load state user transactions", "state_user_transactions", "");
+			}
+			std::for_each(stateUserTransactions.begin(), stateUserTransactions.end(), [&](const StateUserTransactionTuple& stateUserTransaction) {
+				auto userId = stateUserTransaction.get<0>();
+				auto userMapIt = mStateUserTransactions.find(userId);
+				if (userMapIt == mStateUserTransactions.end()) {
+					auto result = mStateUserTransactions.insert({ userId, std::map<Poco::UInt64, StateUserTransaction>() });
+					if (!result.second) {
+						Poco::Logger::get("errorLog").error("error create user map entry in CommunityServer::mStateUserTransactions");
+						return;
+					}
+					userMapIt = result.first;
+				}
+				auto transactionNr = stateUserTransaction.get<1>();
+				userMapIt->second.insert({ transactionNr, stateUserTransaction });
+			});
+
+			speedLog.information("[CommunityServer::loadStateUserBalances] time: %s", timeUsed.string());
 		}
 
 		MemoryBin* CommunityServer::getUserPubkey(uint64_t userId, uint64_t transactionId)
