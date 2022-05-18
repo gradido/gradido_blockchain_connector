@@ -23,6 +23,11 @@
 #include <sodium.h>
 #include <google/protobuf/stubs/common.h>
 
+// TODO: move
+#include "gradido_blockchain/TransactionsManager.h"
+#include "model/import/LoginServer.h"
+#include "model/import/CommunityServer.h"
+
 GradidoBlockchainConnector::GradidoBlockchainConnector()
 	: _helpRequested(false)
 {
@@ -144,6 +149,9 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 		createConsoleFileAsyncLogger("errorLog", log_Path + "errorLog.txt");
 		Poco::Logger& errorLog = Poco::Logger::get("errorLog");
 
+		// speed logginh
+		createConsoleFileAsyncLogger("speedLog", log_Path + "speedLog.txt");
+
 
 		// *************** load from config ********************************************
 
@@ -196,6 +204,17 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 		Poco::Net::HTTPServer json_srv(new JsonRequestHandlerFactory, json_svs, new Poco::Net::HTTPServerParams);
 		// start the json server
 		json_srv.start();
+
+		
+		// TODO: move
+		// code for loading old transactions from db
+		model::import::LoginServer loginServerImport;
+		try {
+			loginServerImport.loadAll();
+		}
+		catch (GradidoBlockchainException& ex) {
+			printf("error by importing from login server: %s\n", ex.getFullString().data());
+		}
 
 		std::clog << "[GradidoBlockchainConnector::main] started in " << usedTime.string().data() << std::endl;
 		// wait for CTRL-C or kill

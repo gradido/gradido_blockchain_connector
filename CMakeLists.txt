@@ -47,11 +47,12 @@ ENDIF()
 FILE(GLOB JSONInterface "src/JSONInterface/*.h" "src/JSONInterface/*.cpp")
 FILE(GLOB MODEL "src/model/*.h" "src/model/*.cpp")
 FILE(GLOB MODEL_TABLE "src/model/table/*.cpp" "src/model/table/*.h")
+FILE(GLOB MODEL_IMPORT "src/model/import/*.cpp" "src/model/import/*.h")
 FILE(GLOB MAIN "src/*.cpp" "src/*.c"  "src/*.h")
 
 SET(LOCAL_SRCS 
 	${MAIN}
-	${MODEL} ${MODEL_TABLE}
+	${MODEL} ${MODEL_TABLE} ${MODEL_IMPORT}
 	${JSONInterface} 
 )
 
@@ -61,6 +62,7 @@ if(MSVC)
 	# src
 	source_group("Json-Interface" FILES ${JSONInterface})	
 	source_group("model\\table" FILES ${MODEL_TABLE})
+	source_group("model\\import" FILES ${MODEL_IMPORT})
 	source_group("model" FILES ${MODEL})
 endif()
 
