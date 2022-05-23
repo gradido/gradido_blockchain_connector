@@ -44,7 +44,7 @@ namespace model {
 			typedef Poco::Tuple<uint64_t, std::string> StateUserTuple;
 			std::list<StateUserTuple> stateUsersList;
 
-			select << "SELECT id, hex(public_key) from state_users", into(stateUsersList);
+			select << "SELECT id, LOWER(HEX(public_key)) from state_users", into(stateUsersList);
 
 			if (!select.execute()) {
 				throw table::RowNotFoundException("couldn't load state users", "state_users", "");
@@ -75,8 +75,8 @@ namespace model {
 			Profiler loadingCreationsTime;
 			typedef Poco::Tuple<uint64_t, std::string, Poco::DateTime, uint64_t, uint64_t, Poco::DateTime> CreationTransactionTuple;
 			std::list<CreationTransactionTuple> creationTransactions;
-
-			select << "select t.id, t.memo, FROM_UNIXTIME(t.received), tc.state_user_id, tc.amount, FROM_UNIXTIME(tc.target_date) "
+			// add timestamp typ: https://stackoverflow.com/questions/37531690/support-for-mysql-timestamp-in-the-poco-c-libraries
+			select << "select t.id, t.memo, t.received, tc.state_user_id, tc.amount, tc.target_date "
 				<< "from transaction_creations as tc "
 				<< "JOIN transactions as t "
 				<< "ON t.id = tc.transaction_id; ", into(creationTransactions);
@@ -112,7 +112,7 @@ namespace model {
 			typedef Poco::Tuple<uint64_t, std::string, Poco::DateTime, uint64_t, uint64_t, uint64_t> TransferTransactionTuple;
 			std::list<TransferTransactionTuple> transferTransactions;
 			select.reset(dbSession);
-			select << "select t.id, t.memo, FROM_UNIXTIME(t.received), tsc.state_user_id, tsc.receiver_user_id, tsc.amount "
+			select << "select t.id, t.memo, t.received, tsc.state_user_id, tsc.receiver_user_id, tsc.amount "
 				<< "from transaction_send_coins as tsc "
 				<< "JOIN transactions as t "
 				<< "ON t.id = tsc.transaction_id", into(transferTransactions);
@@ -177,7 +177,7 @@ namespace model {
 			std::list<StateUserTransactionTuple> stateUserTransactions;
 			select.reset(dbSession);
 
-			select << "select state_user_id, transaction_id, balance, FROM_UNIXTIME(balance_date) "
+			select << "select state_user_id, transaction_id, balance, balance_date "
 				   << "from state_user_transactions ", into(stateUserTransactions);
 
 			if (!select.execute()) {
@@ -201,6 +201,18 @@ namespace model {
 			speedLog.information("[CommunityServer::loadStateUserBalances] time: %s", timeUsed.string());
 		}
 
+		void CommunityServer::loadAll(const std::string& groupAlias, bool shouldLoadStateUserBalances /* = false */)
+		{
+			if (mLoadState) return;
+			mLoadState++;
+			loadStateUsers();
+			if (shouldLoadStateUserBalances) {
+				loadStateUserBalances();
+			}
+			loadTransactionsIntoTransactionManager(groupAlias);
+			mLoadState++;
+		}
+
 		MemoryBin* CommunityServer::getUserPubkey(uint64_t userId, uint64_t transactionId)
 		{
 			auto userIt = mStateUserIdPublicKey.find(userId);
@@ -213,6 +225,14 @@ namespace model {
 				return nullptr;
 			}
 			return DataTypeConverter::hexToBin(userIt->second);
+		}
+		std::string CommunityServer::getUserPubkeyHex(Poco::UInt64 userId)
+		{
+			auto userIt = mStateUserIdPublicKey.find(userId);
+			if (userIt == mStateUserIdPublicKey.end()) {
+				throw UserIdNotFoundException("[CommunityServer::getUserPubkeyHex]", userId);
+			}
+			return userIt->second;
 		}
 	}
 }

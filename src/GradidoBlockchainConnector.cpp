@@ -27,9 +27,10 @@
 #include "gradido_blockchain/model/TransactionsManager.h"
 #include "model/import/LoginServer.h"
 #include "model/import/CommunityServer.h"
+#include "gradido_blockchain/lib/Decay.h"
 
 GradidoBlockchainConnector::GradidoBlockchainConnector()
-	: _helpRequested(false)
+	: _helpRequested(false), _checkCommunityServerStateBalancesRequested(false)
 {
 }
 
@@ -52,24 +53,35 @@ void GradidoBlockchainConnector::uninitialize()
 void GradidoBlockchainConnector::defineOptions(Poco::Util::OptionSet& options)
 {
 	ServerApplication::defineOptions(options);
-
-	/*options.addOption(
+	
+	options.addOption(
 		Poco::Util::Option("help", "h", "display help information on command line arguments")
 		.required(false)
-		.repeatable(false));*/
+		.repeatable(false));
 	options.addOption(
 		Poco::Util::Option("config", "c", "use non default config file (default is ~/.gradido/blockchain_connector.properties)", false)
 		.repeatable(false)
 		.argument("Gradido_LoginServer.properties", true)
 		.callback(Poco::Util::OptionCallback<GradidoBlockchainConnector>(this, &GradidoBlockchainConnector::handleOption)));
-
+	// on windows use / instead of - or -- for options!
+	options.addOption(
+		Poco::Util::Option("checkBackup", "cb", "check db backup contain valid data, argument is backup type: community for backup in login- and community server format", false)
+		.repeatable(false) // TODO: make repeatable if more than one type is supported
+		.argument("community", true)
+		.callback(Poco::Util::OptionCallback<GradidoBlockchainConnector>(this, &GradidoBlockchainConnector::handleOption)));
 }
 
 void GradidoBlockchainConnector::handleOption(const std::string& name, const std::string& value)
 {
-	//printf("handle option: %s with value: %s\n", name.data(), value.data());
+	
 	if (name == "config") {
 		mConfigPath = value;
+		return;
+	}
+	else if (name == "checkBackup") {
+		if (value == "community") {
+			_checkCommunityServerStateBalancesRequested = true;
+		}
 		return;
 	}
 	ServerApplication::handleOption(name, value);
@@ -83,6 +95,81 @@ void GradidoBlockchainConnector::displayHelp()
 	helpFormatter.setUsage("OPTIONS");
 	helpFormatter.setHeader("Gradido Blockchain Connector");
 	helpFormatter.format(std::cout);
+}
+
+void GradidoBlockchainConnector::checkCommunityServerStateBalances()
+{
+	Poco::Logger& speedLog = Poco::Logger::get("speedLog");
+	Poco::Logger& errorLog = Poco::Logger::get("errorLog");
+	std::string groupAlias = "gdd1";
+	// code for loading old transactions from db
+	/*model::import::LoginServer loginServerImport;
+	try {
+		loginServerImport.loadAll();
+	}
+	catch (GradidoBlockchainException& ex) {
+		printf("error by importing from login server: %s\n", ex.getFullString().data());
+	}*/
+	model::import::CommunityServer communityServerImport;
+	try {
+		communityServerImport.loadAll(groupAlias, true);
+	}
+	catch (GradidoBlockchainException& ex) {
+		printf("error by importing from community server: %s\n", ex.getFullString().data());
+	}
+	auto tm = model::TransactionsManager::getInstance();
+	auto mm = MemoryManager::getInstance();
+	Profiler caluclateBalancesTime;
+	Poco::DateTime now;
+	//auto userBalances = tm->calculateFinalUserBalances("gdd1", now);
+	int i = 0;
+	auto stateBalances = communityServerImport.getStateBalances();
+	auto stateUserTransactions = communityServerImport.getStateUserTransactions();
+	auto dbBalance = mm->getMathMemory();
+	auto calcBalance = mm->getMathMemory();
+	auto diff = MathMemory::create();
+	initDefaultDecayFactors();
+	for (auto it = stateUserTransactions.begin(); it != stateUserTransactions.end(); it++) {
+		//if (it->first < 82) continue;
+		if (i > 0) break;
+		auto pubkeyHex = communityServerImport.getUserPubkeyHex(it->first);
+		/*for (auto it2 = it->second.begin(); it2 != it->second.end(); it2++) {
+			auto userBalance = tm->calculateUserBalanceUntil(groupAlias, pubkeyHex, it2->second.balanceDate);
+			mpfr_set_str(calcBalance, userBalance.balance.data(), 10, gDefaultRound);
+			mpfr_set_ui(dbBalance, it2->second.balanceGddCent, gDefaultRound);
+			mpfr_div_d(dbBalance, dbBalance, 10000, gDefaultRound);
+
+			mpfr_sub(diff->getData(), calcBalance, dbBalance, gDefaultRound);
+			std::string balanceString = std::to_string((double)it2->second.balanceGddCent / 10000.0);
+			//printf("%d balance from db: %s, calculated balance: %s, diff: ", j++, balanceString.data(), userBalance.balance.data());
+			mpfr_printf("%.20Rf\n", diff->getData());
+		}*/
+		auto lastStateUserTransaction = it->second.rbegin()->second;
+		try {
+			auto userBalance = tm->calculateUserBalanceUntil(groupAlias, pubkeyHex, lastStateUserTransaction.balanceDate);
+			mpfr_set_str(calcBalance, userBalance.balance.data(), 10, gDefaultRound);
+			mpfr_set_ui(dbBalance, lastStateUserTransaction.balanceGddCent, gDefaultRound);
+			mpfr_div_d(dbBalance, dbBalance, 10000, gDefaultRound);
+			mpfr_sub(diff->getData(), calcBalance, dbBalance, gDefaultRound);
+
+			std::string balanceString = std::to_string((double)lastStateUserTransaction.balanceGddCent / 10000.0);
+			if (mpfr_cmp(dbBalance, calcBalance)) {
+			//if (mpfr_cmp_ui(diff->getData(), 5) > 0) {
+				printf("balance from db: %s, calculated balance: %s\n", balanceString.data(), userBalance.balance.data());
+				printf("state user id: %d, pubkey hex: %s\n", it->first, pubkeyHex.data());
+				auto transactionsString = tm->getUserTransactionsDebugString(groupAlias, pubkeyHex);
+				printf("%s\n", transactionsString.data());
+				i++;
+			}
+		}
+		catch (model::TransactionsManager::AccountInGroupNotFoundException& ex) {
+			errorLog.error("error by calculating user balances, account for state user: %u not found", (unsigned)it->first);
+		}
+	}
+	mm->releaseMathMemory(dbBalance);
+	mm->releaseMathMemory(calcBalance);
+
+	speedLog.information("calculate user balances time: %s", caluclateBalancesTime.string());
 }
 
 void GradidoBlockchainConnector::createConsoleFileAsyncLogger(std::string name, std::string filePath)
@@ -205,28 +292,12 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 		Poco::Net::HTTPServer json_srv(new JsonRequestHandlerFactory, json_svs, new Poco::Net::HTTPServerParams);
 		// start the json server
 		json_srv.start();
-
-		
-		// TODO: move
-		// code for loading old transactions from db
-		model::import::LoginServer loginServerImport;
-		try {
-			loginServerImport.loadAll();
-		}
-		catch (GradidoBlockchainException& ex) {
-			printf("error by importing from login server: %s\n", ex.getFullString().data());
-		}
-		model::import::CommunityServer communityServerImport;
-		try {
-			communityServerImport.loadStateUsers();
-			communityServerImport.loadStateUserBalances();
-			communityServerImport.loadTransactionsIntoTransactionManager("gdd1");
-		}
-		catch (GradidoBlockchainException& ex) {
-			printf("error by importing from community server: %s\n", ex.getFullString().data());
-		}
-
 		speedLog.information("[GradidoBlockchainConnector::main] started in %s", usedTime.string());
+
+		if (_checkCommunityServerStateBalancesRequested) {
+			checkCommunityServerStateBalances();
+		}
+
 		// wait for CTRL-C or kill
 		waitForTerminationRequest();
 

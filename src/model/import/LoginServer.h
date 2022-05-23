@@ -23,6 +23,7 @@ namespace model {
 		protected:
 			//! map key is user public key
 			std::unordered_map<std::string, std::unique_ptr<KeyPairEd25519>> mUserKeys;
+			Poco::AtomicCounter mLoadState;
 		};
 	}
 }

@@ -22,6 +22,8 @@ namespace model {
 
 		void LoginServer::loadAll()
 		{
+			if (mLoadState) return;
+			mLoadState++;
 			Profiler timeUsedAll;
 			auto dbSession = ConnectionManager::getInstance()->getConnection();
 			Poco::Data::Statement select(dbSession);
@@ -80,6 +82,7 @@ namespace model {
 			});
 			speedLog.information("recover: %u key pairs in %s", (unsigned)mUserKeys.size(), recoverKeyPairsTime.string());
 			speedLog.information("[LoginServer::loadAll] time: %s", timeUsedAll.string());
+			mLoadState++;
 		}
 	}
 

@@ -35,6 +35,23 @@ namespace model {
 			void loadStateUsers();
 			void loadTransactionsIntoTransactionManager(const std::string& groupAlias);
 			void loadStateUserBalances();
+			void loadAll(const std::string& groupAlias, bool shouldLoadStateUserBalances = false);
+	
+			inline const std::map<Poco::UInt64, StateBalance>& getStateBalances() { return mStateBalances; }
+			inline const std::map<Poco::UInt64, std::map<Poco::UInt64, StateUserTransaction>>& getStateUserTransactions() { return mStateUserTransactions; }
+			std::string getUserPubkeyHex(Poco::UInt64 userId);
+
+			class UserIdNotFoundException : public GradidoBlockchainException
+			{
+			public: 
+				explicit UserIdNotFoundException(const char* what, Poco::UInt64 userId) noexcept
+					: GradidoBlockchainException(what), mUserId(userId) {};
+
+				std::string getFullString() const { return std::string(what()) +  std::string(", user id: ") + std::to_string(mUserId); }
+			protected:
+				Poco::UInt64 mUserId;
+			};
+
 
 		protected:
 			
@@ -45,6 +62,7 @@ namespace model {
 			std::map<Poco::UInt64, StateBalance> mStateBalances;
 			//! first key is user id, seconds key is transaction id
 			std::map<Poco::UInt64, std::map<Poco::UInt64, StateUserTransaction>> mStateUserTransactions;
+			Poco::AtomicCounter mLoadState;
 		};
 	}
 }
