@@ -2,8 +2,10 @@
 #include "gradido_blockchain/lib/Profiler.h"
 #include "gradido_blockchain/model/TransactionsManager.h"
 #include "gradido_blockchain/model/TransactionFactory.h"
+#include "gradido_blockchain/crypto/CryptoConfig.h"
 #include "ConnectionManager.h"
 #include "../table/BaseTable.h"
+#include "../../JSONInterface/JsonTransaction.h"
 
 using namespace Poco::Data::Keywords;
 
@@ -62,24 +64,28 @@ namespace model {
 			speedLog.information("[CommunityServer::loadStateUsers] time: %s", timeUsedAll.string());
 		}
 
-		void CommunityServer::loadTransactionsIntoTransactionManager(const std::string& groupAlias)
+		void CommunityServer::loadTransactionsIntoTransactionManager(const std::string& groupAlias, const std::unordered_map<std::string, std::unique_ptr<KeyPairEd25519>>* userKeys)
 		{
 			Profiler timeUsedAll;
 			auto dbSession = ConnectionManager::getInstance()->getConnection();
 			Poco::Data::Statement select(dbSession);
 			Poco::Logger& speedLog = Poco::Logger::get("speedLog");
+			Poco::Logger& errorLog = Poco::Logger::get("errorLog");
+			std::set<std::string> missingPrivKeys;
 			auto tm = TransactionsManager::getInstance();
 			auto mm = MemoryManager::getInstance();
 
 			// load creation transactions
 			Profiler loadingCreationsTime;
-			typedef Poco::Tuple<uint64_t, std::string, Poco::DateTime, uint64_t, uint64_t, Poco::DateTime> CreationTransactionTuple;
+			typedef Poco::Tuple<uint64_t, std::string, Poco::DateTime, uint64_t, uint64_t, Poco::DateTime, std::string> CreationTransactionTuple;
 			std::list<CreationTransactionTuple> creationTransactions;
 			// add timestamp typ: https://stackoverflow.com/questions/37531690/support-for-mysql-timestamp-in-the-poco-c-libraries
-			select << "select t.id, t.memo, t.received, tc.state_user_id, tc.amount, tc.target_date "
+			select << "select t.id, t.memo, t.received, tc.state_user_id, tc.amount, tc.target_date, ts.pubkey "
 				<< "from transaction_creations as tc "
 				<< "JOIN transactions as t "
-				<< "ON t.id = tc.transaction_id; ", into(creationTransactions);
+				<< "ON t.id = tc.transaction_id "
+				<< "LEFT JOIN transaction_signatures as ts "
+				<< "ON t.id = ts.transaction_id;", into(creationTransactions);
 
 			if (!select.execute()) {
 				throw table::RowNotFoundException("couldn't load creation transactions joined with transactions", "creation_transactions JOIN transactions", "");
@@ -92,18 +98,71 @@ namespace model {
 				auto userPubkey = getUserPubkey(creationTransaction.get<3>(), creationTransaction.get<0>());
 				if (!userPubkey) return;
 
+				if (userKeys) {
+					auto senderUserPubkeyHex = *userPubkey->convertToHex().get();
+					auto senderPubkeyIt = userKeys->find(senderUserPubkeyHex);
+					if (senderPubkeyIt == userKeys->end()) {
+						auto keyPair = getReserveKeyPair(senderUserPubkeyHex);
+						missingPrivKeys.insert(senderUserPubkeyHex);
+						mm->releaseMemory(userPubkey);
+						userPubkey = keyPair->getPublicKeyCopy();
+					}
+				}
+
 				auto amountString = std::to_string((double)creationTransaction.get<4>() / 10000.0);
 				auto creationTransactionObj = TransactionFactory::createTransactionCreation(
 					userPubkey,
 					amountString,
-					groupAlias,
 					creationTransaction.get<5>()
 				);
-				creationTransactionObj->setMemo(creationTransaction.get<1>());
+				
+				//creationTransactionObj->setMemo(creationTransaction.get<1>());
 				creationTransactionObj->setCreated(creationTransaction.get<2>());
-				tm->pushGradidoTransaction(groupAlias, creationTransaction.get<0>(), std::move(creationTransactionObj));
+				creationTransactionObj->updateBodyBytes();
+				auto signerPubkeyHex = DataTypeConverter::binToHex(creationTransaction.get<6>());
+				if (userKeys) {
+					auto signerIt = userKeys->find(signerPubkeyHex);
+					if (signerIt == userKeys->end()) {
+						missingPrivKeys.insert(signerPubkeyHex);
+						// pubkey from admin
+						std::string adminPubkey("7fe0a2489bc9f2db54a8f7be6f7d31da7d6d7b2ed2e0d2350b5feec5212589ab");
+						adminPubkey.resize(65);
+						std::string admin2Pubkey("c6edaa40822a521806b7d86fbdf4c9a0fc8671a9d2e8c432e27e111fc263d51d");
+						admin2Pubkey.resize(65);
+						if (creationTransaction.get<3>() != 82) {
+							signerIt = userKeys->find(adminPubkey);
+						}
+						else {
+							signerIt = userKeys->find(admin2Pubkey);
+						}
+					}
+					
+					auto signerPubkey = signerIt->second->getPublicKeyCopy();					
+
+					auto encryptedMemo = JsonTransaction::encryptMemo(
+						creationTransaction.get<1>(),
+						userPubkey->data(),
+						signerIt->second->getPrivateKey()
+					);
+					creationTransactionObj->setMemo(encryptedMemo).updateBodyBytes();
+
+					auto signature = signerIt->second->sign(*creationTransactionObj->getTransactionBody()->getBodyBytes());
+					creationTransactionObj->addSign(signerPubkey, signature);
+					if (creationTransaction.get<4>() != 30000000) {
+						try {
+							creationTransactionObj->validate(gradido::TRANSACTION_VALIDATION_SINGLE);
+						}
+						catch (GradidoBlockchainException& ex) {
+							printf("validation error in transaction %d: %s\n", creationTransaction.get<0>(), ex.getFullString().data());
+							throw;
+						}
+					}
+					mm->releaseMemory(signerPubkey);
+					mm->releaseMemory(signature);
+				}
+				tm->pushGradidoTransaction(groupAlias, std::move(creationTransactionObj));
 				mm->releaseMemory(userPubkey);
-				});
+			});
 			creationTransactions.clear();
 			speedLog.information("put creation transactions into TransactionManager in: %s", putCreationsIntoTransactionManagerTime.string());
 
@@ -125,9 +184,23 @@ namespace model {
 			// put transfer transaction into TransactionsManager
 			Profiler putTransfersIntoTransactionManagerTime;
 			std::for_each(transferTransactions.begin(), transferTransactions.end(), [&](const TransferTransactionTuple& transfer) {
-
 				auto senderUserPubkey = getUserPubkey(transfer.get<3>(), transfer.get<0>());
 				if (!senderUserPubkey) return;
+
+				KeyPairEd25519* keyPair = nullptr;
+				if (userKeys) {
+					auto senderUserPubkeyHex = *senderUserPubkey->convertToHex().get();
+					auto signerKeyPairIt = userKeys->find(senderUserPubkeyHex);
+					if (signerKeyPairIt == userKeys->end()) {
+						keyPair = getReserveKeyPair(senderUserPubkeyHex);
+						missingPrivKeys.insert(senderUserPubkeyHex);
+						mm->releaseMemory(senderUserPubkey);
+						senderUserPubkey = keyPair->getPublicKeyCopy();
+					}
+					else {
+						keyPair = signerKeyPairIt->second.get();
+					}
+				}
 
 				auto recipientUserPubkey = getUserPubkey(transfer.get<4>(), transfer.get<0>());
 				if (!recipientUserPubkey) {
@@ -138,20 +211,35 @@ namespace model {
 				auto transferrTransactionObj = TransactionFactory::createTransactionTransfer(
 					senderUserPubkey,
 					amountString,
-					groupAlias,
+					"",
 					recipientUserPubkey
 				);
-				transferrTransactionObj->setMemo(transfer.get<1>());
+				//transferrTransactionObj->setMemo(transfer.get<1>());
 				transferrTransactionObj->setCreated(transfer.get<2>());
-				tm->pushGradidoTransaction(groupAlias, transfer.get<0>(), std::move(transferrTransactionObj));
-
+				transferrTransactionObj->updateBodyBytes();
+				if (userKeys) {
+					auto encryptedMemo = JsonTransaction::encryptMemo(
+						transfer.get<1>(),
+						recipientUserPubkey->data(),
+						keyPair->getPrivateKey()
+					);
+					transferrTransactionObj->setMemo(encryptedMemo).updateBodyBytes();
+					
+					auto signature = keyPair->sign(*transferrTransactionObj->getTransactionBody()->getBodyBytes().get());
+					transferrTransactionObj->addSign(senderUserPubkey, signature);
+					mm->releaseMemory(signature);
+					
+				}
+				tm->pushGradidoTransaction(groupAlias, std::move(transferrTransactionObj));
 				mm->releaseMemory(senderUserPubkey);
 				mm->releaseMemory(recipientUserPubkey);
-				});
+			});
 			transferTransactions.clear();
 			speedLog.information("put transfer transactions into TransactionManager in: %s", putTransfersIntoTransactionManagerTime.string());
 			speedLog.information("[CommunityServer::loadTransactionsIntoTransactionManager] time: %s", timeUsedAll.string());
-
+			std::for_each(missingPrivKeys.begin(), missingPrivKeys.end(), [&](const std::string& pubkeyHex) {
+				errorLog.error("key pair for signing transaction for pubkey: %s replaced", pubkeyHex);
+			});
 		}
 
 		void CommunityServer::loadStateUserBalances()
@@ -201,7 +289,11 @@ namespace model {
 			speedLog.information("[CommunityServer::loadStateUserBalances] time: %s", timeUsed.string());
 		}
 
-		void CommunityServer::loadAll(const std::string& groupAlias, bool shouldLoadStateUserBalances /* = false */)
+		void CommunityServer::loadAll(
+			const std::string& groupAlias,
+			bool shouldLoadStateUserBalances /* = false */,
+			const std::unordered_map<std::string, std::unique_ptr<KeyPairEd25519>>* userKeys/* = nullptr*/
+		)
 		{
 			if (mLoadState) return;
 			mLoadState++;
@@ -209,8 +301,28 @@ namespace model {
 			if (shouldLoadStateUserBalances) {
 				loadStateUserBalances();
 			}
-			loadTransactionsIntoTransactionManager(groupAlias);
+			loadTransactionsIntoTransactionManager(groupAlias, userKeys);
 			mLoadState++;
+		}
+
+		std::string CommunityServer::getUserPubkeyHex(Poco::UInt64 userId)
+		{
+			auto userIt = mStateUserIdPublicKey.find(userId);
+			if (userIt == mStateUserIdPublicKey.end()) {
+				throw UserIdNotFoundException("[CommunityServer::getUserPubkeyHex]", userId);
+			}
+			return userIt->second;
+		}
+
+		KeyPairEd25519* CommunityServer::findReserveKeyPair(const unsigned char* pubkey)
+		{
+			for (auto it = mReserveKeyPairs.begin(); it != mReserveKeyPairs.end(); it++)
+			{
+				if (it->second->isTheSame(pubkey)) {
+					return it->second.get();
+				}
+			}
+			return nullptr;
 		}
 
 		MemoryBin* CommunityServer::getUserPubkey(uint64_t userId, uint64_t transactionId)
@@ -226,13 +338,16 @@ namespace model {
 			}
 			return DataTypeConverter::hexToBin(userIt->second);
 		}
-		std::string CommunityServer::getUserPubkeyHex(Poco::UInt64 userId)
+
+		KeyPairEd25519* CommunityServer::getReserveKeyPair(const std::string& originalPubkeyHex)
 		{
-			auto userIt = mStateUserIdPublicKey.find(userId);
-			if (userIt == mStateUserIdPublicKey.end()) {
-				throw UserIdNotFoundException("[CommunityServer::getUserPubkeyHex]", userId);
+			auto it = mReserveKeyPairs.find(originalPubkeyHex);
+			if (it == mReserveKeyPairs.end()) {
+				auto passphrase = Passphrase::generate(&CryptoConfig::g_Mnemonic_WordLists[CryptoConfig::MNEMONIC_BIP0039_SORTED_ORDER]);
+				it = mReserveKeyPairs.insert({ originalPubkeyHex, std::move(KeyPairEd25519::create(passphrase)) }).first;
 			}
-			return userIt->second;
+			return it->second.get();
 		}
+		
 	}
 }

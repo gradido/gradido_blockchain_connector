@@ -106,7 +106,7 @@ Document JsonCreationTransaction::handle(const rapidjson::Document& params)
 			}
 		}
 
-		auto creation = TransactionFactory::createTransactionCreation(publicKeyBin, amountString, coinGroupId, targetDate);
+		auto creation = TransactionFactory::createTransactionCreation(publicKeyBin, amountString, targetDate);
 		mm->releaseMemory(publicKeyBin);
 		publicKeyBin = nullptr;
 

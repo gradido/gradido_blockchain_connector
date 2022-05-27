@@ -169,7 +169,7 @@ namespace gradidoNodeRPC {
 		}
 	}
 
-	void putTransaction(const std::string& base64Transaction, uint64_t transactionNr, const std::string& groupAlias)
+	double putTransaction(const std::string& base64Transaction, uint64_t transactionNr, const std::string& groupAlias)
 	{
 		try {
 			Value rpcParams(kObjectType);
@@ -182,6 +182,7 @@ namespace gradidoNodeRPC {
 			if (!result.HasMember("result")) {
 				throw RapidjsonMissingMemberException("missing result from puttransaction", "result", "object");
 			}
+			return result["result"]["timeUsed"].GetDouble(); 
 		}
 		catch (...) {
 			handleGradidoNodeRpcException();

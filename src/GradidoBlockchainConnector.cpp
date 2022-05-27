@@ -2,6 +2,7 @@
 #include "ServerConfig.h"
 #include "JSONInterface/JsonRequestHandlerFactory.h"
 #include "model/table/VersionsManager.h"
+#include "GradidoNodeRPC.h"
 
 #include "gradido_blockchain/lib/Profiler.h"
 #include "gradido_blockchain/crypto/CryptoConfig.h"
@@ -25,12 +26,15 @@
 
 // TODO: move
 #include "gradido_blockchain/model/TransactionsManager.h"
+#include "gradido_blockchain/model/TransactionFactory.h"
+#include "gradido_blockchain/model/protobufWrapper/TransactionValidationExceptions.h"
+#include "JSONInterface/JsonTransaction.h"
 #include "model/import/LoginServer.h"
 #include "model/import/CommunityServer.h"
 #include "gradido_blockchain/lib/Decay.h"
 
 GradidoBlockchainConnector::GradidoBlockchainConnector()
-	: _helpRequested(false), _checkCommunityServerStateBalancesRequested(false)
+	: _helpRequested(false), _checkCommunityServerStateBalancesRequested(false), _sendCommunityServerTransactionsToGradidoNodeRequested(false)
 {
 }
 
@@ -57,18 +61,25 @@ void GradidoBlockchainConnector::defineOptions(Poco::Util::OptionSet& options)
 	options.addOption(
 		Poco::Util::Option("help", "h", "display help information on command line arguments")
 		.required(false)
-		.repeatable(false));
+		.repeatable(false)
+	);
 	options.addOption(
 		Poco::Util::Option("config", "c", "use non default config file (default is ~/.gradido/blockchain_connector.properties)", false)
 		.repeatable(false)
 		.argument("Gradido_LoginServer.properties", true)
-		.callback(Poco::Util::OptionCallback<GradidoBlockchainConnector>(this, &GradidoBlockchainConnector::handleOption)));
+	);
 	// on windows use / instead of - or -- for options!
 	options.addOption(
 		Poco::Util::Option("checkBackup", "cb", "check db backup contain valid data, argument is backup type: community for backup in login- and community server format", false)
 		.repeatable(false) // TODO: make repeatable if more than one type is supported
 		.argument("community", true)
-		.callback(Poco::Util::OptionCallback<GradidoBlockchainConnector>(this, &GradidoBlockchainConnector::handleOption)));
+	);
+
+	options.addOption(
+		Poco::Util::Option("sendBackup", "sb", "send db backup transactions to gradido node or iota")
+		.repeatable(false)
+		.argument("gradidoNode", true)
+	);
 }
 
 void GradidoBlockchainConnector::handleOption(const std::string& name, const std::string& value)
@@ -81,6 +92,12 @@ void GradidoBlockchainConnector::handleOption(const std::string& name, const std
 	else if (name == "checkBackup") {
 		if (value == "community") {
 			_checkCommunityServerStateBalancesRequested = true;
+		}
+		return;
+	}
+	else if (name == "sendBackup") {
+		if (value == "gradidoNode") {
+			_sendCommunityServerTransactionsToGradidoNodeRequested = true;
 		}
 		return;
 	}
@@ -97,11 +114,10 @@ void GradidoBlockchainConnector::displayHelp()
 	helpFormatter.format(std::cout);
 }
 
-void GradidoBlockchainConnector::checkCommunityServerStateBalances()
+void GradidoBlockchainConnector::checkCommunityServerStateBalances(const std::string& groupAlias)
 {
 	Poco::Logger& speedLog = Poco::Logger::get("speedLog");
 	Poco::Logger& errorLog = Poco::Logger::get("errorLog");
-	std::string groupAlias = "gdd1";
 	// code for loading old transactions from db
 	/*model::import::LoginServer loginServerImport;
 	try {
@@ -170,6 +186,151 @@ void GradidoBlockchainConnector::checkCommunityServerStateBalances()
 	mm->releaseMathMemory(calcBalance);
 
 	speedLog.information("calculate user balances time: %s", caluclateBalancesTime.string());
+}
+
+void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(const std::string& groupAlias)
+{
+	Poco::Logger& speedLog = Poco::Logger::get("speedLog");
+	Poco::Logger& errorLog = Poco::Logger::get("errorLog");
+	auto tm = model::TransactionsManager::getInstance();
+	auto mm = MemoryManager::getInstance();
+
+	// code for loading old transactions from db
+	model::import::LoginServer loginServerImport;
+	try {
+		loginServerImport.loadAll();
+	}
+	catch (GradidoBlockchainException& ex) {
+		printf("error by importing from login server: %s\n", ex.getFullString().data());
+	}
+	model::import::CommunityServer communityServerImport;
+	try {
+		communityServerImport.loadAll(groupAlias, true, &loginServerImport.getUserKeys());
+	}
+	catch (GradidoBlockchainException& ex) {
+		printf("error by importing from community server: %s\n", ex.getFullString().data());
+	}
+	model::TransactionsManager::TransactionList transactions;
+	try {
+		transactions = tm->getSortedTransactions(groupAlias);
+	}
+	catch (model::TransactionsManager::MissingTransactionNrException& ex) {
+		errorLog.error("hole in transactions: %s", ex.getFullString());
+		return;
+	}
+
+	// fix invalid transactions
+	const auto& userKeys = loginServerImport.getUserKeys();
+	for (auto it = transactions.begin(); it != transactions.end(); it++) {
+		auto transactionBody = (*it)->getTransactionBody();
+		if (transactionBody->isCreation()) {
+			auto creation = transactionBody->getCreationTransaction();
+			if (creation->getAmount() == "3000.000000") {
+				// Aktives Grundeinkommen für GL.Dez, Jan, Feb
+				// 2020-03-30 08:59:55
+				auto targetPubkey = creation->getRecipientPublicKey();
+				auto createdDate = transactionBody->getCreated();
+				auto signerPubkeys = (*it)->getPublicKeysfromSignatureMap(true);
+				assert(signerPubkeys.size());
+				auto signerPubkeyHex = DataTypeConverter::binToHex(signerPubkeys[0]);
+				auto signerKeyIt = userKeys.find(signerPubkeyHex);
+				KeyPairEd25519* signerKeyPair = nullptr;
+				if (signerKeyIt != userKeys.end()) {
+					signerKeyPair = signerKeyIt->second.get();
+				}
+				else {
+					signerKeyPair = communityServerImport.findReserveKeyPair(signerPubkeys[0]->data());
+				}
+
+				for (int i = 0; i < 3; i++) {
+					std::string memo = "Aktives Grundeinkommen für GL. ";
+					Poco::DateTime targetDate = createdDate;
+					switch (i) {
+					case 0:
+						memo += "Dez"; 
+						targetDate = Poco::DateTime(2020, 1, 30, 8, 59, 55); 
+						break;
+					case 1:
+						memo += "Jan"; 
+						targetDate = Poco::DateTime(2020, 2, 26, 8, 59, 55);
+						break;
+					case 2: 
+						memo += "Feb"; 
+						targetDate = Poco::DateTime(2020, 3, 30, 8, 59, 55);
+						break;
+					}
+					auto newTransaction = TransactionFactory::createTransactionCreation(
+						targetPubkey, "1000", targetDate
+					);
+					auto encryptedMemo = JsonTransaction::encryptMemo(
+						memo, targetPubkey->data(), signerKeyPair->getPrivateKey()
+					);
+					newTransaction->setMemo(encryptedMemo).setCreated(createdDate).updateBodyBytes();
+					auto bodyBytes = newTransaction->getTransactionBody()->getBodyBytes();
+					auto signerPubkey = signerKeyPair->getPublicKeyCopy();
+					auto signature = signerKeyPair->sign(*bodyBytes);
+					newTransaction->addSign(signerPubkey, signature);
+
+					mm->releaseMemory(signerPubkey);
+					mm->releaseMemory(signature);
+					auto sharedTransaction = std::shared_ptr<model::gradido::GradidoTransaction>(newTransaction.release());
+					it = transactions.insert(it, sharedTransaction);
+					it++;
+				}
+
+				//februaryCreation->setMemo("Aktives Grundeinkommen für GL. Feb").setCreated(createdDate).updateBodyBytes();
+				mm->releaseMemory(signerPubkeys[0]);
+				mm->releaseMemory(targetPubkey);
+				it = transactions.erase(it);
+			}
+		}
+	}
+
+	int transactionNr = 1;
+	Profiler timeUsed;
+
+	double gradidoNodeTimeUsedSum = 0.0;
+	for (auto it = transactions.begin(); it != transactions.end(); it++) {
+		try {
+			(*it)->validate(model::gradido::TRANSACTION_VALIDATION_SINGLE);
+		}
+		catch (model::gradido::TransactionValidationInvalidSignatureException& ex) {
+			errorLog.error("invalid signature: %s", ex.getFullString());
+			auto bodyBytes = (*it)->getTransactionBody()->getBodyBytes();
+			auto bodyBytesBase64 = DataTypeConverter::binToBase64(*bodyBytes);
+			errorLog.error("body bytes now: %s", bodyBytesBase64);
+		}
+		catch (model::gradido::TransactionValidationForbiddenSignException& ex) {
+			errorLog.error("forbidden sign: %s", ex.getFullString());
+			auto transactionBody = (*it)->getTransactionBody();
+			if (transactionBody->isCreation()) {
+				auto pubkey = (*it)->getTransactionBody()->getCreationTransaction()->getRecipientPublicKeyString();
+				auto pubkeyHex = DataTypeConverter::binToHex(pubkey);
+				errorLog.error("recipient pubkey: %s", pubkeyHex);
+			}
+		}
+		catch (model::gradido::TransactionValidationException& ex) {
+			errorLog.error("error validating transaction %d: %s", transactionNr, ex.getFullString());
+			errorLog.error("transaction in json: %s", (*it)->toJson());
+			break;
+		}
+		auto base64Transaction = DataTypeConverter::binToBase64(std::move((*it)->getSerialized()));
+		try {
+			gradidoNodeTimeUsedSum += gradidoNodeRPC::putTransaction(*base64Transaction, transactionNr, groupAlias);
+		}
+		catch (GradidoBlockchainException& ex) {
+			errorLog.error("error by sending transaction %d to gradido node: %s", transactionNr, ex.getFullString());
+			errorLog.error("transaction in json: %s", (*it)->toJson());
+			break;
+		}
+		transactionNr++;
+		printf("\rtransaction: %d/%d", transactionNr, transactions.size());
+	}
+	printf("\n");
+	speedLog.information("time used for sending %d transaction to gradido node: %s", transactionNr - 1, timeUsed.string());
+	speedLog.information("time used for sending on gradido node: %f ms", gradidoNodeTimeUsedSum);
+	speedLog.information("time used per transaction: %f ms", gradidoNodeTimeUsedSum / (double)transactions.size());
+
 }
 
 void GradidoBlockchainConnector::createConsoleFileAsyncLogger(std::string name, std::string filePath)
@@ -294,8 +455,12 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 		json_srv.start();
 		speedLog.information("[GradidoBlockchainConnector::main] started in %s", usedTime.string());
 
+		std::string groupAlias = "gdd1";
 		if (_checkCommunityServerStateBalancesRequested) {
-			checkCommunityServerStateBalances();
+			checkCommunityServerStateBalances(groupAlias);
+		}
+		if (_sendCommunityServerTransactionsToGradidoNodeRequested) {
+			sendCommunityServerTransactionsToGradidoNode(groupAlias);
 		}
 
 		// wait for CTRL-C or kill

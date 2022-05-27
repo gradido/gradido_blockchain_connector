@@ -31,7 +31,7 @@ Poco::Net::HTTPRequestHandler* JsonRequestHandlerFactory::createRequestHandler(c
 
 	mRemoveGETParameters.extract(uri, url_first_part);
 
-	if (url_first_part != "/listPending") {
+	if (url_first_part != "/listPending" && url_first_part != "/notify") {
 		std::string dateTimeString = Poco::DateTimeFormatter::format(Poco::DateTime(), "%d.%m.%y %H:%M:%S");
 		logStream << dateTimeString << " call " << uri;
 		mLogging.information(logStream.str());

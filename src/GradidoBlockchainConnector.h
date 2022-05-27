@@ -29,7 +29,8 @@ protected:
 
 	void handleOption(const std::string& name, const std::string& value);
 	void displayHelp();
-	void checkCommunityServerStateBalances();
+	void checkCommunityServerStateBalances(const std::string& groupAlias);
+	void sendCommunityServerTransactionsToGradidoNode(const std::string& groupAlias);
 
 	int main(const std::vector<std::string>& args);
 
@@ -38,7 +39,8 @@ protected:
 
 private:
 	bool _helpRequested;
-	bool _checkCommunityServerStateBalancesRequestd;
+	bool _checkCommunityServerStateBalancesRequested;
+	bool _sendCommunityServerTransactionsToGradidoNodeRequested;
 	std::string mConfigPath;
 };
 

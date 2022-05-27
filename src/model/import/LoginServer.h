@@ -19,9 +19,11 @@ namespace model {
 			~LoginServer();
 
 			void loadAll();
+			inline const std::unordered_map<std::string, std::unique_ptr<KeyPairEd25519>>& getUserKeys() const { return mUserKeys; }
+
 
 		protected:
-			//! map key is user public key
+			//! map key is user public key hex
 			std::unordered_map<std::string, std::unique_ptr<KeyPairEd25519>> mUserKeys;
 			Poco::AtomicCounter mLoadState;
 		};

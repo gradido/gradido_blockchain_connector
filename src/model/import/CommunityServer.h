@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 #include "../table/BaseTable.h"
+#include "gradido_blockchain/crypto/KeyPairEd25519.h"
 #include "gradido_blockchain/MemoryManager.h"
 
 namespace model {
@@ -33,13 +34,15 @@ namespace model {
 			};
 
 			void loadStateUsers();
-			void loadTransactionsIntoTransactionManager(const std::string& groupAlias);
+			//! \param userKeys for signing transactions
+			void loadTransactionsIntoTransactionManager(const std::string& groupAlias, const std::unordered_map<std::string, std::unique_ptr<KeyPairEd25519>>* userKeys = nullptr);
 			void loadStateUserBalances();
-			void loadAll(const std::string& groupAlias, bool shouldLoadStateUserBalances = false);
+			void loadAll(const std::string& groupAlias, bool shouldLoadStateUserBalances = false, const std::unordered_map<std::string, std::unique_ptr<KeyPairEd25519>>* userKeys = nullptr);
 	
 			inline const std::map<Poco::UInt64, StateBalance>& getStateBalances() { return mStateBalances; }
 			inline const std::map<Poco::UInt64, std::map<Poco::UInt64, StateUserTransaction>>& getStateUserTransactions() { return mStateUserTransactions; }
 			std::string getUserPubkeyHex(Poco::UInt64 userId);
+			KeyPairEd25519* findReserveKeyPair(const unsigned char* pubkey);
 
 			class UserIdNotFoundException : public GradidoBlockchainException
 			{
@@ -56,8 +59,12 @@ namespace model {
 		protected:
 			
 			MemoryBin* getUserPubkey(uint64_t userId, uint64_t transactionId);
+			KeyPairEd25519* getReserveKeyPair(const std::string& originalPubkeyHex);
+
 			std::map<uint64_t, std::string> mStateUserIdPublicKey;
 			std::unordered_map<std::string, uint64_t> mPublicKeyStateUserId;
+			//! key is original user pubkey hex
+			std::unordered_map<std::string, std::unique_ptr<KeyPairEd25519>> mReserveKeyPairs;
 			//! key is user id
 			std::map<Poco::UInt64, StateBalance> mStateBalances;
 			//! first key is user id, seconds key is transaction id

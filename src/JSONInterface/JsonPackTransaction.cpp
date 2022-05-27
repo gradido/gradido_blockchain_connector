@@ -75,6 +75,7 @@ Document JsonPackTransaction::transfer(const Document& params)
 	auto recipientPubkeyBin = DataTypeConverter::hexToBin(recipientPubkey);
 
 	std::vector<TransactionGroupAlias> transactions;
+	
 	auto baseTransaction = TransactionFactory::createTransactionTransfer(
 		senderPubkeyBin,
 		amount,
@@ -138,7 +139,7 @@ Document JsonPackTransaction::creation(const Document& params)
 
 	std::vector<TransactionGroupAlias> transactions;
 	try {
-		auto creation = TransactionFactory::createTransactionCreation(recipientPubkeyBin, amount, readCoinGroupId(params), targetDate);
+		auto creation = TransactionFactory::createTransactionCreation(recipientPubkeyBin, amount, targetDate);
 		transactions.push_back({ creation.release(), "" });
 	}
 	catch (...) {
