@@ -84,7 +84,7 @@ namespace task {
 		// work to do
 		//lib::MultithreadQueue<TaskPtr> mPendingTasks;
 		std::list<TaskPtr> mPendingTasks;
-		MultithreadContainer mPendingTasksMutex;
+		Poco::FastMutex mPendingTasksMutex;
 		bool mStopped;
 		Poco::FastMutex mCheckStopMutex;
 
