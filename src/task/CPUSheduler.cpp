@@ -50,7 +50,7 @@ namespace task {
 			t->setNewTask(task);
 		} else {
 			// else put task to pending queue
-			mPendingTasksMutex.lock();
+			mPendingTasksMutex.lock("CPUSheduler::sheduleTask");
 			mPendingTasks.push_back(task);
 			mPendingTasksMutex.unlock();
 		}
@@ -63,7 +63,7 @@ namespace task {
 		mStopped = true;
 		mCheckStopMutex.unlock();
 
-		mPendingTasksMutex.lock();
+		mPendingTasksMutex.lock("CPUSheduler::stop");
 		mPendingTasks.clear();
 		mPendingTasksMutex.unlock();
 	}
@@ -71,7 +71,7 @@ namespace task {
 	{
 		// look at pending tasks
 		TaskPtr task;
-		mPendingTasksMutex.lock();
+		mPendingTasksMutex.lock("CPUSheduler::getNextUndoneTask");
 		for (std::list<TaskPtr>::iterator it = mPendingTasks.begin(); it != mPendingTasks.end(); it++) {
 			if ((*it)->isAllParentsReady()) {
 				task = *it;

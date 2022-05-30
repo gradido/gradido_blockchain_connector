@@ -2,6 +2,8 @@
 #include "gradido_blockchain/model/protobufWrapper/GradidoTransaction.h"
 #include "gradido_blockchain/lib/DataTypeConverter.h"
 
+#include "gradido_blockchain/MemoryManager.h"
+
 #include "ServerConfig.h"
 
 using namespace rapidjson;
@@ -40,7 +42,7 @@ Document JsonSendTransactionIota::handle(const Document& params)
 		return stateError("signaturePairs isn't a array");
 	}
 	
-	auto transactionBody = model::gradido::TransactionBody::load(DataTypeConverter::base64ToBinString(bodyBytesBase64String));
+	auto transactionBody = model::gradido::TransactionBody::load(DataTypeConverter::base64ToBinString(bodyBytesBase64String), ProtobufArenaMemory::create());
 	std::unique_ptr<model::gradido::GradidoTransaction> transaction(new model::gradido::GradidoTransaction(transactionBody));
 	auto mm = MemoryManager::getInstance();
 

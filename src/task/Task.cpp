@@ -69,16 +69,16 @@ namespace task {
 
 	void Task::release()
 	{
-		//mReferenceMutex.lock();
-		Poco::FastMutex::ScopedLock _lock(mReferenceMutex);
+		mReferenceMutex.lock();
+		
 		mReferenceCount--;
 		//printf("[Task::release] new value: %d\n", mReferenceCount);
 		if (0 == mReferenceCount) {
-			//mReferenceMutex.unlock();
+			mReferenceMutex.unlock();
 			delete this;
 			return;
 		}
-		//mReferenceMutex.unlock();
+		mReferenceMutex.unlock();
 	}
 	int Task::getReferenceCount()
 	{
