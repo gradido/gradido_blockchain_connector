@@ -49,11 +49,12 @@ FILE(GLOB MODEL "src/model/*.h" "src/model/*.cpp")
 FILE(GLOB MODEL_TABLE "src/model/table/*.cpp" "src/model/table/*.h")
 FILE(GLOB MODEL_IMPORT "src/model/import/*.cpp" "src/model/import/*.h")
 FILE(GLOB MAIN "src/*.cpp" "src/*.c"  "src/*.h")
+FILE(GLOB TASK "src/task/*.cpp" "src/task/*.h")
 
 SET(LOCAL_SRCS 
-	${MAIN}
+	${MAIN} 
 	${MODEL} ${MODEL_TABLE} ${MODEL_IMPORT}
-	${JSONInterface} 
+	${JSONInterface} ${TASK}
 )
 
 aux_source_directory("src" LOCAL_SRCS)
@@ -64,6 +65,7 @@ if(MSVC)
 	source_group("model\\table" FILES ${MODEL_TABLE})
 	source_group("model\\import" FILES ${MODEL_IMPORT})
 	source_group("model" FILES ${MODEL})
+	source_group("task" FILES ${TASK})
 endif()
 
 

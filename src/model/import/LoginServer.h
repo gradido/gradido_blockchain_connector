@@ -4,6 +4,9 @@
 #include <unordered_map>
 #include <memory>
 #include "gradido_blockchain/crypto/KeyPairEd25519.h"
+#include "gradido_blockchain/lib/MultithreadContainer.h"
+#include "../../task/Task.h"
+#include "Poco/RefCountedObject.h"
 
 namespace model {
 	namespace import {
@@ -12,7 +15,7 @@ namespace model {
 		  @date   18.05.2022
 		  @brief  Import user datas from old Login Server DB Backup
 		*/
-		class LoginServer
+		class LoginServer: public Poco::RefCountedObject
 		{
 		public:
 			LoginServer();
@@ -21,11 +24,17 @@ namespace model {
 			void loadAll();
 			inline const std::unordered_map<std::string, std::unique_ptr<KeyPairEd25519>>& getUserKeys() const { return mUserKeys; }
 
+			bool isAllRecoverKeyPairTasksFinished();
+			//! \param pubkeyHex move string
+			//! \return true if add to map worked
+			bool addUserKeys(std::unique_ptr<KeyPairEd25519> keyPair);
 
 		protected:
 			//! map key is user public key hex
 			std::unordered_map<std::string, std::unique_ptr<KeyPairEd25519>> mUserKeys;
 			Poco::AtomicCounter mLoadState;
+			std::list<task::TaskPtr> mRecoverKeyPairTasks;
+			std::shared_mutex mWorkMutex;
 		};
 	}
 }

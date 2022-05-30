@@ -23,6 +23,8 @@
 #include "gradido_blockchain/MemoryManager.h"
 #include "gradido_blockchain/http/IotaRequest.h"
 
+#include "task/CPUSheduler.h"
+
 #define DISABLE_EMAIL
 
 namespace ServerConfig {
@@ -43,6 +45,7 @@ namespace ServerConfig {
 	extern MemoryBin* g_JwtPrivateKey;
 	extern std::string g_JwtVerifySecret;
 	extern Poco::Timespan g_SessionValidDuration;
+	extern task::CPUSheduler* g_WorkerThread;
 	
 	//extern li::mysql_database* g_Mysql;
 

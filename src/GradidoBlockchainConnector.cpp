@@ -196,16 +196,16 @@ void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(co
 	auto mm = MemoryManager::getInstance();
 
 	// code for loading old transactions from db
-	model::import::LoginServer loginServerImport;
+	Poco::AutoPtr<model::import::LoginServer> loginServerImport = new model::import::LoginServer;
 	try {
-		loginServerImport.loadAll();
+		loginServerImport->loadAll();
 	}
 	catch (GradidoBlockchainException& ex) {
 		printf("error by importing from login server: %s\n", ex.getFullString().data());
 	}
 	model::import::CommunityServer communityServerImport;
 	try {
-		communityServerImport.loadAll(groupAlias, true, &loginServerImport.getUserKeys());
+		communityServerImport.loadAll(groupAlias, true, loginServerImport);
 	}
 	catch (GradidoBlockchainException& ex) {
 		printf("error by importing from community server: %s\n", ex.getFullString().data());
@@ -220,7 +220,7 @@ void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(co
 	}
 
 	// fix invalid transactions
-	const auto& userKeys = loginServerImport.getUserKeys();
+	const auto& userKeys = loginServerImport->getUserKeys();
 	for (auto it = transactions.begin(); it != transactions.end(); it++) {
 		auto transactionBody = (*it)->getTransactionBody();
 		if (transactionBody->isCreation()) {
@@ -445,6 +445,9 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 		ServerConfig::initIota(config());
 		ServerConfig::g_GradidoNodeUri = Poco::URI(config().getString("gradidoNode", "http://127.0.0.1:8340"));
 		ServerConfig::readUnsecureFlags(config());
+
+		uint8_t worker_count = Poco::Environment::processorCount();
+		ServerConfig::g_WorkerThread = new task::CPUSheduler(worker_count, "grddWr");
 
 		model::table::VersionsManager::getInstance()->migrate();
 		

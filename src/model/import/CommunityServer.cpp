@@ -1,4 +1,5 @@
 #include "CommunityServer.h"
+#include "LoginServer.h"
 #include "gradido_blockchain/lib/Profiler.h"
 #include "gradido_blockchain/model/TransactionsManager.h"
 #include "gradido_blockchain/model/TransactionFactory.h"
@@ -6,6 +7,7 @@
 #include "ConnectionManager.h"
 #include "../table/BaseTable.h"
 #include "../../JSONInterface/JsonTransaction.h"
+
 
 using namespace Poco::Data::Keywords;
 
@@ -292,7 +294,8 @@ namespace model {
 		void CommunityServer::loadAll(
 			const std::string& groupAlias,
 			bool shouldLoadStateUserBalances /* = false */,
-			const std::unordered_map<std::string, std::unique_ptr<KeyPairEd25519>>* userKeys/* = nullptr*/
+			Poco::AutoPtr<LoginServer> loginServer /*= nullptr*/
+			//const std::unordered_map<std::string, std::unique_ptr<KeyPairEd25519>>* userKeys/* = nullptr*/
 		)
 		{
 			if (mLoadState) return;
@@ -301,7 +304,12 @@ namespace model {
 			if (shouldLoadStateUserBalances) {
 				loadStateUserBalances();
 			}
-			loadTransactionsIntoTransactionManager(groupAlias, userKeys);
+			Profiler waitOnRecoverKeys;
+			while (!loginServer->isAllRecoverKeyPairTasksFinished()) {
+				Poco::Thread::sleep(10);
+			}
+			Poco::Logger::get("speedLog").information("wait for recover keys: %s", waitOnRecoverKeys.string());
+			loadTransactionsIntoTransactionManager(groupAlias, &loginServer->getUserKeys());
 			mLoadState++;
 		}
 

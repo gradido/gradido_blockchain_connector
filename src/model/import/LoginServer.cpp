@@ -2,6 +2,7 @@
 #include "gradido_blockchain/lib/Profiler.h"
 #include "ConnectionManager.h"
 #include "../table/BaseTable.h"
+#include "../../task/RecoverLoginKeyPair.h"
 
 using namespace Poco::Data::Keywords;
 
@@ -67,22 +68,36 @@ namespace model {
 			speedLog.information("put user backups into map, clear user backup list in: %s", sortUserBackupsTime);
 			*/
 			// recover key pairs for users
-			Profiler recoverKeyPairsTime;
+			
 			std::for_each(userBackupsList.begin(), userBackupsList.end(), [&](const UserBackupsTuple& userBackup) {
-				auto passphraseString = userBackup.get<1>();
-				auto mnemonic = Passphrase::detectMnemonic(passphraseString);
-				if (!mnemonic) {
-					Poco::Logger::get("errorLog").error("couldn't find correct word list for: %u (%s)", (unsigned)userBackup.get<0>(), passphraseString);
+				task::TaskPtr task = new task::RecoverLoginKeyPair(userBackup.get<0>(), userBackup.get<1>(), Poco::AutoPtr<LoginServer>(this, true));
+				task->scheduleTask(task);
+				mRecoverKeyPairTasks.push_back(task);
+			});
+			//mLoadState++;
+		}
+
+		bool LoginServer::isAllRecoverKeyPairTasksFinished()
+		{
+			int erasedCount = 0;
+			for (auto it = mRecoverKeyPairTasks.begin(); it != mRecoverKeyPairTasks.end(); it++) {
+				if ((*it)->isTaskFinished()) {
+					it = mRecoverKeyPairTasks.erase(it);
+					erasedCount++;
 				}
 				else {
-					auto passphrase = std::make_shared<Passphrase>(passphraseString, mnemonic);
-					auto keyPair = KeyPairEd25519::create(passphrase);
-					mUserKeys.insert({ keyPair->getPublicKeyHex(), std::move(keyPair) });
+					return false;
 				}
-			});
-			speedLog.information("recover: %u key pairs in %s", (unsigned)mUserKeys.size(), recoverKeyPairsTime.string());
-			speedLog.information("[LoginServer::loadAll] time: %s", timeUsedAll.string());
-			mLoadState++;
+			}
+			if (erasedCount) {
+				mLoadState++;
+			}
+			return true;
+		}
+		bool LoginServer::addUserKeys(std::unique_ptr<KeyPairEd25519> keyPair)
+		{
+			std::scoped_lock _lock(mWorkMutex);
+			return mUserKeys.insert({ std::move(keyPair->getPublicKeyHex()), std::move(keyPair) }).second;
 		}
 	}
 

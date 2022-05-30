@@ -9,6 +9,8 @@
 
 namespace model {
 	namespace import {
+		class LoginServer;
+
 		class CommunityServer
 		{
 		public:
@@ -37,7 +39,7 @@ namespace model {
 			//! \param userKeys for signing transactions
 			void loadTransactionsIntoTransactionManager(const std::string& groupAlias, const std::unordered_map<std::string, std::unique_ptr<KeyPairEd25519>>* userKeys = nullptr);
 			void loadStateUserBalances();
-			void loadAll(const std::string& groupAlias, bool shouldLoadStateUserBalances = false, const std::unordered_map<std::string, std::unique_ptr<KeyPairEd25519>>* userKeys = nullptr);
+			void loadAll(const std::string& groupAlias, bool shouldLoadStateUserBalances = false, Poco::AutoPtr<LoginServer> loginServer = nullptr);
 	
 			inline const std::map<Poco::UInt64, StateBalance>& getStateBalances() { return mStateBalances; }
 			inline const std::map<Poco::UInt64, std::map<Poco::UInt64, StateUserTransaction>>& getStateUserTransactions() { return mStateUserTransactions; }

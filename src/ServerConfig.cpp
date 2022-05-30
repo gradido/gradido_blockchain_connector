@@ -38,6 +38,7 @@ namespace ServerConfig {
 	MemoryBin* g_JwtPrivateKey = nullptr;
 	std::string g_JwtVerifySecret;
 	Poco::Timespan g_SessionValidDuration = Poco::Timespan(600, 0);
+	task::CPUSheduler* g_WorkerThread = nullptr;
 
 	//li::mysql_database* g_Mysql = nullptr;
 
@@ -177,6 +178,11 @@ namespace ServerConfig {
 		if (g_JwtPrivateKey) {
 			mm->releaseMemory(g_JwtPrivateKey);
 			g_JwtPrivateKey = nullptr;
+		}
+		if (g_WorkerThread) {
+			g_WorkerThread->stop();
+			delete g_WorkerThread;
+			g_WorkerThread = nullptr;
 		}
 	}
 
