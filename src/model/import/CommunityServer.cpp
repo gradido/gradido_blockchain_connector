@@ -7,7 +7,8 @@
 #include "ConnectionManager.h"
 #include "../table/BaseTable.h"
 #include "../../JSONInterface/JsonTransaction.h"
-
+#include "../../task/PrepareCommunityCreationTransaction.h"
+#include "../../task/PrepareCommunityTransferTransaction.h"
 
 using namespace Poco::Data::Keywords;
 
@@ -79,7 +80,7 @@ namespace model {
 
 			// load creation transactions
 			Profiler loadingCreationsTime;
-			typedef Poco::Tuple<uint64_t, std::string, Poco::DateTime, uint64_t, uint64_t, Poco::DateTime, std::string> CreationTransactionTuple;
+			
 			std::list<CreationTransactionTuple> creationTransactions;
 			// add timestamp typ: https://stackoverflow.com/questions/37531690/support-for-mysql-timestamp-in-the-poco-c-libraries
 			select << "select t.id, t.memo, t.received, tc.state_user_id, tc.amount, tc.target_date, ts.pubkey "
@@ -97,80 +98,19 @@ namespace model {
 			// put creation transactions into TransactionManager
 			Profiler putCreationsIntoTransactionManagerTime;
 			std::for_each(creationTransactions.begin(), creationTransactions.end(), [&](const CreationTransactionTuple& creationTransaction) {
-				auto userPubkey = getUserPubkey(creationTransaction.get<3>(), creationTransaction.get<0>());
-				if (!userPubkey) return;
-
-				if (userKeys) {
-					auto senderUserPubkeyHex = *userPubkey->convertToHex().get();
-					auto senderPubkeyIt = userKeys->find(senderUserPubkeyHex);
-					if (senderPubkeyIt == userKeys->end()) {
-						auto keyPair = getReserveKeyPair(senderUserPubkeyHex);
-						missingPrivKeys.insert(senderUserPubkeyHex);
-						mm->releaseMemory(userPubkey);
-						userPubkey = keyPair->getPublicKeyCopy();
-					}
-				}
-
-				auto amountString = std::to_string((double)creationTransaction.get<4>() / 10000.0);
-				auto creationTransactionObj = TransactionFactory::createTransactionCreation(
-					userPubkey,
-					amountString,
-					creationTransaction.get<5>()
+				task::TaskPtr task = new task::PrepareCommunityCreationTransaction(
+					creationTransaction,
+					Poco::AutoPtr<CommunityServer>(this, true),
+					userKeys, groupAlias
 				);
-				
-				//creationTransactionObj->setMemo(creationTransaction.get<1>());
-				creationTransactionObj->setCreated(creationTransaction.get<2>());
-				creationTransactionObj->updateBodyBytes();
-				auto signerPubkeyHex = DataTypeConverter::binToHex(creationTransaction.get<6>());
-				if (userKeys) {
-					auto signerIt = userKeys->find(signerPubkeyHex);
-					if (signerIt == userKeys->end()) {
-						missingPrivKeys.insert(signerPubkeyHex);
-						// pubkey from admin
-						std::string adminPubkey("7fe0a2489bc9f2db54a8f7be6f7d31da7d6d7b2ed2e0d2350b5feec5212589ab");
-						adminPubkey.resize(65);
-						std::string admin2Pubkey("c6edaa40822a521806b7d86fbdf4c9a0fc8671a9d2e8c432e27e111fc263d51d");
-						admin2Pubkey.resize(65);
-						if (creationTransaction.get<3>() != 82) {
-							signerIt = userKeys->find(adminPubkey);
-						}
-						else {
-							signerIt = userKeys->find(admin2Pubkey);
-						}
-					}
-					
-					auto signerPubkey = signerIt->second->getPublicKeyCopy();					
-
-					auto encryptedMemo = JsonTransaction::encryptMemo(
-						creationTransaction.get<1>(),
-						userPubkey->data(),
-						signerIt->second->getPrivateKey()
-					);
-					creationTransactionObj->setMemo(encryptedMemo).updateBodyBytes();
-
-					auto signature = signerIt->second->sign(*creationTransactionObj->getTransactionBody()->getBodyBytes());
-					creationTransactionObj->addSign(signerPubkey, signature);
-					if (creationTransaction.get<4>() != 30000000) {
-						try {
-							creationTransactionObj->validate(gradido::TRANSACTION_VALIDATION_SINGLE);
-						}
-						catch (GradidoBlockchainException& ex) {
-							printf("validation error in transaction %d: %s\n", creationTransaction.get<0>(), ex.getFullString().data());
-							throw;
-						}
-					}
-					mm->releaseMemory(signerPubkey);
-					mm->releaseMemory(signature);
-				}
-				tm->pushGradidoTransaction(groupAlias, std::move(creationTransactionObj));
-				mm->releaseMemory(userPubkey);
+				task->scheduleTask(task);
+				mPreparingTransactions.push_back(task);
 			});
 			creationTransactions.clear();
-			speedLog.information("put creation transactions into TransactionManager in: %s", putCreationsIntoTransactionManagerTime.string());
+			speedLog.information("start creation transactions tasks in: %s", putCreationsIntoTransactionManagerTime.string());
 
 			// load transfer transactions 
 			Profiler loadingTransfersTime;
-			typedef Poco::Tuple<uint64_t, std::string, Poco::DateTime, uint64_t, uint64_t, uint64_t> TransferTransactionTuple;
 			std::list<TransferTransactionTuple> transferTransactions;
 			select.reset(dbSession);
 			select << "select t.id, t.memo, t.received, tsc.state_user_id, tsc.receiver_user_id, tsc.amount "
@@ -186,58 +126,16 @@ namespace model {
 			// put transfer transaction into TransactionsManager
 			Profiler putTransfersIntoTransactionManagerTime;
 			std::for_each(transferTransactions.begin(), transferTransactions.end(), [&](const TransferTransactionTuple& transfer) {
-				auto senderUserPubkey = getUserPubkey(transfer.get<3>(), transfer.get<0>());
-				if (!senderUserPubkey) return;
-
-				KeyPairEd25519* keyPair = nullptr;
-				if (userKeys) {
-					auto senderUserPubkeyHex = *senderUserPubkey->convertToHex().get();
-					auto signerKeyPairIt = userKeys->find(senderUserPubkeyHex);
-					if (signerKeyPairIt == userKeys->end()) {
-						keyPair = getReserveKeyPair(senderUserPubkeyHex);
-						missingPrivKeys.insert(senderUserPubkeyHex);
-						mm->releaseMemory(senderUserPubkey);
-						senderUserPubkey = keyPair->getPublicKeyCopy();
-					}
-					else {
-						keyPair = signerKeyPairIt->second.get();
-					}
-				}
-
-				auto recipientUserPubkey = getUserPubkey(transfer.get<4>(), transfer.get<0>());
-				if (!recipientUserPubkey) {
-					mm->releaseMemory(senderUserPubkey);
-					return;
-				}
-				auto amountString = std::to_string((double)transfer.get<5>() / 10000.0);
-				auto transferrTransactionObj = TransactionFactory::createTransactionTransfer(
-					senderUserPubkey,
-					amountString,
-					"",
-					recipientUserPubkey
+				task::TaskPtr task = new task::PrepareCommunityTransferTransaction(
+					transfer,
+					Poco::AutoPtr<CommunityServer>(this, true),
+					userKeys, groupAlias
 				);
-				//transferrTransactionObj->setMemo(transfer.get<1>());
-				transferrTransactionObj->setCreated(transfer.get<2>());
-				transferrTransactionObj->updateBodyBytes();
-				if (userKeys) {
-					auto encryptedMemo = JsonTransaction::encryptMemo(
-						transfer.get<1>(),
-						recipientUserPubkey->data(),
-						keyPair->getPrivateKey()
-					);
-					transferrTransactionObj->setMemo(encryptedMemo).updateBodyBytes();
-					
-					auto signature = keyPair->sign(*transferrTransactionObj->getTransactionBody()->getBodyBytes().get());
-					transferrTransactionObj->addSign(senderUserPubkey, signature);
-					mm->releaseMemory(signature);
-					
-				}
-				tm->pushGradidoTransaction(groupAlias, std::move(transferrTransactionObj));
-				mm->releaseMemory(senderUserPubkey);
-				mm->releaseMemory(recipientUserPubkey);
+				task->scheduleTask(task);
+				mPreparingTransactions.push_back(task);
 			});
 			transferTransactions.clear();
-			speedLog.information("put transfer transactions into TransactionManager in: %s", putTransfersIntoTransactionManagerTime.string());
+			speedLog.information("start transfer transactions tasks in: %s", putTransfersIntoTransactionManagerTime.string());
 			speedLog.information("[CommunityServer::loadTransactionsIntoTransactionManager] time: %s", timeUsedAll.string());
 			std::for_each(missingPrivKeys.begin(), missingPrivKeys.end(), [&](const std::string& pubkeyHex) {
 				errorLog.error("key pair for signing transaction for pubkey: %s replaced", pubkeyHex);
@@ -333,6 +231,26 @@ namespace model {
 			return nullptr;
 		}
 
+		bool CommunityServer::isAllTransactionTasksFinished()
+		{
+			std::scoped_lock _lock(mWorkMutex);
+			int erasedCount = 0;
+			for (auto it = mPreparingTransactions.begin(); it != mPreparingTransactions.end(); ++it) {
+				if ((*it)->isTaskFinished()) {
+					it = mPreparingTransactions.erase(it);
+					erasedCount++;
+					if (it == mPreparingTransactions.end()) break;
+				}
+				else {
+					return false;
+				}
+			}
+			if (erasedCount) {
+				mLoadState++;
+			}
+			return true;
+		}
+
 		MemoryBin* CommunityServer::getUserPubkey(uint64_t userId, uint64_t transactionId)
 		{
 			auto userIt = mStateUserIdPublicKey.find(userId);
@@ -349,6 +267,7 @@ namespace model {
 
 		KeyPairEd25519* CommunityServer::getReserveKeyPair(const std::string& originalPubkeyHex)
 		{
+			std::scoped_lock _lock(mWorkMutex);
 			auto it = mReserveKeyPairs.find(originalPubkeyHex);
 			if (it == mReserveKeyPairs.end()) {
 				auto passphrase = Passphrase::generate(&CryptoConfig::g_Mnemonic_WordLists[CryptoConfig::MNEMONIC_BIP0039_SORTED_ORDER]);

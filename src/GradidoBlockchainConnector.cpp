@@ -203,13 +203,18 @@ void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(co
 	catch (GradidoBlockchainException& ex) {
 		printf("error by importing from login server: %s\n", ex.getFullString().data());
 	}
-	model::import::CommunityServer communityServerImport;
+	Poco::AutoPtr<model::import::CommunityServer> communityServerImport = new model::import::CommunityServer;
 	try {
-		communityServerImport.loadAll(groupAlias, true, loginServerImport);
+		communityServerImport->loadAll(groupAlias, true, loginServerImport);
 	}
 	catch (GradidoBlockchainException& ex) {
 		printf("error by importing from community server: %s\n", ex.getFullString().data());
 	}
+	Profiler waitOnTransactions;
+	while (!communityServerImport->isAllTransactionTasksFinished()) {
+		Poco::Thread::sleep(10);
+	}
+	speedLog.information("wait for transactions: %s", waitOnTransactions.string());
 	model::TransactionsManager::TransactionList transactions;
 	try {
 		transactions = tm->getSortedTransactions(groupAlias);
@@ -239,7 +244,7 @@ void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(co
 					signerKeyPair = signerKeyIt->second.get();
 				}
 				else {
-					signerKeyPair = communityServerImport.findReserveKeyPair(signerPubkeys[0]->data());
+					signerKeyPair = communityServerImport->findReserveKeyPair(signerPubkeys[0]->data());
 				}
 
 				for (int i = 0; i < 3; i++) {
@@ -446,7 +451,7 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 		ServerConfig::g_GradidoNodeUri = Poco::URI(config().getString("gradidoNode", "http://127.0.0.1:8340"));
 		ServerConfig::readUnsecureFlags(config());
 
-		uint8_t worker_count = Poco::Environment::processorCount();
+		uint8_t worker_count = Poco::Environment::processorCount()-2;
 		ServerConfig::g_WorkerThread = new task::CPUSheduler(worker_count, "grddWr");
 
 		model::table::VersionsManager::getInstance()->migrate();

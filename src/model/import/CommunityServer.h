@@ -6,18 +6,28 @@
 #include "../table/BaseTable.h"
 #include "gradido_blockchain/crypto/KeyPairEd25519.h"
 #include "gradido_blockchain/MemoryManager.h"
+#include "Poco/RefCountedObject.h"
+
+namespace task {
+	class PrepareCommunityCreationTransaction;
+	class PrepareCommunityTransferTransaction;
+}
 
 namespace model {
 	namespace import {
 		class LoginServer;
 
-		class CommunityServer
+		class CommunityServer : public Poco::RefCountedObject
 		{
+			friend class task::PrepareCommunityCreationTransaction;
+			friend class task::PrepareCommunityTransferTransaction;
 		public:
 			CommunityServer();
 			~CommunityServer();
 
 			typedef Poco::Tuple<Poco::UInt64, Poco::DateTime, Poco::UInt64> StateBalanceTuple;
+			typedef Poco::Tuple<uint64_t, std::string, Poco::DateTime, uint64_t, uint64_t, Poco::DateTime, std::string> CreationTransactionTuple;
+			typedef Poco::Tuple<uint64_t, std::string, Poco::DateTime, uint64_t, uint64_t, uint64_t> TransferTransactionTuple;
 			struct StateBalance
 			{
 				StateBalance(const StateBalanceTuple& tuple);
@@ -57,6 +67,7 @@ namespace model {
 				Poco::UInt64 mUserId;
 			};
 
+			bool isAllTransactionTasksFinished();
 
 		protected:
 			
@@ -72,6 +83,8 @@ namespace model {
 			//! first key is user id, seconds key is transaction id
 			std::map<Poco::UInt64, std::map<Poco::UInt64, StateUserTransaction>> mStateUserTransactions;
 			Poco::AtomicCounter mLoadState;
+			std::list<task::TaskPtr> mPreparingTransactions;
+			std::shared_mutex mWorkMutex;
 		};
 	}
 }

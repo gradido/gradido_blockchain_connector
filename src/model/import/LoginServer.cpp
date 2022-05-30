@@ -68,7 +68,7 @@ namespace model {
 			speedLog.information("put user backups into map, clear user backup list in: %s", sortUserBackupsTime);
 			*/
 			// recover key pairs for users
-			
+			std::scoped_lock _lock(mWorkMutex);
 			std::for_each(userBackupsList.begin(), userBackupsList.end(), [&](const UserBackupsTuple& userBackup) {
 				task::TaskPtr task = new task::RecoverLoginKeyPair(userBackup.get<0>(), userBackup.get<1>(), Poco::AutoPtr<LoginServer>(this, true));
 				task->scheduleTask(task);
@@ -79,11 +79,13 @@ namespace model {
 
 		bool LoginServer::isAllRecoverKeyPairTasksFinished()
 		{
+			std::scoped_lock _lock(mWorkMutex);
 			int erasedCount = 0;
-			for (auto it = mRecoverKeyPairTasks.begin(); it != mRecoverKeyPairTasks.end(); it++) {
+			for (auto it = mRecoverKeyPairTasks.begin(); it != mRecoverKeyPairTasks.end(); ++it) {
 				if ((*it)->isTaskFinished()) {
 					it = mRecoverKeyPairTasks.erase(it);
 					erasedCount++;
+					if (it == mRecoverKeyPairTasks.end()) break;
 				}
 				else {
 					return false;
