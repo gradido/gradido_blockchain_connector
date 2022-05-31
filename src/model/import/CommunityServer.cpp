@@ -9,11 +9,15 @@
 #include "../../JSONInterface/JsonTransaction.h"
 #include "../../task/PrepareCommunityCreationTransaction.h"
 #include "../../task/PrepareCommunityTransferTransaction.h"
+#include "../../task/UpdateCreationTargetDate.h"
 
 using namespace Poco::Data::Keywords;
 
 namespace model {
 	namespace import {
+
+		std::string CommunityServer::mTempCreationTableName = "transaction_creations_temp";
+		std::string CommunityServer::mTempTransactionsTableName = "transactions_temp";
 
 		CommunityServer::StateBalance::StateBalance(const StateBalanceTuple& tuple)
 			: recordDate(tuple.get<1>()), amountGddCent(tuple.get<2>())
@@ -67,6 +71,110 @@ namespace model {
 			speedLog.information("[CommunityServer::loadStateUsers] time: %s", timeUsedAll.string());
 		}
 
+		void CommunityServer::updateCreationTargetDate()
+		{
+			Profiler timeUsedAll;
+			Poco::Logger& speedLog = Poco::Logger::get("speedLog");
+			auto dbSession = ConnectionManager::getInstance()->getConnection();
+			Poco::Data::Statement copyTable(dbSession);
+			
+
+			// make copy of transaction_creations table
+			Profiler copyTableTime;
+			copyTable << "DROP TABLE IF EXISTS " << mTempCreationTableName, now;
+			copyTable.reset(dbSession);
+			copyTable << "CREATE TABLE " << mTempCreationTableName << " LIKE transaction_creations;", now;
+			copyTable.reset(dbSession);
+			copyTable << "INSERT INTO " << mTempCreationTableName << " SELECT * FROM transaction_creations;", now;
+
+			speedLog.information("copy creations table time: %s", copyTableTime.string());
+			copyTableTime.reset();
+
+			copyTable.reset(dbSession);
+			copyTable << "DROP TABLE IF EXISTS " << mTempTransactionsTableName, now;
+			copyTable.reset(dbSession);
+			copyTable << "CREATE TABLE " << mTempTransactionsTableName << " LIKE transactions;", now;
+			copyTable.reset(dbSession);
+			copyTable << "INSERT INTO " << mTempTransactionsTableName << " SELECT * FROM transactions;", now;
+			speedLog.information("copy transactions table time: %s", copyTableTime.string());
+			
+
+			// select specific data sets and update them
+			
+			Profiler updateTime;
+			typedef Poco::Tuple<std::string, uint8_t, uint16_t> ReplaceSet;
+			std::vector< ReplaceSet> replaceSets = {
+				{"Dez", 12, 2019},
+				{"Jan", 1, 2020},
+				{"Feb", 2, 2020},
+				{"März", 3, 2020},
+				{"April", 4, 2020}
+			};
+			std::for_each(replaceSets.begin(), replaceSets.end(), [&](const ReplaceSet& replaceSet) {
+				Poco::Data::Statement update(dbSession);
+				update << "update " << mTempCreationTableName << " "
+					<< "set target_date = DATE_FORMAT(target_date, CONCAT(?, '-', ?, '-', ";
+				if (replaceSet.get<0>() == "Feb") {
+					update << "IF(DATE_FORMAT(target_date, '%d') <= 28, '%d', 28)";
+				}
+				else {
+					update << "'%d'";
+				}
+				update << ", ' %H:%i:%s')) "
+					<< "where id in( "
+					<< "select tc.id "
+					<< "from " << mTempCreationTableName << " as tc "
+					<< "JOIN " << mTempTransactionsTableName << " as t "
+					<< "ON t.id = tc.transaction_id "
+					<< "where "
+					<< "t.received = tc.target_date and tc.amount <= 10000000 and t.memo LIKE '%" << replaceSet.get<0>() << "%' "
+					<< ")", useRef(replaceSet.get<2>()), useRef(replaceSet.get<1>()), now;
+			});
+			speedLog.information("time for updating target date from creation transactions: %s", updateTime.string());
+			/*
+				for creation transactions where target date is more than 2 month in the past from received
+				community server format
+				check if decay needs an update
+			*/
+			Profiler updateTransactionReceivedTime;
+			Poco::Data::Statement update(dbSession);
+			/* for received month -1 */
+			update << "update " << mTempTransactionsTableName << " "
+				<< "set received = DATE_FORMAT(received, CONCAT("
+				  << "'%Y-', CAST(DATE_FORMAT(received, '%m') AS UNSIGNED) - 1, "
+				  << "'-', IF(DATE_FORMAT(received, '%d') <= 28, '%d', 28), ' %H:%i:%s')) "
+				<< "where id in( "
+					<< "SELECT t.id "
+					<< "from " << mTempCreationTableName << " tc "
+					<< "JOIN " << mTempTransactionsTableName << " as t ON t.id = tc.transaction_id "
+					<< "WHERE "
+					//<< "TIMESTAMPDIFF(MONTH, tc.target_date, t.received) > 2 "
+				    << "CAST(DATE_FORMAT(t.received, '%m') AS SIGNED) - CAST(DATE_FORMAT(tc.target_date, '%m') AS SIGNED) > 2 "
+					<< "AND DATE_FORMAT(t.received, '%m') > 1 "
+				<< ")";
+			auto count = update.execute(true);
+
+			speedLog.information("time for updating %u transaction received month -1: %s", (unsigned)count, updateTransactionReceivedTime.string());
+			updateTransactionReceivedTime.reset();
+
+			/* for received year -1, month 12 */
+			update << "update " << mTempTransactionsTableName << " "
+				<< "set received = DATE_FORMAT(received, CONCAT("
+				<< "CAST(DATE_FORMAT(received, '%Y') AS UNSIGNED)-1, '-12-%d %H:%i:%s')) "
+				<< "where id in( "
+				<< "SELECT t.id "
+				<< "from " << mTempCreationTableName << " tc "
+				<< "JOIN " << mTempTransactionsTableName << " as t ON t.id = tc.transaction_id "
+				<< "WHERE "
+				//<< "TIMESTAMPDIFF(MONTH, tc.target_date, t.received) > 2 "
+				<< "CAST(DATE_FORMAT(t.received, '%m') AS SIGNED) - CAST(DATE_FORMAT(tc.target_date, '%m') AS SIGNED) > 2 "
+				<< "AND DATE_FORMAT(t.received, '%m') = 1 "
+				<< ")", now;
+
+			speedLog.information("time for updating transaction received year -1, month 12: %s", updateTransactionReceivedTime.string());
+			speedLog.information("[CommunityServer::updateCreationTargetDate] time: %s", timeUsedAll.string());
+		}
+
 		void CommunityServer::loadTransactionsIntoTransactionManager(const std::string& groupAlias, const std::unordered_map<std::string, std::unique_ptr<KeyPairEd25519>>* userKeys)
 		{
 			Profiler timeUsedAll;
@@ -84,8 +192,8 @@ namespace model {
 			std::list<CreationTransactionTuple> creationTransactions;
 			// add timestamp typ: https://stackoverflow.com/questions/37531690/support-for-mysql-timestamp-in-the-poco-c-libraries
 			select << "select t.id, t.memo, t.received, tc.state_user_id, tc.amount, tc.target_date, ts.pubkey "
-				<< "from transaction_creations as tc "
-				<< "JOIN transactions as t "
+				<< "from " << mTempCreationTableName << " as tc "
+				<< "JOIN " << mTempTransactionsTableName << " as t "
 				<< "ON t.id = tc.transaction_id "
 				<< "LEFT JOIN transaction_signatures as ts "
 				<< "ON t.id = ts.transaction_id;", into(creationTransactions);
@@ -115,7 +223,7 @@ namespace model {
 			select.reset(dbSession);
 			select << "select t.id, t.memo, t.received, tsc.state_user_id, tsc.receiver_user_id, tsc.amount "
 				<< "from transaction_send_coins as tsc "
-				<< "JOIN transactions as t "
+				<< "JOIN " << mTempTransactionsTableName << " as t "
 				<< "ON t.id = tsc.transaction_id", into(transferTransactions);
 
 			if (!select.execute()) {
@@ -207,6 +315,7 @@ namespace model {
 				Poco::Thread::sleep(10);
 			}
 			Poco::Logger::get("speedLog").information("wait for recover keys: %s", waitOnRecoverKeys.string());
+			updateCreationTargetDate();
 			loadTransactionsIntoTransactionManager(groupAlias, &loginServer->getUserKeys());
 			mLoadState++;
 		}

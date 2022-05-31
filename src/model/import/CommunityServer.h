@@ -46,6 +46,9 @@ namespace model {
 			};
 
 			void loadStateUsers();
+			// go throw all creations grouped by receiver and update target_date to match correct target date in memo
+			void updateCreationTargetDate();
+
 			//! \param userKeys for signing transactions
 			void loadTransactionsIntoTransactionManager(const std::string& groupAlias, const std::unordered_map<std::string, std::unique_ptr<KeyPairEd25519>>* userKeys = nullptr);
 			void loadStateUserBalances();
@@ -68,7 +71,8 @@ namespace model {
 			};
 
 			bool isAllTransactionTasksFinished();
-
+			static std::string mTempCreationTableName;
+			static std::string mTempTransactionsTableName;
 		protected:
 			
 			MemoryBin* getUserPubkey(uint64_t userId, uint64_t transactionId);

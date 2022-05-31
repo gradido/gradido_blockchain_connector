@@ -14,7 +14,9 @@ namespace task {
 		mTransaction(transaction), mCommunityServer(communityServer), 
 		mUserKeys(userKeys), mGroupAlias(groupAlias)
 	{
-
+#ifdef _UNI_LIB_DEBUG
+		setName(std::to_string(transaction.get<0>()).data());
+#endif
 	}
 
 	PrepareCommunityCreationTransaction::~PrepareCommunityCreationTransaction()
