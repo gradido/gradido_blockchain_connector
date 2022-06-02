@@ -3,6 +3,7 @@
 #include "gradido_blockchain/model/TransactionFactory.h"
 #include "gradido_blockchain/model/TransactionsManager.h"
 #include "../JSONInterface/JsonTransaction.h"
+#include "GradidoNodeRPC.h"
 
 namespace task {
 	PrepareCommunityTransferTransaction::PrepareCommunityTransferTransaction(
@@ -35,7 +36,7 @@ namespace task {
 			auto senderUserPubkeyHex = *senderUserPubkey->convertToHex().get();
 			auto signerKeyPairIt = mUserKeys->find(senderUserPubkeyHex);
 			if (signerKeyPairIt == mUserKeys->end()) {
-				keyPair = mCommunityServer->getReserveKeyPair(senderUserPubkeyHex);
+				keyPair = mCommunityServer->getReserveKeyPair(senderUserPubkeyHex, mGroupAlias);
 				missingPrivKeys.insert(senderUserPubkeyHex);
 				mm->releaseMemory(senderUserPubkey);
 				senderUserPubkey = keyPair->getPublicKeyCopy();
@@ -72,6 +73,13 @@ namespace task {
 			transferrTransactionObj->addSign(senderUserPubkey, signature);
 			mm->releaseMemory(signature);
 
+			try {
+				transferrTransactionObj->validate(model::gradido::TRANSACTION_VALIDATION_SINGLE);
+			}
+			catch (GradidoBlockchainException& ex) {
+				printf("validation error in transaction %d: %s\n", mTransaction.get<0>(), ex.getFullString().data());
+				throw;
+			}
 		}
 		tm->pushGradidoTransaction(mGroupAlias, std::move(transferrTransactionObj));
 		mm->releaseMemory(senderUserPubkey);

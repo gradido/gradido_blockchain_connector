@@ -69,6 +69,13 @@ namespace task {
 	}
 	TaskPtr CPUSheduler::getNextUndoneTask(CPUShedulerThread* Me)
 	{
+		{ // scoped lock
+			Poco::ScopedLock<Poco::FastMutex> _lock(mCheckStopMutex);
+			if (mStopped) {
+				return TaskPtr();
+			}
+		} // scoped lock end
+
 		// look at pending tasks
 		TaskPtr task;
 		mPendingTasksMutex.lock();

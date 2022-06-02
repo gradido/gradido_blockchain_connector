@@ -28,10 +28,12 @@
 #include "gradido_blockchain/model/TransactionsManager.h"
 #include "gradido_blockchain/model/TransactionFactory.h"
 #include "gradido_blockchain/model/protobufWrapper/TransactionValidationExceptions.h"
+#include "gradido_blockchain/lib/MultithreadQueue.h"
 #include "JSONInterface/JsonTransaction.h"
 #include "model/import/LoginServer.h"
 #include "model/import/CommunityServer.h"
 #include "gradido_blockchain/lib/Decay.h"
+#include "task/SendTransactionToGradidoNode.h"
 
 GradidoBlockchainConnector::GradidoBlockchainConnector()
 	: _helpRequested(false), _checkCommunityServerStateBalancesRequested(false), _sendCommunityServerTransactionsToGradidoNodeRequested(false)
@@ -198,7 +200,7 @@ void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(co
 	// code for loading old transactions from db
 	Poco::AutoPtr<model::import::LoginServer> loginServerImport = new model::import::LoginServer;
 	try {
-		loginServerImport->loadAll();
+		loginServerImport->loadAll(groupAlias);
 	}
 	catch (GradidoBlockchainException& ex) {
 		printf("error by importing from login server: %s\n", ex.getFullString().data());
@@ -294,48 +296,41 @@ void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(co
 	int transactionNr = 1;
 	Profiler timeUsed;
 
-	double gradidoNodeTimeUsedSum = 0.0;
-	for (auto it = transactions.begin(); it != transactions.end(); it++) {
-		try {
-			(*it)->validate(model::gradido::TRANSACTION_VALIDATION_SINGLE);
-		}
-		catch (model::gradido::TransactionValidationInvalidSignatureException& ex) {
-			errorLog.error("invalid signature: %s", ex.getFullString());
-			auto bodyBytes = (*it)->getTransactionBody()->getBodyBytes();
-			auto bodyBytesBase64 = DataTypeConverter::binToBase64(*bodyBytes);
-			errorLog.error("body bytes now: %s", bodyBytesBase64);
-		}
-		catch (model::gradido::TransactionValidationForbiddenSignException& ex) {
-			errorLog.error("forbidden sign: %s", ex.getFullString());
-			auto transactionBody = (*it)->getTransactionBody();
-			if (transactionBody->isCreation()) {
-				auto pubkey = (*it)->getTransactionBody()->getCreationTransaction()->getRecipientPublicKeyString();
-				auto pubkeyHex = DataTypeConverter::binToHex(pubkey);
-				errorLog.error("recipient pubkey: %s", pubkeyHex);
-			}
-		}
-		catch (model::gradido::TransactionValidationException& ex) {
-			errorLog.error("error validating transaction %d: %s", transactionNr, ex.getFullString());
-			errorLog.error("transaction in json: %s", (*it)->toJson());
-			break;
-		}
-		auto base64Transaction = DataTypeConverter::binToBase64(std::move((*it)->getSerialized()));
-		try {
-			gradidoNodeTimeUsedSum += gradidoNodeRPC::putTransaction(*base64Transaction, transactionNr, groupAlias);
-		}
-		catch (GradidoBlockchainException& ex) {
-			errorLog.error("error by sending transaction %d to gradido node: %s", transactionNr, ex.getFullString());
-			errorLog.error("transaction in json: %s", (*it)->toJson());
-			break;
-		}
-		transactionNr++;
-		printf("\rtransaction: %d/%d", transactionNr, transactions.size());
+	std::list<task::TaskPtr> putTasks;
+	MultithreadQueue<double> transactionRunningTimes;
+	Profiler scheduleTime;
+	for (auto it = transactions.begin(); it != transactions.end(); it++) 
+	{
+		task::TaskPtr putTask = new task::SendTransactionToGradidoNode(*it, transactionNr, groupAlias, &transactionRunningTimes);
+		putTasks.push_back(putTask);
+		putTask->scheduleTask(putTask);
+		transactionNr++;		
 	}
+	speedLog.information("time for scheduling %d transactions: %s", transactionNr - 1, scheduleTime.string());
+	Poco::Thread::sleep(15);
 	printf("\n");
-	speedLog.information("time used for sending %d transaction to gradido node: %s", transactionNr - 1, timeUsed.string());
-	speedLog.information("time used for sending on gradido node: %f ms", gradidoNodeTimeUsedSum);
-	speedLog.information("time used per transaction: %f ms", gradidoNodeTimeUsedSum / (double)transactions.size());
-
+	// wait on finishing task, will keep running if only one error occur!
+	printf("\rtransaction: %d/%d", transactions.size() - putTasks.size(), transactions.size());
+	while (putTasks.size()) {
+		for (auto it = putTasks.begin(); it != putTasks.end(); it++) {
+			if ((*it)->isTaskFinished()) {
+				it = putTasks.erase(it);
+				printf("\rtransaction: %d/%d", transactions.size() - putTasks.size(), transactions.size());
+				if (it == putTasks.end()) break;
+			}
+		}		
+		Poco::Thread::sleep(35);
+	}
+	printf("\rtransaction: %d/%d", transactions.size() - putTasks.size(), transactions.size());
+	printf("\n");
+	double runtimeSum = 0.0;
+	double temp = 0.0;
+	while (transactionRunningTimes.pop(temp)) {
+		runtimeSum += temp;
+	}
+	speedLog.information("time used for sending %d transaction to gradido node: %s", transactionNr - 1, timeUsed.string());	
+	speedLog.information("time used for sending on gradido node: %f ms", runtimeSum);
+	speedLog.information("time used per transaction: %f ms", runtimeSum / (double)transactions.size());
 }
 
 void GradidoBlockchainConnector::createConsoleFileAsyncLogger(std::string name, std::string filePath)
@@ -452,6 +447,7 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 		ServerConfig::readUnsecureFlags(config());
 
 		uint8_t worker_count = Poco::Environment::processorCount()-2;
+		worker_count = 1;
 		ServerConfig::g_WorkerThread = new task::CPUSheduler(worker_count, "grddWr");
 
 		model::table::VersionsManager::getInstance()->migrate();
@@ -476,6 +472,8 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 
 		// Stop the json server
 		json_srv.stop();
+
+		ServerConfig::g_WorkerThread->stop();
 
 		ServerConfig::unload();
 		Poco::Net::uninitializeSSL();

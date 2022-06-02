@@ -11,7 +11,13 @@ namespace task
 	{
 	public:
 		//! \param passphrase move string here
-		RecoverLoginKeyPair(uint64_t id, std::string passphrase, Poco::AutoPtr<model::import::LoginServer> loginServer);
+		RecoverLoginKeyPair(
+			uint64_t id, 
+			std::string passphrase, 
+			Poco::AutoPtr<model::import::LoginServer> loginServer,
+			Poco::DateTime created,
+			const std::string& groupAlias
+		);
 		~RecoverLoginKeyPair();
 
 		const char* getResourceType() const { return "RecoverLoginKeyPair"; };
@@ -20,6 +26,8 @@ namespace task
 		uint64_t mId;
 		std::string mPassphrase;
 		Poco::AutoPtr<model::import::LoginServer> mLoginServer;
+		Poco::DateTime mCreated;
+		std::string mGroupAlias;
 	};
 }
 

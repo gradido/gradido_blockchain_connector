@@ -47,6 +47,7 @@ bool ConnectionManager::setConnectionsFromConfig(const Poco::Util::LayeredConfig
 	dbConfig << "db=" << dbName << ";";
 	dbConfig << "user=" << config.getString("db.user", "root") << ";";
 	dbConfig << "password=" << config.getString("db.password", "") << ";";
+	dbConfig << "character-set=utf8mb4;";
 	//dbConfig << "auto-reconnect=true";
 	//std::clog << "try connect with: " << dbConfig.str() << std::endl;
 	Poco::Data::MySQL::Connector::registerConnector();

@@ -21,7 +21,7 @@ namespace model {
 
 		}
 
-		void LoginServer::loadAll()
+		void LoginServer::loadAll(const std::string& groupAlias)
 		{
 			if (mLoadState) return;
 			mLoadState++;
@@ -46,10 +46,10 @@ namespace model {
 			*/
 			// loading all user backups into memory
 			Profiler loadingUserBackupsTime;
-			typedef Poco::Tuple<uint64_t, std::string> UserBackupsTuple;
+			typedef Poco::Tuple<uint64_t, std::string, Poco::DateTime> UserBackupsTuple;
 			std::list<UserBackupsTuple> userBackupsList;
 			
-			select << "SELECT id, passphrase from user_backups",
+			select << "SELECT ub.id, ub.passphrase, u.created from user_backups as ub INNER JOIN users as u on(u.id = ub.user_id)",
 				into(userBackupsList);
 			if (!select.execute()) {
 				throw table::RowNotFoundException("couldn't load user backups", "user_backups", "");
@@ -70,7 +70,13 @@ namespace model {
 			// recover key pairs for users
 			std::scoped_lock _lock(mWorkMutex);
 			std::for_each(userBackupsList.begin(), userBackupsList.end(), [&](const UserBackupsTuple& userBackup) {
-				task::TaskPtr task = new task::RecoverLoginKeyPair(userBackup.get<0>(), userBackup.get<1>(), Poco::AutoPtr<LoginServer>(this, true));
+				task::TaskPtr task = new task::RecoverLoginKeyPair(
+					userBackup.get<0>(), 
+					userBackup.get<1>(),
+					Poco::AutoPtr<LoginServer>(this, true),
+					userBackup.get<2>(),
+					groupAlias
+					);
 				task->scheduleTask(task);
 				mRecoverKeyPairTasks.push_back(task);
 			});

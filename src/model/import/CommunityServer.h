@@ -76,7 +76,7 @@ namespace model {
 		protected:
 			
 			MemoryBin* getUserPubkey(uint64_t userId, uint64_t transactionId);
-			KeyPairEd25519* getReserveKeyPair(const std::string& originalPubkeyHex);
+			KeyPairEd25519* getReserveKeyPair(const std::string& originalPubkeyHex, const std::string& groupAlias);
 
 			std::map<uint64_t, std::string> mStateUserIdPublicKey;
 			std::unordered_map<std::string, uint64_t> mPublicKeyStateUserId;

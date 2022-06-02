@@ -3,6 +3,7 @@
 #include "gradido_blockchain/model/TransactionFactory.h"
 #include "gradido_blockchain/model/TransactionsManager.h"
 #include "../JSONInterface/JsonTransaction.h"
+#include "GradidoNodeRPC.h"
 
 namespace task {
 	PrepareCommunityCreationTransaction::PrepareCommunityCreationTransaction(
@@ -38,7 +39,7 @@ namespace task {
 			auto senderUserPubkeyHex = *userPubkey->convertToHex().get();
 			auto senderPubkeyIt = mUserKeys->find(senderUserPubkeyHex);
 			if (senderPubkeyIt == mUserKeys->end()) {
-				auto keyPair = mCommunityServer->getReserveKeyPair(senderUserPubkeyHex);
+				auto keyPair = mCommunityServer->getReserveKeyPair(senderUserPubkeyHex, mGroupAlias);
 				missingPrivKeys.insert(senderUserPubkeyHex);
 				mm->releaseMemory(userPubkey);
 				userPubkey = keyPair->getPublicKeyCopy();

@@ -10,6 +10,7 @@
 #include "../../task/PrepareCommunityCreationTransaction.h"
 #include "../../task/PrepareCommunityTransferTransaction.h"
 #include "../../task/UpdateCreationTargetDate.h"
+#include "Poco/UTF8String.h"
 
 using namespace Poco::Data::Keywords;
 
@@ -106,7 +107,7 @@ namespace model {
 			std::vector< ReplaceSet> replaceSets = {
 				{"Dez", 12, 2019},
 				{"Jan", 1, 2020},
-				{"Feb", 2, 2020},
+    			{"Feb", 2, 2020},
 				{"März", 3, 2020},
 				{"April", 4, 2020}
 			};
@@ -129,15 +130,37 @@ namespace model {
 					<< "where "
 					<< "t.received = tc.target_date and tc.amount <= 10000000 and t.memo LIKE '%" << replaceSet.get<0>() << "%' "
 					<< ")", useRef(replaceSet.get<2>()), useRef(replaceSet.get<1>()), now;
+				//printf("replaced: %s\n", replaceSet.get<0>().data());
 			});
 			speedLog.information("time for updating target date from creation transactions: %s", updateTime.string());
+			Profiler updateTimeRest;
+			Poco::Data::Statement update(dbSession);
+			update << "update " << mTempCreationTableName << " "
+				<< "set target_date = CAST(DATE_FORMAT(target_date, CONCAT("
+				<< "IF(DATE_FORMAT(target_date, '%m') = 1, DATE_FORMAT(target_date, '%Y') - 1, '%Y'),"
+				<< "'-',"
+				<< "IF(DATE_FORMAT(target_date, '%m') = 1, 12, DATE_FORMAT(target_date, '%m') - 1),"
+				<< "'-',"
+				<< "IF(DATE_FORMAT(target_date, '%m') = 3, IF(DATE_FORMAT(target_date, '%d') <= 28, '%d', 28), '%d'),"
+				<< "' %H:%i:%s')) AS DATETIME)"
+				<< "where id in("
+				<< "SELECT tc.id "
+				<< "from " << mTempCreationTableName << " as tc "
+				<< "JOIN " << mTempTransactionsTableName << " as t "
+				<< "ON t.id = tc.transaction_id "
+				<< "WHERE t.received = tc.target_date AND t.memo NOT LIKE '%Dez%' AND t.memo NOT LIKE '%Jan%' "
+				<< " AND t.memo NOT LIKE '%Feb%' AND t.memo NOT LIKE '%März%' AND t.memo NOT LIKE '%April%')";
+			
+			auto count = update.execute(true);
+			speedLog.information("update: %u with memo without month name in: %s", (unsigned)count, updateTimeRest.string());
+			
 			/*
 				for creation transactions where target date is more than 2 month in the past from received
 				community server format
 				check if decay needs an update
 			*/
 			Profiler updateTransactionReceivedTime;
-			Poco::Data::Statement update(dbSession);
+			update.reset(dbSession);
 			/* for received month -1 */
 			update << "update " << mTempTransactionsTableName << " "
 				<< "set received = DATE_FORMAT(received, CONCAT("
@@ -148,15 +171,16 @@ namespace model {
 					<< "from " << mTempCreationTableName << " tc "
 					<< "JOIN " << mTempTransactionsTableName << " as t ON t.id = tc.transaction_id "
 					<< "WHERE "
-					//<< "TIMESTAMPDIFF(MONTH, tc.target_date, t.received) > 2 "
-				    << "CAST(DATE_FORMAT(t.received, '%m') AS SIGNED) - CAST(DATE_FORMAT(tc.target_date, '%m') AS SIGNED) > 2 "
+					<< "(TIMESTAMPDIFF(MONTH, tc.target_date, t.received) > 2 OR "
+				    << "CAST(DATE_FORMAT(t.received, '%m') AS SIGNED) - CAST(DATE_FORMAT(tc.target_date, '%m') AS SIGNED) > 2) "
 					<< "AND DATE_FORMAT(t.received, '%m') > 1 "
 				<< ")";
-			auto count = update.execute(true);
+			count = update.execute(true);
 
 			speedLog.information("time for updating %u transaction received month -1: %s", (unsigned)count, updateTransactionReceivedTime.string());
 			updateTransactionReceivedTime.reset();
 
+			update.reset(dbSession);
 			/* for received year -1, month 12 */
 			update << "update " << mTempTransactionsTableName << " "
 				<< "set received = DATE_FORMAT(received, CONCAT("
@@ -166,12 +190,12 @@ namespace model {
 				<< "from " << mTempCreationTableName << " tc "
 				<< "JOIN " << mTempTransactionsTableName << " as t ON t.id = tc.transaction_id "
 				<< "WHERE "
-				//<< "TIMESTAMPDIFF(MONTH, tc.target_date, t.received) > 2 "
-				<< "CAST(DATE_FORMAT(t.received, '%m') AS SIGNED) - CAST(DATE_FORMAT(tc.target_date, '%m') AS SIGNED) > 2 "
-				<< "AND DATE_FORMAT(t.received, '%m') = 1 "
-				<< ")", now;
-
-			speedLog.information("time for updating transaction received year -1, month 12: %s", updateTransactionReceivedTime.string());
+				<< "(TIMESTAMPDIFF(MONTH, tc.target_date, t.received) > 2 OR "
+				<< "CAST(DATE_FORMAT(t.received, '%m') AS SIGNED) - CAST(DATE_FORMAT(tc.target_date, '%m') AS SIGNED) > 2) "
+				<< "AND CAST(DATE_FORMAT(t.received, '%m') AS UNSIGNED) = 1 "
+				<< ")";
+			count = update.execute();
+			speedLog.information("time for updating %u transaction received year -1, month 12: %s", (unsigned)count, updateTransactionReceivedTime.string());
 			speedLog.information("[CommunityServer::updateCreationTargetDate] time: %s", timeUsedAll.string());
 		}
 
@@ -374,13 +398,28 @@ namespace model {
 			return DataTypeConverter::hexToBin(userIt->second);
 		}
 
-		KeyPairEd25519* CommunityServer::getReserveKeyPair(const std::string& originalPubkeyHex)
+		KeyPairEd25519* CommunityServer::getReserveKeyPair(const std::string& originalPubkeyHex, const std::string& groupAlias)
 		{
 			std::scoped_lock _lock(mWorkMutex);
 			auto it = mReserveKeyPairs.find(originalPubkeyHex);
 			if (it == mReserveKeyPairs.end()) {
 				auto passphrase = Passphrase::generate(&CryptoConfig::g_Mnemonic_WordLists[CryptoConfig::MNEMONIC_BIP0039_SORTED_ORDER]);
-				it = mReserveKeyPairs.insert({ originalPubkeyHex, std::move(KeyPairEd25519::create(passphrase)) }).first;
+				auto keyPair = KeyPairEd25519::create(passphrase);
+				auto userPubkey = keyPair->getPublicKeyCopy();
+				auto mm = MemoryManager::getInstance();
+				auto tm = TransactionsManager::getInstance();
+				
+				auto registerAddress = TransactionFactory::createRegisterAddress(userPubkey, proto::gradido::RegisterAddress_AddressType_HUMAN);
+				//int year, int month, int day, int hour = 0, int minute = 0, int second = 0, int millisecond = 0, int microsecond = 0
+				registerAddress->setCreated(Poco::DateTime(2017, 1, 1, 10));
+				registerAddress->updateBodyBytes();
+				auto sign = keyPair->sign(*registerAddress->getTransactionBody()->getBodyBytes());
+				registerAddress->addSign(userPubkey, sign);
+				mm->releaseMemory(sign);
+				mm->releaseMemory(userPubkey);
+				tm->pushGradidoTransaction(groupAlias, std::move(registerAddress));
+
+				it = mReserveKeyPairs.insert({ originalPubkeyHex, std::move(keyPair) }).first;
 			}
 			return it->second.get();
 		}

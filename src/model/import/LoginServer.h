@@ -21,7 +21,7 @@ namespace model {
 			LoginServer();
 			~LoginServer();
 
-			void loadAll();
+			void loadAll(const std::string& groupAlias);
 			inline const std::unordered_map<std::string, std::unique_ptr<KeyPairEd25519>>& getUserKeys() const { return mUserKeys; }
 
 			bool isAllRecoverKeyPairTasksFinished();

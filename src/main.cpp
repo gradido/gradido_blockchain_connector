@@ -2,10 +2,12 @@
 #include <sodium.h>
 
 #include "gradido_blockchain/lib/Profiler.h"
+#include "gradido_blockchain/lib/Decay.h"
 #include "ServerConfig.h"
 
 #include "Poco/DateTimeParser.h"
 #include "Poco/DateTimeFormatter.h"
+
 
 #ifndef _TEST_BUILD
 
@@ -17,7 +19,7 @@ int main(int argc, char** argv)
 		printf("error initializing sodium, early exit\n");
 		return -1;
 	}
-
+	initDefaultDecayFactors();
 	std::string dateTimeString = __DATE__;
 	//printf("Building date time string: %s\n", dateTimeString.data());
 	std::string formatString("%b %d %Y");
@@ -32,11 +34,13 @@ int main(int argc, char** argv)
 	GradidoBlockchainConnector app;
 	try {
 		auto result = app.run(argc, argv);
+		unloadDefaultDecayFactors();
 		return result;
 	}
 	catch (Poco::Exception& ex) {
 		printf("[Gradido_LoginServer::main] exception by starting server: %s\n", ex.displayText().data());
 	}
+	unloadDefaultDecayFactors();
 	return -1;
 
 }
