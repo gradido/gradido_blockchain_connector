@@ -105,7 +105,7 @@ namespace model {
 		bool LoginServer::addUserKeys(std::unique_ptr<KeyPairEd25519> keyPair)
 		{
 			std::scoped_lock _lock(mWorkMutex);
-			return mUserKeys.insert({ std::move(keyPair->getPublicKeyHex()), std::move(keyPair) }).second;
+			return mUserKeys.insert({ std::move(keyPair->getPublicKeyHex().substr(0,64)), std::move(keyPair) }).second;
 		}
 	}
 

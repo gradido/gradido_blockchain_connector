@@ -199,7 +199,7 @@ namespace model {
 			speedLog.information("[CommunityServer::updateCreationTargetDate] time: %s", timeUsedAll.string());
 		}
 
-		void CommunityServer::loadTransactionsIntoTransactionManager(const std::string& groupAlias, const std::unordered_map<std::string, std::unique_ptr<KeyPairEd25519>>* userKeys)
+		void CommunityServer::loadTransactionsIntoTransactionManager(const std::string& groupAlias)
 		{
 			Profiler timeUsedAll;
 			auto dbSession = ConnectionManager::getInstance()->getConnection();
@@ -233,7 +233,7 @@ namespace model {
 				task::TaskPtr task = new task::PrepareCommunityCreationTransaction(
 					creationTransaction,
 					Poco::AutoPtr<CommunityServer>(this, true),
-					userKeys, groupAlias
+					groupAlias
 				);
 				task->scheduleTask(task);
 				mPreparingTransactions.push_back(task);
@@ -261,7 +261,7 @@ namespace model {
 				task::TaskPtr task = new task::PrepareCommunityTransferTransaction(
 					transfer,
 					Poco::AutoPtr<CommunityServer>(this, true),
-					userKeys, groupAlias
+					groupAlias
 				);
 				task->scheduleTask(task);
 				mPreparingTransactions.push_back(task);
@@ -330,6 +330,7 @@ namespace model {
 		{
 			if (mLoadState) return;
 			mLoadState++;
+			mLoginServer = loginServer;
 			loadStateUsers();
 			if (shouldLoadStateUserBalances) {
 				loadStateUserBalances();
@@ -340,7 +341,7 @@ namespace model {
 			}
 			Poco::Logger::get("speedLog").information("wait for recover keys: %s", waitOnRecoverKeys.string());
 			updateCreationTargetDate();
-			loadTransactionsIntoTransactionManager(groupAlias, &loginServer->getUserKeys());
+			loadTransactionsIntoTransactionManager(groupAlias);
 			mLoadState++;
 		}
 
@@ -398,7 +399,34 @@ namespace model {
 			return DataTypeConverter::hexToBin(userIt->second);
 		}
 
-		KeyPairEd25519* CommunityServer::getReserveKeyPair(const std::string& originalPubkeyHex, const std::string& groupAlias)
+		const KeyPairEd25519* CommunityServer::getOrCreateKeyPair(uint64_t userId, const std::string& groupAlias)
+		{
+			auto stateUserIt = mStateUserIdPublicKey.find(userId);
+			if (stateUserIt == mStateUserIdPublicKey.end()) {
+				Poco::Logger::get("errorLog").error(
+					"error, sender user: %d not found",
+					(unsigned)userId
+				);
+				return nullptr;
+			}
+			else {
+				return getOrCreateKeyPair(stateUserIt->second, groupAlias);
+			}
+			return nullptr;
+		}
+
+		const KeyPairEd25519* CommunityServer::getOrCreateKeyPair(const std::string& originalPubkeyHex, const std::string& groupAlias)
+		{
+			const auto& userKeys = mLoginServer->getUserKeys();
+			
+			auto senderPubkeyIt = userKeys.find(originalPubkeyHex);
+			if (senderPubkeyIt == userKeys.end()) {
+				return getReserveKeyPair(originalPubkeyHex, groupAlias);
+			}
+			return senderPubkeyIt->second.get();
+		}
+
+		const KeyPairEd25519* CommunityServer::getReserveKeyPair(const std::string& originalPubkeyHex, const std::string& groupAlias)
 		{
 			std::scoped_lock _lock(mWorkMutex);
 			auto it = mReserveKeyPairs.find(originalPubkeyHex);
@@ -411,7 +439,7 @@ namespace model {
 				
 				auto registerAddress = TransactionFactory::createRegisterAddress(userPubkey, proto::gradido::RegisterAddress_AddressType_HUMAN);
 				//int year, int month, int day, int hour = 0, int minute = 0, int second = 0, int millisecond = 0, int microsecond = 0
-				registerAddress->setCreated(Poco::DateTime(2017, 1, 1, 10));
+				registerAddress->setCreated(Poco::DateTime(2019, 12, 1, 10));
 				registerAddress->updateBodyBytes();
 				auto sign = keyPair->sign(*registerAddress->getTransactionBody()->getBodyBytes());
 				registerAddress->addSign(userPubkey, sign);
@@ -420,6 +448,8 @@ namespace model {
 				tm->pushGradidoTransaction(groupAlias, std::move(registerAddress));
 
 				it = mReserveKeyPairs.insert({ originalPubkeyHex, std::move(keyPair) }).first;
+				Poco::Logger::get("errorLog").information("(%u) replace publickey: %s with: %s",
+					(unsigned)mReserveKeyPairs.size(), originalPubkeyHex, it->second->getPublicKeyHex());
 			}
 			return it->second.get();
 		}

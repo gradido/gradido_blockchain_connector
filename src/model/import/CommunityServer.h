@@ -50,7 +50,7 @@ namespace model {
 			void updateCreationTargetDate();
 
 			//! \param userKeys for signing transactions
-			void loadTransactionsIntoTransactionManager(const std::string& groupAlias, const std::unordered_map<std::string, std::unique_ptr<KeyPairEd25519>>* userKeys = nullptr);
+			void loadTransactionsIntoTransactionManager(const std::string& groupAlias);
 			void loadStateUserBalances();
 			void loadAll(const std::string& groupAlias, bool shouldLoadStateUserBalances = false, Poco::AutoPtr<LoginServer> loginServer = nullptr);
 	
@@ -76,7 +76,9 @@ namespace model {
 		protected:
 			
 			MemoryBin* getUserPubkey(uint64_t userId, uint64_t transactionId);
-			KeyPairEd25519* getReserveKeyPair(const std::string& originalPubkeyHex, const std::string& groupAlias);
+			const KeyPairEd25519* getOrCreateKeyPair(uint64_t userId, const std::string& groupAlias);
+			const KeyPairEd25519* getOrCreateKeyPair(const std::string& originalPubkeyHex, const std::string& groupAlias);
+			const KeyPairEd25519* getReserveKeyPair(const std::string& originalPubkeyHex, const std::string& groupAlias);
 
 			std::map<uint64_t, std::string> mStateUserIdPublicKey;
 			std::unordered_map<std::string, uint64_t> mPublicKeyStateUserId;
@@ -89,6 +91,7 @@ namespace model {
 			Poco::AtomicCounter mLoadState;
 			std::list<task::TaskPtr> mPreparingTransactions;
 			std::shared_mutex mWorkMutex;
+			Poco::AutoPtr<LoginServer> mLoginServer;
 		};
 	}
 }

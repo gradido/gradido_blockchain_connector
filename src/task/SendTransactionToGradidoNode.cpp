@@ -16,7 +16,7 @@ namespace task {
 	) : CPUTask(ServerConfig::g_WorkerThread), mTransaction(transaction), mTransactionNr(transactionNr), mGroupAlias(groupAlias), mRuntime(runtime)
 	{
 #ifdef _UNI_LIB_DEBUG
-		setName(mTransaction->toJson().data());
+		setName(std::to_string(mTransactionNr).data());
 #endif
 
 	}

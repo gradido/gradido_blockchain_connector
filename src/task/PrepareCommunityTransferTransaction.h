@@ -13,7 +13,6 @@ namespace task {
 		PrepareCommunityTransferTransaction(
 			model::import::CommunityServer::TransferTransactionTuple transaction,
 			Poco::AutoPtr<model::import::CommunityServer> communityServer,
-			const std::unordered_map<std::string, std::unique_ptr<KeyPairEd25519>>* userKeys,
 			const std::string groupAlias
 		);
 		~PrepareCommunityTransferTransaction();
@@ -23,7 +22,6 @@ namespace task {
 	protected:
 		model::import::CommunityServer::TransferTransactionTuple mTransaction;
 		Poco::AutoPtr<model::import::CommunityServer> mCommunityServer;
-		const std::unordered_map<std::string, std::unique_ptr<KeyPairEd25519>>* mUserKeys;
 		std::string mGroupAlias;
 	};
 }
