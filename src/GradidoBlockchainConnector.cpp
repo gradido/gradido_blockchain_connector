@@ -447,7 +447,7 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 		ServerConfig::readUnsecureFlags(config());
 
 		uint8_t worker_count = Poco::Environment::processorCount()-2;
-		worker_count = 1;
+		//worker_count = 1;
 		ServerConfig::g_WorkerThread = new task::CPUSheduler(worker_count, "grddWr");
 
 		model::table::VersionsManager::getInstance()->migrate();

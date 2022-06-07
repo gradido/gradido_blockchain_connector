@@ -32,8 +32,11 @@ namespace task {
 				mTransaction->getTransactionBody()->getCreatedSeconds(),
 				nullptr
 			);
-
-			auto level = static_cast<model::gradido::TransactionValidationLevel>(model::gradido::TRANSACTION_VALIDATION_SINGLE |
+			if (mTransactionNr == 509) {
+				int zahl = 0;
+			}
+			auto level = static_cast<model::gradido::TransactionValidationLevel>(
+				model::gradido::TRANSACTION_VALIDATION_SINGLE |
 				model::gradido::TRANSACTION_VALIDATION_DATE_RANGE |
 				model::gradido::TRANSACTION_VALIDATION_SINGLE_PREVIOUS
 			);
@@ -103,6 +106,7 @@ namespace task {
 			}
 		}
 		catch (GradidoBlockchainException& ex) {
+			printf("\n");
 			errorLog.error("error by sending transaction %d to gradido node: %s", (int)mTransactionNr, ex.getFullString());
 			errorLog.error("transaction in json: %s", mTransaction->toJson());
 			ServerConfig::g_WorkerThread->stop();

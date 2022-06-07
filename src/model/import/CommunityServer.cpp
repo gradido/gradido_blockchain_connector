@@ -108,7 +108,7 @@ namespace model {
 				{"Dez", 12, 2019},
 				{"Jan", 1, 2020},
     			{"Feb", 2, 2020},
-				{"März", 3, 2020},
+				{"M_rz", 3, 2020},
 				{"April", 4, 2020}
 			};
 			std::for_each(replaceSets.begin(), replaceSets.end(), [&](const ReplaceSet& replaceSet) {
@@ -149,19 +149,19 @@ namespace model {
 				<< "JOIN " << mTempTransactionsTableName << " as t "
 				<< "ON t.id = tc.transaction_id "
 				<< "WHERE t.received = tc.target_date AND t.memo NOT LIKE '%Dez%' AND t.memo NOT LIKE '%Jan%' "
-				<< " AND t.memo NOT LIKE '%Feb%' AND t.memo NOT LIKE '%März%' AND t.memo NOT LIKE '%April%')";
+				<< " AND t.memo NOT LIKE '%Feb%' AND t.memo NOT LIKE '%M_rz%' AND t.memo NOT LIKE '%April%')";
 			
 			auto count = update.execute(true);
 			speedLog.information("update: %u with memo without month name in: %s", (unsigned)count, updateTimeRest.string());
-			
+			//*/
 			/*
 				for creation transactions where target date is more than 2 month in the past from received
 				community server format
 				check if decay needs an update
 			*/
-			Profiler updateTransactionReceivedTime;
+	/*		Profiler updateTransactionReceivedTime;
 			update.reset(dbSession);
-			/* for received month -1 */
+			// for received month -1 
 			update << "update " << mTempTransactionsTableName << " "
 				<< "set received = DATE_FORMAT(received, CONCAT("
 				  << "'%Y-', CAST(DATE_FORMAT(received, '%m') AS UNSIGNED) - 1, "
@@ -181,7 +181,7 @@ namespace model {
 			updateTransactionReceivedTime.reset();
 
 			update.reset(dbSession);
-			/* for received year -1, month 12 */
+			// for received year -1, month 12 
 			update << "update " << mTempTransactionsTableName << " "
 				<< "set received = DATE_FORMAT(received, CONCAT("
 				<< "CAST(DATE_FORMAT(received, '%Y') AS UNSIGNED)-1, '-12-%d %H:%i:%s')) "
@@ -196,6 +196,7 @@ namespace model {
 				<< ")";
 			count = update.execute();
 			speedLog.information("time for updating %u transaction received year -1, month 12: %s", (unsigned)count, updateTransactionReceivedTime.string());
+			*/
 			speedLog.information("[CommunityServer::updateCreationTargetDate] time: %s", timeUsedAll.string());
 		}
 
@@ -439,7 +440,7 @@ namespace model {
 				
 				auto registerAddress = TransactionFactory::createRegisterAddress(userPubkey, proto::gradido::RegisterAddress_AddressType_HUMAN);
 				//int year, int month, int day, int hour = 0, int minute = 0, int second = 0, int millisecond = 0, int microsecond = 0
-				registerAddress->setCreated(Poco::DateTime(2019, 12, 1, 10));
+				registerAddress->setCreated(Poco::DateTime(2019, 10, 8, 10));
 				registerAddress->updateBodyBytes();
 				auto sign = keyPair->sign(*registerAddress->getTransactionBody()->getBodyBytes());
 				registerAddress->addSign(userPubkey, sign);
@@ -448,8 +449,8 @@ namespace model {
 				tm->pushGradidoTransaction(groupAlias, std::move(registerAddress));
 
 				it = mReserveKeyPairs.insert({ originalPubkeyHex, std::move(keyPair) }).first;
-				Poco::Logger::get("errorLog").information("(%u) replace publickey: %s with: %s",
-					(unsigned)mReserveKeyPairs.size(), originalPubkeyHex, it->second->getPublicKeyHex());
+				//Poco::Logger::get("errorLog").information("(%u) replace publickey: %s with: %s",
+					//(unsigned)mReserveKeyPairs.size(), originalPubkeyHex, it->second->getPublicKeyHex());
 			}
 			return it->second.get();
 		}
