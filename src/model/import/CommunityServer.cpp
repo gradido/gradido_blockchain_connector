@@ -449,8 +449,8 @@ namespace model {
 				tm->pushGradidoTransaction(groupAlias, std::move(registerAddress));
 
 				it = mReserveKeyPairs.insert({ originalPubkeyHex, std::move(keyPair) }).first;
-				//Poco::Logger::get("errorLog").information("(%u) replace publickey: %s with: %s",
-					//(unsigned)mReserveKeyPairs.size(), originalPubkeyHex, it->second->getPublicKeyHex());
+				Poco::Logger::get("errorLog").information("(%u) replace publickey: %s with: %s",
+					(unsigned)mReserveKeyPairs.size(), originalPubkeyHex, it->second->getPublicKeyHex());
 			}
 			return it->second.get();
 		}
