@@ -216,6 +216,7 @@ void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(co
 	while (!communityServerImport->isAllTransactionTasksFinished()) {
 		Poco::Thread::sleep(10);
 	}
+	communityServerImport->cleanTransactions();
 	speedLog.information("wait for transactions: %s", waitOnTransactions.string());
 	model::TransactionsManager::TransactionList transactions;
 	try {
@@ -321,6 +322,8 @@ void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(co
 		}		
 		Poco::Thread::sleep(35);
 	}
+	putTasks.clear();
+
 	printf("\rtransaction: %d/%d", transactions.size() - putTasks.size(), transactions.size());
 	printf("\n");
 	double runtimeSum = 0.0;
@@ -331,6 +334,12 @@ void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(co
 	speedLog.information("time used for sending %d transaction to gradido node: %s", transactionNr - 1, timeUsed.string());	
 	speedLog.information("time used for sending on gradido node: %f ms", runtimeSum);
 	speedLog.information("time used per transaction: %f ms", runtimeSum / (double)transactions.size());
+	Profiler cleanUpTime;
+	mm->clearProtobufMemory();
+	mm->clearMathMemory();
+	mm->clearMemory();
+	tm->clear();
+	speedLog.information("time used for memory clean up: %s", cleanUpTime.string());
 }
 
 void GradidoBlockchainConnector::createConsoleFileAsyncLogger(std::string name, std::string filePath)

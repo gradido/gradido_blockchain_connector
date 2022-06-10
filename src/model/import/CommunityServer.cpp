@@ -39,7 +39,7 @@ namespace model {
 
 		CommunityServer::~CommunityServer()
 		{
-
+			printf("[CommunityServer::~CommunityServer]\n");
 		}
 
 		void CommunityServer::loadStateUsers()
@@ -340,6 +340,7 @@ namespace model {
 			while (!loginServer->isAllRecoverKeyPairTasksFinished()) {
 				Poco::Thread::sleep(10);
 			}
+			loginServer->cleanTransactions();
 			Poco::Logger::get("speedLog").information("wait for recover keys: %s", waitOnRecoverKeys.string());
 			updateCreationTargetDate();
 			loadTransactionsIntoTransactionManager(groupAlias);
@@ -385,6 +386,12 @@ namespace model {
 			}
 			return true;
 		}
+
+		void CommunityServer::cleanTransactions()
+		{
+			mPreparingTransactions.clear();
+		}
+
 
 		MemoryBin* CommunityServer::getUserPubkey(uint64_t userId, uint64_t transactionId)
 		{

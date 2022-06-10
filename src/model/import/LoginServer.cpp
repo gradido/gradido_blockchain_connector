@@ -18,7 +18,7 @@ namespace model {
 
 		LoginServer::~LoginServer()
 		{
-
+			printf("[LoginServer::~LoginServer] \n");
 		}
 
 		void LoginServer::loadAll(const std::string& groupAlias)
@@ -101,6 +101,10 @@ namespace model {
 				mLoadState++;
 			}
 			return true;
+		}
+		void LoginServer::cleanTransactions()
+		{
+			mRecoverKeyPairTasks.clear();
 		}
 		bool LoginServer::addUserKeys(std::unique_ptr<KeyPairEd25519> keyPair)
 		{

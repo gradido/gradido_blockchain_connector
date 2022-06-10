@@ -71,6 +71,7 @@ namespace model {
 			};
 
 			bool isAllTransactionTasksFinished();
+			void cleanTransactions();
 			static std::string mTempCreationTableName;
 			static std::string mTempTransactionsTableName;
 		protected:

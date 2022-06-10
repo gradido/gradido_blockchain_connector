@@ -25,6 +25,7 @@ namespace model {
 			inline const std::unordered_map<std::string, std::unique_ptr<KeyPairEd25519>>& getUserKeys() const { return mUserKeys; }
 
 			bool isAllRecoverKeyPairTasksFinished();
+			void cleanTransactions();
 			//! \param pubkeyHex move string
 			//! \return true if add to map worked
 			bool addUserKeys(std::unique_ptr<KeyPairEd25519> keyPair);
