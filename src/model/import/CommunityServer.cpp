@@ -99,9 +99,57 @@ namespace model {
 			copyTable << "INSERT INTO " << mTempTransactionsTableName << " SELECT * FROM transactions;", now;
 			speedLog.information("copy transactions table time: %s", copyTableTime.string());
 			
+			// split 3000 GDD Creation into three new transactions
+			// id 	transaction_id 	state_user_id 	amount 	    target_date 	     transaction_type_id memo 										 received 	
+			// 150 	224 	        275 	        30000000 	2020-03-30 08:59:55	 1 	 				 Aktives Grundeinkommen für GL.Dez, Jan, Feb 2020-03-30 08:59:55
 
-			// select specific data sets and update them
-			
+			// transactions
+			// transaction_type_id memo									received
+			// 1				   Aktives Grundeinkommen für GL. Dez   2020-03-30 08:59:55
+			// 1				   Aktives Grundeinkommen für GL. Jan   2020-03-30 08:59:55
+			// 1				   Aktives Grundeinkommen für GL. Feb   2020-03-30 08:59:55
+
+			// transaction_creations
+			// transaction_id state_user_id amount   target_date
+			// ?			  275			10000000 2019-12-01 01:00:00
+			// ?              275           10000000 2020-01-01 01:00:00
+			// ?              275           10000000 2020-02-01 01:00:00
+
+			// 
+			// target date, memo
+			std::vector<std::pair<Poco::DateTime, std::string>> transactionDivData = {
+				{Poco::DateTime(2019, 12, 1, 1, 0, 0), "Aktives Grundeinkommen für GL. Dez"},
+				{Poco::DateTime(2020, 1, 1, 1, 0, 0),  "Aktives Grundeinkommen für GL. Jan"},
+				{Poco::DateTime(2020, 2, 1, 1, 0, 0),  "Aktives Grundeinkommen für GL. Feb"}
+			};
+			Profiler splitTransactionTime;
+			Poco::Data::Statement insertTransactions(dbSession);
+			std::string memo;
+			Poco::DateTime received(2020, 3, 30, 8, 59, 55);
+			insertTransactions << "INSERT INTO " << mTempTransactionsTableName
+				<< "(transaction_type_id, memo, received) VALUES(1, ?, ?)",
+				use(memo), use(received);
+
+			Poco::Data::Statement insertCreationTransactions(dbSession);
+			int amount = 10000000;
+			Poco::DateTime targetDate(2019, 12, 1, 1, 0, 0);
+			insertCreationTransactions << "INSERT INTO " << mTempCreationTableName
+				<< "(transaction_id, state_user_id, amount, target_date) VALUES(LAST_INSERT_ID(), 275, ?, ?)",
+				use(amount), use(targetDate);
+
+			for (auto it = transactionDivData.begin(); it != transactionDivData.end(); it++) {
+				targetDate = it->first;
+				memo = it->second;
+				insertTransactions.execute();
+				insertCreationTransactions.execute();
+			}
+			Poco::Data::Statement removeInvalidTransaction(dbSession);
+			removeInvalidTransaction << "delete from " << mTempCreationTableName << " where id = 150", now;
+			removeInvalidTransaction.reset(dbSession);
+			removeInvalidTransaction << "delete from " << mTempTransactionsTableName << " where id = 224", now;
+			speedLog.information("time for split transaction: %s", splitTransactionTime.string());
+
+			// select specific data sets and update them			
 			Profiler updateTime;
 			typedef Poco::Tuple<std::string, uint8_t, uint16_t> ReplaceSet;
 			std::vector< ReplaceSet> replaceSets = {

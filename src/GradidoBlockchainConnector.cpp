@@ -218,7 +218,7 @@ void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(co
 	}
 	communityServerImport->cleanTransactions();
 	speedLog.information("wait for transactions: %s", waitOnTransactions.string());
-	model::TransactionsManager::TransactionList transactions;
+	const model::TransactionsManager::TransactionList* transactions;
 	try {
 		transactions = tm->getSortedTransactions(groupAlias);
 	}
@@ -228,8 +228,8 @@ void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(co
 	}
 
 	// fix invalid transactions
-	const auto& userKeys = loginServerImport->getUserKeys();
-	for (auto it = transactions.begin(); it != transactions.end(); it++) {
+/*	const auto& userKeys = loginServerImport->getUserKeys();
+	for (auto it = transactions->begin(); it != transactions->end(); it++) {
 		auto transactionBody = (*it)->getTransactionBody();
 		if (transactionBody->isCreation()) {
 			auto creation = transactionBody->getCreationTransaction();
@@ -281,17 +281,25 @@ void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(co
 
 					mm->releaseMemory(signerPubkey);
 					mm->releaseMemory(signature);
-					auto sharedTransaction = std::shared_ptr<model::gradido::GradidoTransaction>(newTransaction.release());
-					it = transactions.insert(it, sharedTransaction);
+					tm->pushGradidoTransaction(groupAlias, std::move(newTransaction));
 					it++;
 				}
 
 				//februaryCreation->setMemo("Aktives Grundeinkommen für GL. Feb").setCreated(createdDate).updateBodyBytes();
 				mm->releaseMemory(signerPubkeys[0]);
 				mm->releaseMemory(targetPubkey);
-				it = transactions.erase(it);
+				tm->removeGradidoTransaction(groupAlias, *it);
 			}
 		}
+	}
+	*/
+
+	try {
+		transactions = tm->getSortedTransactions(groupAlias);
+	}
+	catch (model::TransactionsManager::MissingTransactionNrException& ex) {
+		errorLog.error("hole in transactions: %s", ex.getFullString());
+		return;
 	}
 
 	int transactionNr = 1;
@@ -300,7 +308,7 @@ void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(co
 	std::list<task::TaskPtr> putTasks;
 	MultithreadQueue<double> transactionRunningTimes;
 	Profiler scheduleTime;
-	for (auto it = transactions.begin(); it != transactions.end(); it++) 
+	for (auto it = transactions->begin(); it != transactions->end(); it++)
 	{
 		task::TaskPtr putTask = new task::SendTransactionToGradidoNode(*it, transactionNr, groupAlias, &transactionRunningTimes);
 		putTasks.push_back(putTask);
@@ -311,12 +319,12 @@ void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(co
 	Poco::Thread::sleep(15);
 	printf("\n");
 	// wait on finishing task, will keep running if only one error occur!
-	printf("\rtransaction: %d/%d", transactions.size() - putTasks.size(), transactions.size());
+	printf("\rtransaction: %d/%d", transactions->size() - putTasks.size(), transactions->size());
 	while (putTasks.size()) {
 		for (auto it = putTasks.begin(); it != putTasks.end(); it++) {
 			if ((*it)->isTaskFinished()) {
 				it = putTasks.erase(it);
-				printf("\rtransaction: %d/%d", transactions.size() - putTasks.size(), transactions.size());
+				printf("\rtransaction: %d/%d", transactions->size() - putTasks.size(), transactions->size());
 				if (it == putTasks.end()) break;
 			}
 		}		
@@ -324,7 +332,7 @@ void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(co
 	}
 	putTasks.clear();
 
-	printf("\rtransaction: %d/%d", transactions.size() - putTasks.size(), transactions.size());
+	printf("\rtransaction: %d/%d", transactions->size() - putTasks.size(), transactions->size());
 	printf("\n");
 	double runtimeSum = 0.0;
 	double temp = 0.0;
@@ -333,8 +341,8 @@ void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(co
 	}
 	speedLog.information("time used for sending %d transaction to gradido node: %s", transactionNr - 1, timeUsed.string());	
 	speedLog.information("time used for sending on gradido node: %f ms", runtimeSum);
-	speedLog.information("time used per transaction: %f ms", runtimeSum / (double)transactions.size());
-	Profiler cleanUpTime;
+	speedLog.information("time used per transaction: %f ms", runtimeSum / (double)transactions->size());
+	Profiler cleanUpTime; 
 	mm->clearProtobufMemory();
 	mm->clearMathMemory();
 	mm->clearMemory();
