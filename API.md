@@ -623,12 +623,12 @@ a jwt Token returned from a Login Request transfered as Authorization Header is 
 	"transactionList": {
 		"balanceGDT": "0",
 		"linkCount": 0,
-		"count": 2,
+		"count": 3,
 		"transactions": [
 			{
 				"typeId": "DECAY",
-				"amount": "-0.00031014282695195957122893225557679155061163564",
-				"balance": "19.999689857173048040428771067744423208449388",
+				"amount": "-0.000047883550416652294396381279487737162417218140",
+				"balance": "1089.9985683248753763032038636458986976632054",
 				"memo": "",
 				"id": -1,
 				"linkedUser": {
@@ -636,60 +636,94 @@ a jwt Token returned from a Login Request transfered as Authorization Header is 
 					"firstName": "",
 					"lastName": ""
 				},
-				"balanceDate": "2022-05-05T11:12:11.252Z",
+				"balanceDate": "2022-05-05T11:18:47.271Z",
 				"decay": {
-					"decay": "-0.00031014282695195957122893225557679155061163564",
-					"start": "2022-05-05T11:00:25.000Z",
-					"end": "2022-05-05T11:12:11.252Z",
-					"duration": 706,
+					"decay": "-0.000047883550416652294396381279487737162417218140",
+					"start": "2022-05-05T11:18:45.000Z",
+					"end": "2022-05-05T11:18:47.271Z",
+					"duration": 2,
 					"__typename": "Decay"
 				},
 				"firstTransaction": false,
 				"__typename": "Transaction"
 			},
 			{
-				"typeId": "RECEIVE",
-				"amount": "10",
-				"balance": "20",
+				"typeId": "SEND",
+				"amount": "-10",
+				"balance": "1089.9986162084257929554982600271781854003678",
 				"__typename": "Transaction",
-				"id": 7,
+				"id": 11,
 				"linkedUser": {
 					"__typename": "User",
 					"lastName": "",
 					"firstName": "DarioFrodo"
 				},
-				"balanceDate": "2022-05-05T11:00:25.000Z",
+				"balanceDate": "2022-05-05T11:18:45.000Z",
 				"decay": {
-					"decay": "0",
-					"start": "2022-05-05T11:00:25.000Z",
-					"end": "2022-05-05T11:00:25.000Z",
-					"duration": 0,
+					"decay": "-0.0007248429987688208951665251171848249527362174",
+					"start": "2022-05-05T11:18:15.000Z",
+					"end": "2022-05-05T11:18:45.000Z",
+					"duration": 30,
 					"__typename": "Decay"
 				},
 				"firstTransaction": false,
-				"memo": "test transfer 1"
+				"memo": "return the favor"
 			},
 			{
 				"typeId": "RECEIVE",
-				"amount": "10",
-				"balance": "10",
+				"amount": "100",
+				"balance": "1099.9993410514245617763934265522953702253205",
 				"__typename": "Transaction",
-				"id": 6,
+				"id": 10,
 				"linkedUser": {
 					"__typename": "User",
 					"lastName": "",
 					"firstName": "DarioFrodo"
 				},
-				"balanceDate": "2022-05-05T11:00:25.000Z",
+				"balanceDate": "2022-05-05T11:18:15.000Z",
+				"decay": {
+					"decay": "-0.00065894857543822360657344770462977167013951363",
+					"start": "2022-05-05T11:17:45.000Z",
+					"end": "2022-05-05T11:18:15.000Z",
+					"duration": 30,
+					"__typename": "Decay"
+				},
+				"firstTransaction": false,
+				"memo": "Send TestUser1 some coins"
+			},
+			{
+				"typeId": "CREATE",
+				"amount": "1000",
+				"balance": "1000",
+				"__typename": "Transaction",
+				"id": 9,
+				"linkedUser": {
+					"__typename": "User",
+					"firstName": "Gradido",
+					"lastName": "Akademie"
+				},
+				"balanceDate": "2022-05-05T11:17:45.000Z",
 				"firstTransaction": true,
-				"memo": "test transfer 1"
+				"memo": "AGE März 2022"
 			}
 		],
-		"balance": "19.999689857173048040428771067744423208449388"
+		"balance": "1089.9985683248753763032038636458986976632054"
 	}
 }
 ```
 
+### Possible errors
+Errors have the format like in [Error Reporting](#error_reporting) at the begin of file shown. 
+For this request this error message are possible:
+
+- `invalid ip`: the login which created this jwt token, came from another ip
+- `invalid jwt token`: jwt token couldn't be verified or don't contain expected data, or was timed out
+- `no session found`: no session for name in jwt token found, maybe Gradido Blockchain Connector was restarted since creating this jwt token or it was deleted because the time last access was longer than the configured `session.duration_seconds`
+- `error by requesting Gradido Node`: error in the communication with Gradido Node
+	- is the key `gradidoNode` filled correctly in Gradido Blockchain Connector Properties?
+	- is the Gradido Node running and the last Version?
+	- for more details look into console or log output from Gradido Blockchain Connector
+	
 ##
 /listPending
 
