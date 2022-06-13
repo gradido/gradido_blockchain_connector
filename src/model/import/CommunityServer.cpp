@@ -1,4 +1,4 @@
-#include "CommunityServer.h"
+ï»¿#include "CommunityServer.h"
 #include "LoginServer.h"
 #include "gradido_blockchain/lib/Profiler.h"
 #include "gradido_blockchain/model/TransactionsManager.h"
@@ -101,13 +101,13 @@ namespace model {
 			
 			// split 3000 GDD Creation into three new transactions
 			// id 	transaction_id 	state_user_id 	amount 	    target_date 	     transaction_type_id memo 										 received 	
-			// 150 	224 	        275 	        30000000 	2020-03-30 08:59:55	 1 	 				 Aktives Grundeinkommen für GL.Dez, Jan, Feb 2020-03-30 08:59:55
+			// 150 	224 	        275 	        30000000 	2020-03-30 08:59:55	 1 	 				 Aktives Grundeinkommen fï¿½r GL.Dez, Jan, Feb 2020-03-30 08:59:55
 
 			// transactions
 			// transaction_type_id memo									received
-			// 1				   Aktives Grundeinkommen für GL. Dez   2020-03-30 08:59:55
-			// 1				   Aktives Grundeinkommen für GL. Jan   2020-03-30 08:59:55
-			// 1				   Aktives Grundeinkommen für GL. Feb   2020-03-30 08:59:55
+			// 1				   Aktives Grundeinkommen fÃ¼r GL. Dez   2020-03-30 08:59:55
+			// 1				   Aktives Grundeinkommen fÃ¼r GL. Jan   2020-03-30 08:59:55
+			// 1				   Aktives Grundeinkommen fÃ¼r GL. Feb   2020-03-30 08:59:55
 
 			// transaction_creations
 			// transaction_id state_user_id amount   target_date
@@ -118,9 +118,9 @@ namespace model {
 			// 
 			// target date, memo
 			std::vector<std::pair<Poco::DateTime, std::string>> transactionDivData = {
-				{Poco::DateTime(2019, 12, 1, 1, 0, 0), "Aktives Grundeinkommen für GL. Dez"},
-				{Poco::DateTime(2020, 1, 1, 1, 0, 0),  "Aktives Grundeinkommen für GL. Jan"},
-				{Poco::DateTime(2020, 2, 1, 1, 0, 0),  "Aktives Grundeinkommen für GL. Feb"}
+				{Poco::DateTime(2019, 12, 1, 1, 0, 0), "Aktives Grundeinkommen fÃ¼r GL. Dez"},
+				{Poco::DateTime(2020, 1, 1, 1, 0, 0),  "Aktives Grundeinkommen fÃ¼r GL. Jan"},
+				{Poco::DateTime(2020, 2, 1, 1, 0, 0),  "Aktives Grundeinkommen fÃ¼r GL. Feb"}
 			};
 			Profiler splitTransactionTime;
 			Poco::Data::Statement insertTransactions(dbSession);
