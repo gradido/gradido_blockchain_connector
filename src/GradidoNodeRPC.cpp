@@ -2,6 +2,7 @@
 #include "gradido_blockchain/http/JsonRPCRequest.h"
 #include "gradido_blockchain/http/RequestExceptions.h"
 #include "gradido_blockchain/model/protobufWrapper/TransactionValidationExceptions.h"
+#include "gradido_blockchain/model/protobufWrapper/GradidoBlock.h"
 #include "ServerConfig.h"
 
 #include "rapidjson/prettywriter.h"
@@ -128,6 +129,53 @@ namespace gradidoNodeRPC {
 		catch (...) {
 			handleGradidoNodeRpcException();
 		}
+	}
+
+	std::string getLastTransaction(const std::string& groupAlias)
+	{
+		try {
+			Value rpcParams(kObjectType);
+			JsonRPCRequest askForLastTransaction(ServerConfig::g_GradidoNodeUri);
+			auto alloc = askForLastTransaction.getJsonAllocator();
+			rpcParams.AddMember("groupAlias", Value(groupAlias.data(), alloc), alloc);
+			auto result = askForLastTransaction.request("getlasttransaction", rpcParams);
+			if (!result.HasMember("result")) {
+				throw RapidjsonMissingMemberException("missing result from getlasttransaction", "result", "object");
+			}
+			if (!result["result"].HasMember("transaction")) {
+				StringBuffer buffer;
+				PrettyWriter<StringBuffer> writer(buffer);
+				result.Accept(writer);
+
+				const char* output = buffer.GetString();
+				printf("result from Gradido Node: %s\n", output);
+				throw RapidjsonMissingMemberException("missing in result from getlasttransaction", "transaction", "base64 string");
+			}
+			std::vector<uint64_t> transactionNrs;
+			std::string transactionBase64 = result["result"]["transaction"].GetString();
+			return std::move(transactionBase64);
+		}
+		catch (...) {
+			handleGradidoNodeRpcException();
+		}
+	}
+
+	uint64_t getLastTransactionNr(const std::string& groupAlias)
+	{
+		try {
+			auto transactionBase64 = getLastTransaction(groupAlias);
+			auto transactionSerialized = DataTypeConverter::base64ToBinString(transactionBase64);
+			auto gradidoBlock = std::make_unique<model::gradido::GradidoBlock>(&transactionSerialized);
+			return gradidoBlock->getID();
+		}
+		catch (GradidoNodeRPCException& ex) {
+			std::string errorString = ex.getFullString();
+			if (errorString.find("no transaction") != errorString.npos) {
+				return 0;
+			}
+			throw;
+		}
+		return 0;
 	}
 
 	std::string getCreationSumForMonth(

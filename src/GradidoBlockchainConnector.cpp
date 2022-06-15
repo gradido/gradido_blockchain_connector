@@ -26,17 +26,20 @@
 
 // TODO: move
 #include "gradido_blockchain/model/TransactionsManager.h"
+#include "gradido_blockchain/model/TransactionsManagerBlockchain.h"
 #include "gradido_blockchain/model/TransactionFactory.h"
 #include "gradido_blockchain/model/protobufWrapper/TransactionValidationExceptions.h"
 #include "gradido_blockchain/lib/MultithreadQueue.h"
 #include "JSONInterface/JsonTransaction.h"
 #include "model/import/LoginServer.h"
 #include "model/import/CommunityServer.h"
+#include "model/PendingTransactions.h"
 #include "gradido_blockchain/lib/Decay.h"
 #include "task/SendTransactionToGradidoNode.h"
 
 GradidoBlockchainConnector::GradidoBlockchainConnector()
-	: _helpRequested(false), _checkCommunityServerStateBalancesRequested(false), _sendCommunityServerTransactionsToGradidoNodeRequested(false)
+	: _helpRequested(false), _checkCommunityServerStateBalancesRequested(false), 
+	_sendCommunityServerTransactionsToGradidoNodeRequested(false), _sendCommunityServerTransactionsToIotaRequested(false)
 {
 }
 
@@ -78,7 +81,7 @@ void GradidoBlockchainConnector::defineOptions(Poco::Util::OptionSet& options)
 	);
 
 	options.addOption(
-		Poco::Util::Option("sendBackup", "sb", "send db backup transactions to gradido node or iota")
+		Poco::Util::Option("sendBackup", "sb", "send db backup transactions to gradidoNode or iota")
 		.repeatable(false)
 		.argument("gradidoNode", true)
 	);
@@ -100,6 +103,9 @@ void GradidoBlockchainConnector::handleOption(const std::string& name, const std
 	else if (name == "sendBackup") {
 		if (value == "gradidoNode") {
 			_sendCommunityServerTransactionsToGradidoNodeRequested = true;
+		}
+		else if (value == "iota") {
+			_sendCommunityServerTransactionsToIotaRequested = true;
 		}
 		return;
 	}
@@ -190,7 +196,7 @@ void GradidoBlockchainConnector::checkCommunityServerStateBalances(const std::st
 	speedLog.information("calculate user balances time: %s", caluclateBalancesTime.string());
 }
 
-void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(const std::string& groupAlias)
+void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(const std::string& groupAlias, bool iota /* = false */)
 {
 	Poco::Logger& speedLog = Poco::Logger::get("speedLog");
 	Poco::Logger& errorLog = Poco::Logger::get("errorLog");
@@ -227,73 +233,7 @@ void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(co
 		return;
 	}
 
-	// fix invalid transactions
-/*	const auto& userKeys = loginServerImport->getUserKeys();
-	for (auto it = transactions->begin(); it != transactions->end(); it++) {
-		auto transactionBody = (*it)->getTransactionBody();
-		if (transactionBody->isCreation()) {
-			auto creation = transactionBody->getCreationTransaction();
-			if (creation->getAmount() == "3000.000000") {
-				// Aktives Grundeinkommen für GL.Dez, Jan, Feb
-				// 2020-03-30 08:59:55
-				auto targetPubkey = creation->getRecipientPublicKey();
-				auto createdDate = transactionBody->getCreated();
-				auto signerPubkeys = (*it)->getPublicKeysfromSignatureMap(true);
-				assert(signerPubkeys.size());
-				auto signerPubkeyHex = DataTypeConverter::binToHex(signerPubkeys[0]);
-				auto signerKeyIt = userKeys.find(signerPubkeyHex);
-				KeyPairEd25519* signerKeyPair = nullptr;
-				if (signerKeyIt != userKeys.end()) {
-					signerKeyPair = signerKeyIt->second.get();
-				}
-				else {
-					signerKeyPair = communityServerImport->findReserveKeyPair(signerPubkeys[0]->data());
-				}
-
-				for (int i = 0; i < 3; i++) {
-					std::string memo = "Aktives Grundeinkommen für GL. ";
-					Poco::DateTime targetDate = createdDate;
-					switch (i) {
-					case 0:
-						memo += "Dez"; 
-						targetDate = Poco::DateTime(2020, 1, 30, 8, 59, 55); 
-						break;
-					case 1:
-						memo += "Jan"; 
-						targetDate = Poco::DateTime(2020, 2, 26, 8, 59, 55);
-						break;
-					case 2: 
-						memo += "Feb"; 
-						targetDate = Poco::DateTime(2020, 3, 30, 8, 59, 55);
-						break;
-					}
-					auto newTransaction = TransactionFactory::createTransactionCreation(
-						targetPubkey, "1000", targetDate
-					);
-					auto encryptedMemo = JsonTransaction::encryptMemo(
-						memo, targetPubkey->data(), signerKeyPair->getPrivateKey()
-					);
-					newTransaction->setMemo(encryptedMemo).setCreated(createdDate).updateBodyBytes();
-					auto bodyBytes = newTransaction->getTransactionBody()->getBodyBytes();
-					auto signerPubkey = signerKeyPair->getPublicKeyCopy();
-					auto signature = signerKeyPair->sign(*bodyBytes);
-					newTransaction->addSign(signerPubkey, signature);
-
-					mm->releaseMemory(signerPubkey);
-					mm->releaseMemory(signature);
-					tm->pushGradidoTransaction(groupAlias, std::move(newTransaction));
-					it++;
-				}
-
-				//februaryCreation->setMemo("Aktives Grundeinkommen für GL. Feb").setCreated(createdDate).updateBodyBytes();
-				mm->releaseMemory(signerPubkeys[0]);
-				mm->releaseMemory(targetPubkey);
-				tm->removeGradidoTransaction(groupAlias, *it);
-			}
-		}
-	}
-	*/
-
+	
 	try {
 		transactions = tm->getSortedTransactions(groupAlias);
 	}
@@ -303,45 +243,120 @@ void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(co
 	}
 
 	int transactionNr = 1;
-	Profiler timeUsed;
-
-	std::list<task::TaskPtr> putTasks;
-	MultithreadQueue<double> transactionRunningTimes;
-	Profiler scheduleTime;
-	for (auto it = transactions->begin(); it != transactions->end(); it++)
-	{
-		task::TaskPtr putTask = new task::SendTransactionToGradidoNode(*it, transactionNr, groupAlias, &transactionRunningTimes);
-		putTasks.push_back(putTask);
-		putTask->scheduleTask(putTask);
-		transactionNr++;		
-	}
-	speedLog.information("time for scheduling %d transactions: %s", transactionNr - 1, scheduleTime.string());
-	Poco::Thread::sleep(15);
-	printf("\n");
-	// wait on finishing task, will keep running if only one error occur!
-	printf("\rtransaction: %d/%d", transactions->size() - putTasks.size(), transactions->size());
-	while (putTasks.size()) {
-		for (auto it = putTasks.begin(); it != putTasks.end(); it++) {
-			if ((*it)->isTaskFinished()) {
-				it = putTasks.erase(it);
-				printf("\rtransaction: %d/%d", transactions->size() - putTasks.size(), transactions->size());
-				if (it == putTasks.end()) break;
+	auto pt = model::PendingTransactions::getInstance();
+	if (iota) {
+		Profiler sendTransactionViaIotaTime;
+		auto lastTransactionNrOnGradidoNode = gradidoNodeRPC::getLastTransactionNr(groupAlias);
+		for (auto it = transactions->begin(); it != transactions->end(); it++) {
+			if (transactionNr <= lastTransactionNrOnGradidoNode) {
+				transactionNr++;
+				continue;
 			}
-		}		
-		Poco::Thread::sleep(35);
-	}
-	putTasks.clear();
+			auto transaction = (*it);
+			auto transactionBody = transaction->getTransactionBody();
+			auto serializedTransaction = transaction->getSerialized();
+			auto transactionCopy = std::make_unique<model::gradido::GradidoTransaction>(serializedTransaction.get());
+			auto gradidoBlock = model::gradido::GradidoBlock::create(
+				std::move(transactionCopy),
+				transactionNr,
+				transactionBody->getCreatedSeconds(),
+				nullptr
+			);
 
-	printf("\rtransaction: %d/%d", transactions->size() - putTasks.size(), transactions->size());
-	printf("\n");
-	double runtimeSum = 0.0;
-	double temp = 0.0;
-	while (transactionRunningTimes.pop(temp)) {
-		runtimeSum += temp;
+			auto level = static_cast<model::gradido::TransactionValidationLevel>(
+				model::gradido::TRANSACTION_VALIDATION_SINGLE |
+				model::gradido::TRANSACTION_VALIDATION_DATE_RANGE |
+				model::gradido::TRANSACTION_VALIDATION_SINGLE_PREVIOUS
+				);
+
+			model::TransactionsManagerBlockchain blockchain(groupAlias);
+			transaction->validate(
+				level,
+				&blockchain,
+				gradidoBlock
+			);
+			// send to iota
+			// finale to hex for iota
+			auto hex_message = DataTypeConverter::binToHex(std::move(serializedTransaction));
+
+			std::string index = "GRADIDO." + groupAlias;
+			auto iotaMessageId = ServerConfig::g_IotaRequestHandler->sendMessage(DataTypeConverter::binToHex(index), *hex_message);
+			Profiler powTime;
+			pt->pushNewTransaction(std::move(model::PendingTransactions::PendingTransaction(
+				iotaMessageId,
+				transactionBody->getTransactionType(),
+				"", transactionBody->getCreated(), 0
+			)));
+			speedLog.information("pow time: %s", powTime.string());
+			
+			
+			Profiler waitingOnIotaTime;
+			// and now we wait...
+			int timeout = 1000;
+			
+			while (timeout) {
+				auto it = pt->findTransaction(iotaMessageId);
+				if (it != pt->getPendingTransactionsEnd() && 
+					it->state != model::PendingTransactions::PendingTransaction::State::SENDED) {
+						break;					
+				}
+				Poco::Thread::sleep(50);
+				timeout--;
+			}
+			speedLog.information("(%u) %s waited on iota", (unsigned)transactionNr, waitingOnIotaTime.string());
+			if (!timeout) {
+				errorLog.error("waited long enough exit");
+				break;
+			}
+			if (pt->isRejected(iotaMessageId)) {
+				break;
+			}
+			transactionNr++;
+		}
+		speedLog.information("sended %u transaction in %s via iota", (unsigned)(transactionNr - lastTransactionNrOnGradidoNode), sendTransactionViaIotaTime.string());
+		
 	}
-	speedLog.information("time used for sending %d transaction to gradido node: %s", transactionNr - 1, timeUsed.string());	
-	speedLog.information("time used for sending on gradido node: %f ms", runtimeSum);
-	speedLog.information("time used per transaction: %f ms", runtimeSum / (double)transactions->size());
+	else {
+		Profiler timeUsed;
+
+		std::list<task::TaskPtr> putTasks;
+		MultithreadQueue<double> transactionRunningTimes;
+		Profiler scheduleTime;
+		for (auto it = transactions->begin(); it != transactions->end(); it++)
+		{
+			task::TaskPtr putTask = new task::SendTransactionToGradidoNode(*it, transactionNr, groupAlias, &transactionRunningTimes);
+			putTasks.push_back(putTask);
+			putTask->scheduleTask(putTask);
+			transactionNr++;
+		}
+		speedLog.information("time for scheduling %d transactions: %s", transactionNr - 1, scheduleTime.string());
+		Poco::Thread::sleep(15);
+		printf("\n");
+		// wait on finishing task, will keep running if only one error occur!
+		printf("\rtransaction: %d/%d", transactions->size() - putTasks.size(), transactions->size());
+		while (putTasks.size()) {
+			for (auto it = putTasks.begin(); it != putTasks.end(); it++) {
+				if ((*it)->isTaskFinished()) {
+					it = putTasks.erase(it);
+					printf("\rtransaction: %d/%d", transactions->size() - putTasks.size(), transactions->size());
+					if (it == putTasks.end()) break;
+				}
+			}
+			Poco::Thread::sleep(35);
+		}
+		putTasks.clear();
+
+		printf("\rtransaction: %d/%d", transactions->size() - putTasks.size(), transactions->size());
+		printf("\n");
+		double runtimeSum = 0.0;
+		double temp = 0.0;
+		while (transactionRunningTimes.pop(temp)) {
+			runtimeSum += temp;
+		}
+		speedLog.information("time used for sending %d transaction to gradido node: %s", transactionNr - 1, timeUsed.string());
+		speedLog.information("time used for sending on gradido node: %f ms", runtimeSum);
+		speedLog.information("time used per transaction: %f ms", runtimeSum / (double)transactions->size());
+	}
 	Profiler cleanUpTime; 
 	mm->clearProtobufMemory();
 	mm->clearMathMemory();
@@ -480,8 +495,8 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 		if (_checkCommunityServerStateBalancesRequested) {
 			checkCommunityServerStateBalances(groupAlias);
 		}
-		if (_sendCommunityServerTransactionsToGradidoNodeRequested) {
-			sendCommunityServerTransactionsToGradidoNode(groupAlias);
+		if (_sendCommunityServerTransactionsToGradidoNodeRequested || _sendCommunityServerTransactionsToIotaRequested) {
+			sendCommunityServerTransactionsToGradidoNode(groupAlias, _sendCommunityServerTransactionsToIotaRequested);
 		}
 
 		// wait for CTRL-C or kill

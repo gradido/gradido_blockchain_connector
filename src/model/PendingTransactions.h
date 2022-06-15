@@ -131,6 +131,12 @@ namespace model {
 			\param alloc allocator from rapidjson::Document, the root node of the json object
 		*/
 		rapidjson::Value listAsJson(rapidjson::Document::AllocatorType& alloc) const;
+
+		std::list<PendingTransaction>::const_iterator findTransaction(const std::string& iotaMessageId) const;
+		inline std::list<PendingTransaction>::const_iterator getPendingTransactionsEnd() const { return mPendingTransactions.end(); }
+		bool isConfirmed(const std::string& iotaMessageId) const;
+		bool isRejected(const std::string& iotaMessageId) const;
+		
 		
 		/*! \brief Check if apollo calculated the same decay as Gradido Node would.
 			
@@ -139,6 +145,7 @@ namespace model {
 		bool validateApolloCreationDecay(const model::gradido::GradidoTransaction* gradidoTransaction);
 			
 	protected:
+		
 		PendingTransactions() {};
 		std::list<PendingTransaction> mPendingTransactions;
 	};

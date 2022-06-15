@@ -17,6 +17,10 @@ namespace gradidoNodeRPC
 
 	std::vector<uint64_t> getAddressTxids(const std::string& pubkeyHex, const std::string& groupAlias);
 
+	//! \return transaction serialized as base64 string
+	std::string getLastTransaction(const std::string& groupAlias);
+	uint64_t getLastTransactionNr(const std::string& groupAlias);
+
 	std::string getCreationSumForMonth(
 		const std::string& pubkeyHex,
 		int month,

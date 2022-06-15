@@ -83,6 +83,34 @@ namespace model {
 		});
 		return list;
 	}
+
+	std::list<PendingTransactions::PendingTransaction>::const_iterator PendingTransactions::findTransaction(const std::string& iotaMessageId) const
+	{
+		for (auto it = mPendingTransactions.begin(); it != mPendingTransactions.end(); it++) {
+			if (it->iotaMessageId == iotaMessageId) {
+				return it;
+			}
+		}
+		return mPendingTransactions.end();
+	}
+
+	bool PendingTransactions::isConfirmed(const std::string& iotaMessageId) const
+	{
+		auto it = findTransaction(iotaMessageId);
+		if (it == mPendingTransactions.end()) {
+			return false;
+		}
+		return it->state == PendingTransaction::State::CONFIRMED;
+
+	}
+	bool PendingTransactions::isRejected(const std::string& iotaMessageId) const
+	{
+		auto it = findTransaction(iotaMessageId);
+		if (it == mPendingTransactions.end()) {
+			return false;
+		}
+		return it->state == PendingTransaction::State::REJECTED;
+	}
 		
 	bool PendingTransactions::validateApolloCreationDecay(const model::gradido::GradidoTransaction* gradidoTransaction)
 	{

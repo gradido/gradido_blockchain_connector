@@ -30,7 +30,7 @@ protected:
 	void handleOption(const std::string& name, const std::string& value);
 	void displayHelp();
 	void checkCommunityServerStateBalances(const std::string& groupAlias);
-	void sendCommunityServerTransactionsToGradidoNode(const std::string& groupAlias);
+	void sendCommunityServerTransactionsToGradidoNode(const std::string& groupAlias, bool iota = false);
 
 	int main(const std::vector<std::string>& args);
 
@@ -41,6 +41,7 @@ private:
 	bool _helpRequested;
 	bool _checkCommunityServerStateBalancesRequested;
 	bool _sendCommunityServerTransactionsToGradidoNodeRequested;
+	bool _sendCommunityServerTransactionsToIotaRequested;
 	std::string mConfigPath;
 };
 
