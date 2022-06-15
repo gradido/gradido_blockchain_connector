@@ -280,15 +280,16 @@ void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(co
 			auto hex_message = DataTypeConverter::binToHex(std::move(serializedTransaction));
 
 			std::string index = "GRADIDO." + groupAlias;
-			auto iotaMessageId = ServerConfig::g_IotaRequestHandler->sendMessage(DataTypeConverter::binToHex(index), *hex_message);
 			Profiler powTime;
+			auto iotaMessageId = ServerConfig::g_IotaRequestHandler->sendMessage(DataTypeConverter::binToHex(index), *hex_message);
+			speedLog.information("pow time: %s", powTime.string());
+
 			pt->pushNewTransaction(std::move(model::PendingTransactions::PendingTransaction(
 				iotaMessageId,
 				transactionBody->getTransactionType(),
 				"", transactionBody->getCreated(), 0
-			)));
-			speedLog.information("pow time: %s", powTime.string());
-			
+			)));			
+			/*
 			
 			Profiler waitingOnIotaTime;
 			// and now we wait...
@@ -311,6 +312,7 @@ void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(co
 			if (pt->isRejected(iotaMessageId)) {
 				break;
 			}
+			*/
 			transactionNr++;
 		}
 		speedLog.information("sended %u transaction in %s via iota", (unsigned)(transactionNr - lastTransactionNrOnGradidoNode), sendTransactionViaIotaTime.string());
