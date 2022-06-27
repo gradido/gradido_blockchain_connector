@@ -289,7 +289,7 @@ void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(co
 				transactionBody->getTransactionType(),
 				"", transactionBody->getCreated(), 0
 			)));			
-			/*
+			
 			
 			Profiler waitingOnIotaTime;
 			// and now we wait...
@@ -312,7 +312,7 @@ void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(co
 			if (pt->isRejected(iotaMessageId)) {
 				break;
 			}
-			*/
+			//*/
 			transactionNr++;
 		}
 		speedLog.information("sended %u transaction in %s via iota", (unsigned)(transactionNr - lastTransactionNrOnGradidoNode), sendTransactionViaIotaTime.string());
@@ -493,7 +493,7 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 		json_srv.start();
 		speedLog.information("[GradidoBlockchainConnector::main] started in %s", usedTime.string());
 
-		std::string groupAlias = "gdd1";
+		std::string groupAlias = "livetest_1221";
 		if (_checkCommunityServerStateBalancesRequested) {
 			checkCommunityServerStateBalances(groupAlias);
 		}
