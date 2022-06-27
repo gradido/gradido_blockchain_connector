@@ -474,7 +474,8 @@ namespace model {
 		const KeyPairEd25519* CommunityServer::getOrCreateKeyPair(const std::string& originalPubkeyHex, const std::string& groupAlias)
 		{
 			const auto& userKeys = mLoginServer->getUserKeys();
-			
+
+			std::scoped_lock _lock(mWorkMutex);
 			auto senderPubkeyIt = userKeys.find(originalPubkeyHex);
 			if (senderPubkeyIt == userKeys.end()) {
 				return getReserveKeyPair(originalPubkeyHex, groupAlias);
@@ -484,8 +485,8 @@ namespace model {
 
 		const KeyPairEd25519* CommunityServer::getReserveKeyPair(const std::string& originalPubkeyHex, const std::string& groupAlias)
 		{
-			std::scoped_lock _lock(mWorkMutex);
-			auto it = mReserveKeyPairs.find(originalPubkeyHex);
+			std::string pubkexHex = originalPubkeyHex.substr(0, 64);
+			auto it = mReserveKeyPairs.find(pubkexHex);
 			if (it == mReserveKeyPairs.end()) {
 				auto passphrase = Passphrase::generate(&CryptoConfig::g_Mnemonic_WordLists[CryptoConfig::MNEMONIC_BIP0039_SORTED_ORDER]);
 				auto keyPair = KeyPairEd25519::create(passphrase);
@@ -503,10 +504,11 @@ namespace model {
 				mm->releaseMemory(userPubkey);
 				tm->pushGradidoTransaction(groupAlias, std::move(registerAddress));
 
-				it = mReserveKeyPairs.insert({ originalPubkeyHex, std::move(keyPair) }).first;
+				it = mReserveKeyPairs.insert({ pubkexHex, std::move(keyPair) }).first;
 				Poco::Logger::get("errorLog").information("(%u) replace publickey: %s with: %s",
-					(unsigned)mReserveKeyPairs.size(), originalPubkeyHex, it->second->getPublicKeyHex());
+					(unsigned)mReserveKeyPairs.size(), pubkexHex, it->second->getPublicKeyHex());
 			}
+			
 			return it->second.get();
 		}
 		
