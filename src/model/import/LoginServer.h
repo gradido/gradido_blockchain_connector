@@ -30,7 +30,15 @@ namespace model {
 			//! \return true if add to map worked
 			bool addUserKeys(std::unique_ptr<KeyPairEd25519> keyPair);
 
-		protected:
+			KeyPairEd25519* findReserveKeyPair(const unsigned char* pubkey);
+			const KeyPairEd25519* getOrCreateKeyPair(const std::string& originalPubkeyHex, const std::string& groupAlias);
+
+		protected:			
+			const KeyPairEd25519* getReserveKeyPair(const std::string& originalPubkeyHex, const std::string& groupAlias);
+
+			//! key is original user pubkey hex
+			std::unordered_map<std::string, std::unique_ptr<KeyPairEd25519>> mReserveKeyPairs;
+
 			//! map key is user public key hex
 			std::unordered_map<std::string, std::unique_ptr<KeyPairEd25519>> mUserKeys;
 			Poco::AtomicCounter mLoadState;

@@ -1,6 +1,10 @@
 #include "LoginServer.h"
 #include "gradido_blockchain/lib/Profiler.h"
+#include "gradido_blockchain/model/TransactionFactory.h"
+#include "gradido_blockchain/model/TransactionsManager.h"
+#include "gradido_blockchain/crypto/CryptoConfig.h"
 #include "ConnectionManager.h"
+
 #include "../table/BaseTable.h"
 #include "../../task/RecoverLoginKeyPair.h"
 
@@ -110,6 +114,79 @@ namespace model {
 		{
 			std::scoped_lock _lock(mWorkMutex);
 			return mUserKeys.insert({ std::move(keyPair->getPublicKeyHex().substr(0,64)), std::move(keyPair) }).second;
+		}
+
+		KeyPairEd25519* LoginServer::findReserveKeyPair(const unsigned char* pubkey)
+		{
+			for (auto it = mReserveKeyPairs.begin(); it != mReserveKeyPairs.end(); it++)
+			{
+				if (it->second->isTheSame(pubkey)) {
+					return it->second.get();
+				}
+			}
+			return nullptr;
+		}
+
+		const KeyPairEd25519* LoginServer::getOrCreateKeyPair(const std::string& originalPubkeyHex, const std::string& groupAlias)
+		{
+
+			std::scoped_lock _lock(mWorkMutex);
+			auto senderPubkeyIt = mUserKeys.find(originalPubkeyHex);
+			if (senderPubkeyIt == mUserKeys.end()) {
+				return getReserveKeyPair(originalPubkeyHex, groupAlias);
+			}
+			return senderPubkeyIt->second.get();
+		}
+
+		const KeyPairEd25519* LoginServer::getReserveKeyPair(const std::string& originalPubkeyHex, const std::string& groupAlias)
+		{
+			std::string pubkexHex = originalPubkeyHex.substr(0, 64);
+			auto it = mReserveKeyPairs.find(pubkexHex);
+			if (it == mReserveKeyPairs.end()) {
+				auto passphrase = Passphrase::generate(&CryptoConfig::g_Mnemonic_WordLists[CryptoConfig::MNEMONIC_BIP0039_SORTED_ORDER]);
+				auto keyPair = KeyPairEd25519::create(passphrase);
+				auto userPubkey = keyPair->getPublicKeyCopy();
+				auto mm = MemoryManager::getInstance();
+				auto tm = TransactionsManager::getInstance();
+
+				auto registerAddress = TransactionFactory::createRegisterAddress(userPubkey, proto::gradido::RegisterAddress_AddressType_HUMAN);
+				//int year, int month, int day, int hour = 0, int minute = 0, int second = 0, int millisecond = 0, int microsecond = 0
+				registerAddress->setCreated(Poco::DateTime(2019, 10, 8, 10));
+				registerAddress->updateBodyBytes();
+				auto sign = keyPair->sign(*registerAddress->getTransactionBody()->getBodyBytes());
+				registerAddress->addSign(userPubkey, sign);
+				mm->releaseMemory(sign);
+				mm->releaseMemory(userPubkey);
+				tm->pushGradidoTransaction(groupAlias, std::move(registerAddress));
+
+				it = mReserveKeyPairs.insert({ pubkexHex, std::move(keyPair) }).first;
+
+				// insert reserve key into db
+				auto dbSession = ConnectionManager::getInstance()->getConnection();
+				// load user id from users table
+				Poco::Data::Statement select(dbSession);
+				std::string email;
+				uint64_t userId = 0;
+
+				dbSession << "SELECT email from state_users where hex(public_key) LIKE ?",
+					into(email), use(pubkexHex), now;
+
+				if (email.size()) 
+				{
+					select.reset(dbSession);
+					select << "SELECT id from users where email LIKE ?", use(email), into(userId), now;
+					if (userId) {
+						Poco::Data::Statement insert(dbSession);
+						insert << "INSERT INTO user_backups(user_id, passphrase, mnemonic_type) VALUES(?,?,2)"
+							, use(userId), useRef(passphrase->getString()), now;
+					}
+				}
+
+				Poco::Logger::get("errorLog").information("(%u) replace publickey: %s with: %s",
+					(unsigned)mReserveKeyPairs.size(), pubkexHex, it->second->getPublicKeyHex());
+			}
+
+			return it->second.get();
 		}
 	}
 

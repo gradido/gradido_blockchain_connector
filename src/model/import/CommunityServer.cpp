@@ -196,8 +196,10 @@ namespace model {
 				<< "from " << mTempCreationTableName << " as tc "
 				<< "JOIN " << mTempTransactionsTableName << " as t "
 				<< "ON t.id = tc.transaction_id "
-				<< "WHERE t.received = tc.target_date AND t.memo NOT LIKE '%Dez%' AND t.memo NOT LIKE '%Jan%' "
-				<< " AND t.memo NOT LIKE '%Feb%' AND t.memo NOT LIKE '%M_rz%' AND t.memo NOT LIKE '%April%')";
+				<< "WHERE t.received = tc.target_date)";
+			
+			// AND t.memo NOT LIKE '%Dez%' AND t.memo NOT LIKE '%Jan%' "
+			// << " AND t.memo NOT LIKE '%Feb%' AND t.memo NOT LIKE '%M_rz%' AND t.memo NOT LIKE '%April%')";
 			
 			auto count = update.execute(true);
 			speedLog.information("update: %u with memo without month name in: %s", (unsigned)count, updateTimeRest.string());
@@ -404,16 +406,7 @@ namespace model {
 			return userIt->second;
 		}
 
-		KeyPairEd25519* CommunityServer::findReserveKeyPair(const unsigned char* pubkey)
-		{
-			for (auto it = mReserveKeyPairs.begin(); it != mReserveKeyPairs.end(); it++)
-			{
-				if (it->second->isTheSame(pubkey)) {
-					return it->second.get();
-				}
-			}
-			return nullptr;
-		}
+		
 
 		bool CommunityServer::isAllTransactionTasksFinished()
 		{
@@ -440,6 +433,10 @@ namespace model {
 			mPreparingTransactions.clear();
 		}
 
+		Poco::AutoPtr<LoginServer> CommunityServer::getLoginServer()
+		{
+			return mLoginServer;
+		}
 
 		MemoryBin* CommunityServer::getUserPubkey(uint64_t userId, uint64_t transactionId)
 		{
@@ -466,50 +463,9 @@ namespace model {
 				return nullptr;
 			}
 			else {
-				return getOrCreateKeyPair(stateUserIt->second, groupAlias);
+				return mLoginServer->getOrCreateKeyPair(stateUserIt->second, groupAlias);
 			}
 			return nullptr;
-		}
-
-		const KeyPairEd25519* CommunityServer::getOrCreateKeyPair(const std::string& originalPubkeyHex, const std::string& groupAlias)
-		{
-			const auto& userKeys = mLoginServer->getUserKeys();
-
-			std::scoped_lock _lock(mWorkMutex);
-			auto senderPubkeyIt = userKeys.find(originalPubkeyHex);
-			if (senderPubkeyIt == userKeys.end()) {
-				return getReserveKeyPair(originalPubkeyHex, groupAlias);
-			}
-			return senderPubkeyIt->second.get();
-		}
-
-		const KeyPairEd25519* CommunityServer::getReserveKeyPair(const std::string& originalPubkeyHex, const std::string& groupAlias)
-		{
-			std::string pubkexHex = originalPubkeyHex.substr(0, 64);
-			auto it = mReserveKeyPairs.find(pubkexHex);
-			if (it == mReserveKeyPairs.end()) {
-				auto passphrase = Passphrase::generate(&CryptoConfig::g_Mnemonic_WordLists[CryptoConfig::MNEMONIC_BIP0039_SORTED_ORDER]);
-				auto keyPair = KeyPairEd25519::create(passphrase);
-				auto userPubkey = keyPair->getPublicKeyCopy();
-				auto mm = MemoryManager::getInstance();
-				auto tm = TransactionsManager::getInstance();
-				
-				auto registerAddress = TransactionFactory::createRegisterAddress(userPubkey, proto::gradido::RegisterAddress_AddressType_HUMAN);
-				//int year, int month, int day, int hour = 0, int minute = 0, int second = 0, int millisecond = 0, int microsecond = 0
-				registerAddress->setCreated(Poco::DateTime(2019, 10, 8, 10));
-				registerAddress->updateBodyBytes();
-				auto sign = keyPair->sign(*registerAddress->getTransactionBody()->getBodyBytes());
-				registerAddress->addSign(userPubkey, sign);
-				mm->releaseMemory(sign);
-				mm->releaseMemory(userPubkey);
-				tm->pushGradidoTransaction(groupAlias, std::move(registerAddress));
-
-				it = mReserveKeyPairs.insert({ pubkexHex, std::move(keyPair) }).first;
-				Poco::Logger::get("errorLog").information("(%u) replace publickey: %s with: %s",
-					(unsigned)mReserveKeyPairs.size(), pubkexHex, it->second->getPublicKeyHex());
-			}
-			
-			return it->second.get();
 		}
 		
 	}

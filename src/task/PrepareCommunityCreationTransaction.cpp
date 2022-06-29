@@ -4,6 +4,7 @@
 #include "gradido_blockchain/model/TransactionsManager.h"
 #include "../JSONInterface/JsonTransaction.h"
 #include "GradidoNodeRPC.h"
+#include "model/import/LoginServer.h"
 
 namespace task {
 	PrepareCommunityCreationTransaction::PrepareCommunityCreationTransaction(
@@ -43,7 +44,7 @@ namespace task {
 		creationTransactionObj->setCreated(mTransaction.get<2>());
 		creationTransactionObj->updateBodyBytes();
 		auto signerPubkeyHex = DataTypeConverter::binToHex(mTransaction.get<6>());
-		auto signerKeyPair = mCommunityServer->getOrCreateKeyPair(signerPubkeyHex, mGroupAlias);
+		auto signerKeyPair = mCommunityServer->getLoginServer()->getOrCreateKeyPair(signerPubkeyHex, mGroupAlias);
 
 		auto signerPubkey = signerKeyPair->getPublicKeyCopy();
 

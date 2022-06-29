@@ -493,7 +493,8 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 		json_srv.start();
 		speedLog.information("[GradidoBlockchainConnector::main] started in %s", usedTime.string());
 
-		std::string groupAlias = "livetest_1221";
+		// livetest_1221
+		std::string groupAlias = "gdd1";
 		if (_checkCommunityServerStateBalancesRequested) {
 			checkCommunityServerStateBalances(groupAlias);
 		}

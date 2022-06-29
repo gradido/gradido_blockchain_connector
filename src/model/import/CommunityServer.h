@@ -74,17 +74,15 @@ namespace model {
 			void cleanTransactions();
 			static std::string mTempCreationTableName;
 			static std::string mTempTransactionsTableName;
+
+			Poco::AutoPtr<LoginServer> getLoginServer();
 		protected:
 			
 			MemoryBin* getUserPubkey(uint64_t userId, uint64_t transactionId);
 			const KeyPairEd25519* getOrCreateKeyPair(uint64_t userId, const std::string& groupAlias);
-			const KeyPairEd25519* getOrCreateKeyPair(const std::string& originalPubkeyHex, const std::string& groupAlias);
-			const KeyPairEd25519* getReserveKeyPair(const std::string& originalPubkeyHex, const std::string& groupAlias);
-
+			
 			std::map<uint64_t, std::string> mStateUserIdPublicKey;
 			std::unordered_map<std::string, uint64_t> mPublicKeyStateUserId;
-			//! key is original user pubkey hex
-			std::unordered_map<std::string, std::unique_ptr<KeyPairEd25519>> mReserveKeyPairs;
 			//! key is user id
 			std::map<Poco::UInt64, StateBalance> mStateBalances;
 			//! first key is user id, seconds key is transaction id
