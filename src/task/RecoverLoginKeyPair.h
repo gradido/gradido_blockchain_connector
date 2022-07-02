@@ -22,9 +22,11 @@ namespace task
 
 		const char* getResourceType() const { return "RecoverLoginKeyPair"; };
 		int run();
+		inline void setOriginalPubkeyHex(const std::string& pubkeyHex) { mOriginalPubkey = pubkeyHex; }
 	protected:
 		uint64_t mId;
 		std::string mPassphrase;
+		std::string mOriginalPubkey;
 		Poco::AutoPtr<model::import::LoginServer> mLoginServer;
 		Poco::DateTime mCreated;
 		std::string mGroupAlias;

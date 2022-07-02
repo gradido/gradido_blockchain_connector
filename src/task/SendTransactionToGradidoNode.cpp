@@ -6,14 +6,18 @@
 #include "gradido_blockchain/model/protobufWrapper/TransactionValidationExceptions.h"
 
 #include "Poco/Util/ServerApplication.h"
+#include "Poco/DateTimeFormatter.h"
+#include "Poco/DateTimeFormat.h"
 
 namespace task {
 	SendTransactionToGradidoNode::SendTransactionToGradidoNode(
 		std::shared_ptr<model::gradido::GradidoTransaction> transaction,
 		uint64_t transactionNr,
 		const std::string& groupAlias,
-		MultithreadQueue<double>* runtime
-	) : CPUTask(ServerConfig::g_WorkerThread), mTransaction(transaction), mTransactionNr(transactionNr), mGroupAlias(groupAlias), mRuntime(runtime)
+		MultithreadQueue<double>* runtime,
+		Poco::AutoPtr<model::import::LoginServer> loginServer
+	) : CPUTask(ServerConfig::g_WorkerThread), mTransaction(transaction), mTransactionNr(transactionNr),
+		mGroupAlias(groupAlias), mRuntime(runtime), mLoginServer(loginServer)
 	{
 #ifdef _UNI_LIB_DEBUG
 		setName(std::to_string(mTransactionNr).data());
@@ -32,15 +36,15 @@ namespace task {
 				mTransaction->getTransactionBody()->getCreatedSeconds(),
 				nullptr
 			);
-			if (mTransactionNr == 509) {
-				int zahl = 0;
-			}
+
 			auto level = static_cast<model::gradido::TransactionValidationLevel>(
 				model::gradido::TRANSACTION_VALIDATION_SINGLE |
 				model::gradido::TRANSACTION_VALIDATION_DATE_RANGE |
 				model::gradido::TRANSACTION_VALIDATION_SINGLE_PREVIOUS
 			);
-
+			if (mTransaction->getTransactionBody()->isRegisterAddress()) {
+				level = (model::gradido::TransactionValidationLevel)(level | model::gradido::TRANSACTION_VALIDATION_CONNECTED_GROUP);
+			}
 			model::TransactionsManagerBlockchain blockchain(mGroupAlias);
 			mTransaction->validate(
 				level,
@@ -78,8 +82,12 @@ namespace task {
 			else if (transactionBody->isTransfer()) {
 				auto pubkey = mTransaction->getTransactionBody()->getTransferTransaction()->getSenderPublicKeyString();
 				pubkeyHex = DataTypeConverter::binToHex(pubkey).substr(0, 64);
-			}			
+			}
+			auto userInfos = mLoginServer->getUserInfos(pubkeyHex);
 			try {
+				errorLog.error("user id: %u, email: %s, name: %s %s, created: %s",
+					(unsigned)userInfos.get<0>(), userInfos.get<1>(), userInfos.get<2>(), userInfos.get<3>(),
+					Poco::DateTimeFormatter::format(userInfos.get<4>(), Poco::DateTimeFormat::SORTABLE_FORMAT));
 				errorLog.error("transactions for user: %s", tm->getUserTransactionsDebugString(mGroupAlias, pubkeyHex));
 			}
 			catch (GradidoBlockchainException& ex) {

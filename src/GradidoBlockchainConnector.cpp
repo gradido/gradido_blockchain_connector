@@ -33,13 +33,13 @@
 #include "JSONInterface/JsonTransaction.h"
 #include "model/import/LoginServer.h"
 #include "model/import/CommunityServer.h"
+#include "model/import/ApolloServer.h"
 #include "model/PendingTransactions.h"
 #include "gradido_blockchain/lib/Decay.h"
 #include "task/SendTransactionToGradidoNode.h"
 
 GradidoBlockchainConnector::GradidoBlockchainConnector()
-	: _helpRequested(false), _checkCommunityServerStateBalancesRequested(false), 
-	_sendCommunityServerTransactionsToGradidoNodeRequested(false), _sendCommunityServerTransactionsToIotaRequested(false)
+	: _helpRequested(false), mArchivedTransactionsHandling(ArchivedTransactionsHandling::NONE)
 {
 }
 
@@ -75,7 +75,7 @@ void GradidoBlockchainConnector::defineOptions(Poco::Util::OptionSet& options)
 	);
 	// on windows use / instead of - or -- for options!
 	options.addOption(
-		Poco::Util::Option("checkBackup", "cb", "check db backup contain valid data, argument is backup type: community for backup in login- and community server format", false)
+		Poco::Util::Option("checkBackup", "cb", "check db backup contain valid data, argument is backup type: community for backup in login- and community server format, apollo for apollo server format", false)
 		.repeatable(false) // TODO: make repeatable if more than one type is supported
 		.argument("community", true)
 	);
@@ -96,16 +96,27 @@ void GradidoBlockchainConnector::handleOption(const std::string& name, const std
 	}
 	else if (name == "checkBackup") {
 		if (value == "community") {
-			_checkCommunityServerStateBalancesRequested = true;
+			mArchivedTransactionsHandling = (ArchivedTransactionsHandling)(
+				(int)mArchivedTransactionsHandling | (int)ArchivedTransactionsHandling::USE_COMMUNITY_SERVER_DATA
+			);
+		}
+		else if (value == "apollo") {
+			mArchivedTransactionsHandling = (ArchivedTransactionsHandling)(
+				(int)mArchivedTransactionsHandling | (int)ArchivedTransactionsHandling::USE_APOLLO_SERVER_DATA
+			);
 		}
 		return;
 	}
 	else if (name == "sendBackup") {
 		if (value == "gradidoNode") {
-			_sendCommunityServerTransactionsToGradidoNodeRequested = true;
-		}
+			mArchivedTransactionsHandling = (ArchivedTransactionsHandling)(
+				(int)mArchivedTransactionsHandling | (int)ArchivedTransactionsHandling::SEND_DATA_TO_GRADIDO_NODE
+			);
+		} 
 		else if (value == "iota") {
-			_sendCommunityServerTransactionsToIotaRequested = true;
+			mArchivedTransactionsHandling = (ArchivedTransactionsHandling)(
+				(int)mArchivedTransactionsHandling | (int)ArchivedTransactionsHandling::SEND_DATA_TO_IOTA
+			);
 		}
 		return;
 	}
@@ -196,7 +207,7 @@ void GradidoBlockchainConnector::checkCommunityServerStateBalances(const std::st
 	speedLog.information("calculate user balances time: %s", caluclateBalancesTime.string());
 }
 
-void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(const std::string& groupAlias, bool iota /* = false */)
+void GradidoBlockchainConnector::sendArchivedTransactionsToGradidoNode(const std::string& groupAlias, bool iota /* = false */, bool apollo /* = false */)
 {
 	Poco::Logger& speedLog = Poco::Logger::get("speedLog");
 	Poco::Logger& errorLog = Poco::Logger::get("errorLog");
@@ -204,25 +215,49 @@ void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(co
 	auto mm = MemoryManager::getInstance();
 
 	// code for loading old transactions from db
-	Poco::AutoPtr<model::import::LoginServer> loginServerImport = new model::import::LoginServer;
+	Poco::AutoPtr<model::import::LoginServer> loginServerImport;
+	if (!apollo) {
+		loginServerImport = new model::import::LoginServer;
+	}
+	else {
+		loginServerImport = new model::import::ApolloServer(groupAlias);
+	}
 	try {
 		loginServerImport->loadAll(groupAlias);
 	}
 	catch (GradidoBlockchainException& ex) {
-		printf("error by importing from login server: %s\n", ex.getFullString().data());
-	}
-	Poco::AutoPtr<model::import::CommunityServer> communityServerImport = new model::import::CommunityServer;
-	try {
-		communityServerImport->loadAll(groupAlias, true, loginServerImport);
-	}
-	catch (GradidoBlockchainException& ex) {
-		printf("error by importing from community server: %s\n", ex.getFullString().data());
+		if (apollo) {
+			printf("error by importing from apollo server: %s\n", ex.getFullString().data());
+			return;
+		}
+		else {
+			printf("error by importing from login server: %s\n", ex.getFullString().data());
+		}
 	}
 	Profiler waitOnTransactions;
-	while (!communityServerImport->isAllTransactionTasksFinished()) {
-		Poco::Thread::sleep(10);
+	if (!apollo) {
+		Poco::AutoPtr<model::import::CommunityServer> communityServerImport = new model::import::CommunityServer;
+		try {
+			communityServerImport->loadAll(groupAlias, true, loginServerImport);
+		}
+		catch (GradidoBlockchainException& ex) {
+			printf("error by importing from community server: %s\n", ex.getFullString().data());
+		}
+		
+		while (!communityServerImport->isAllTransactionTasksFinished()) {
+			Poco::Thread::sleep(10);
+		}
+		communityServerImport->cleanTransactions();
 	}
-	communityServerImport->cleanTransactions();
+	else {
+		Profiler waitOnPrepareTransactions;
+		auto apolloServer = (model::import::ApolloServer*)(loginServerImport.get());
+		while (!apolloServer->isAllTransactionTasksFinished()) {
+			Poco::Thread::sleep(10);
+		}
+		apolloServer->cleanTransactions();
+		speedLog.information("waited on Apollo Prepare Transactions Tasks: %s", waitOnPrepareTransactions.string());
+	}
 	speedLog.information("wait for transactions: %s", waitOnTransactions.string());
 	const model::TransactionsManager::TransactionList* transactions;
 	try {
@@ -326,7 +361,13 @@ void GradidoBlockchainConnector::sendCommunityServerTransactionsToGradidoNode(co
 		Profiler scheduleTime;
 		for (auto it = transactions->begin(); it != transactions->end(); it++)
 		{
-			task::TaskPtr putTask = new task::SendTransactionToGradidoNode(*it, transactionNr, groupAlias, &transactionRunningTimes);
+			task::TaskPtr putTask = new task::SendTransactionToGradidoNode(
+				*it, 
+				transactionNr, 
+				groupAlias, 
+				&transactionRunningTimes,
+				loginServerImport
+			);
 			putTasks.push_back(putTask);
 			putTask->scheduleTask(putTask);
 			transactionNr++;
@@ -495,11 +536,18 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 
 		// livetest_1221
 		std::string groupAlias = "gdd1";
-		if (_checkCommunityServerStateBalancesRequested) {
+		if(mArchivedTransactionsHandling == (ArchivedTransactionsHandling)(
+			(int)ArchivedTransactionsHandling::CHECK_DATA & (int)ArchivedTransactionsHandling::USE_COMMUNITY_SERVER_DATA
+		)) {
 			checkCommunityServerStateBalances(groupAlias);
 		}
-		if (_sendCommunityServerTransactionsToGradidoNodeRequested || _sendCommunityServerTransactionsToIotaRequested) {
-			sendCommunityServerTransactionsToGradidoNode(groupAlias, _sendCommunityServerTransactionsToIotaRequested);
+		if (ArchivedTransactionsHandling::NONE != (ArchivedTransactionsHandling)(
+			(int)mArchivedTransactionsHandling & (int)ArchivedTransactionsHandling::SEND_DATA_TO_GRADIDO_NODE | (int)ArchivedTransactionsHandling::SEND_DATA_TO_IOTA
+		)){
+			sendArchivedTransactionsToGradidoNode(groupAlias, 
+				((int)mArchivedTransactionsHandling & (int)ArchivedTransactionsHandling::SEND_DATA_TO_IOTA) == (int)ArchivedTransactionsHandling::SEND_DATA_TO_IOTA,
+				((int)mArchivedTransactionsHandling & (int)ArchivedTransactionsHandling::USE_APOLLO_SERVER_DATA) == (int)ArchivedTransactionsHandling::USE_APOLLO_SERVER_DATA
+			);
 		}
 
 		// wait for CTRL-C or kill

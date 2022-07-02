@@ -30,7 +30,7 @@ protected:
 	void handleOption(const std::string& name, const std::string& value);
 	void displayHelp();
 	void checkCommunityServerStateBalances(const std::string& groupAlias);
-	void sendCommunityServerTransactionsToGradidoNode(const std::string& groupAlias, bool iota = false);
+	void sendArchivedTransactionsToGradidoNode(const std::string& groupAlias, bool iota = false, bool apollo = false);
 
 	int main(const std::vector<std::string>& args);
 
@@ -39,9 +39,17 @@ protected:
 
 private:
 	bool _helpRequested;
-	bool _checkCommunityServerStateBalancesRequested;
-	bool _sendCommunityServerTransactionsToGradidoNodeRequested;
-	bool _sendCommunityServerTransactionsToIotaRequested;
+
+	enum class ArchivedTransactionsHandling : int {
+		NONE = 0,
+		USE_COMMUNITY_SERVER_DATA = 1,
+		USE_APOLLO_SERVER_DATA = 2,
+		CHECK_DATA = 4,
+		SEND_DATA_TO_GRADIDO_NODE = 8,
+		SEND_DATA_TO_IOTA = 16
+	};
+
+	ArchivedTransactionsHandling mArchivedTransactionsHandling;
 	std::string mConfigPath;
 };
 

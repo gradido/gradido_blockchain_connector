@@ -39,9 +39,18 @@ namespace task {
 				Poco::Logger::get("errorLog").error("couldn't create key pair for: %u (%s)", (unsigned)mId, mPassphrase);
 				return -2;
 			}
+
+			if (mOriginalPubkey.size()) {
+				auto publicHex = keyPair->getPublicKeyHex();
+				if (publicHex.substr(0, 64) != mOriginalPubkey.substr(0, 64)) {
+					Poco::Logger::get("errorLog").error("original pubkey differ from recovered pubkey for %u", (unsigned)mId);
+					Poco::Logger::get("errorLog").error("%s != %s", publicHex, mOriginalPubkey);
+					return -4;
+				}
+			}
+
 			auto mm = MemoryManager::getInstance();
 			auto tm = model::TransactionsManager::getInstance();
-
 			auto pubkeyCopy = keyPair->getPublicKeyCopy();
 			
 			auto registerAddress = TransactionFactory::createRegisterAddress(pubkeyCopy, proto::gradido::RegisterAddress_AddressType_HUMAN);
@@ -52,12 +61,24 @@ namespace task {
 			mm->releaseMemory(sign);
 			mm->releaseMemory(pubkeyCopy);
 
-			if (mLoginServer->addUserKeys(std::move(keyPair))) {
-				tm->pushGradidoTransaction(mGroupAlias, std::move(registerAddress));
+			if (mLoginServer->addUserKey(std::move(keyPair))) {
+				try {
+					tm->pushGradidoTransaction(mGroupAlias, std::move(registerAddress));
+				}
+				catch (std::exception& ex) {
+					printf("exception: %s\n", ex.what());
+				}
 				return 0;
 			}
 			else {
 				Poco::Logger::get("errorLog").error("couldn't add user keys to login server: %u (%s)", (unsigned)mId, mPassphrase);
+				if (mOriginalPubkey.size()) {
+					auto findKeyPair = mLoginServer->findUserKey(mOriginalPubkey);
+					if (findKeyPair) {
+						Poco::Logger::get("errorLog").error("key pair was already added: %s", mOriginalPubkey);
+					}
+				}
+
 				mm->releaseMemory(pubkeyCopy);
 				return -3;
 			}

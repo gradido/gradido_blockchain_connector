@@ -4,6 +4,7 @@
 #include "CPUTask.h"
 #include "gradido_blockchain/model/protobufWrapper/GradidoTransaction.h"
 #include "Poco/SharedPtr.h"
+#include "model/import/LoginServer.h"
 
 namespace task {
 	class SendTransactionToGradidoNode: public CPUTask
@@ -13,7 +14,8 @@ namespace task {
 			std::shared_ptr<model::gradido::GradidoTransaction> transaction,
 			uint64_t transactionNr, 
 			const std::string& groupAlias,
-			MultithreadQueue<double>* runtime
+			MultithreadQueue<double>* runtime,
+			Poco::AutoPtr<model::import::LoginServer> loginServer
 		);
 
 		const char* getResourceType() const { return "SendTransactionToGradidoNode"; };
@@ -23,6 +25,7 @@ namespace task {
 		uint64_t mTransactionNr;
 		std::string mGroupAlias;
 		MultithreadQueue<double>* mRuntime;
+		Poco::AutoPtr<model::import::LoginServer> mLoginServer;
 	};
 }
 
