@@ -40,11 +40,9 @@ namespace task {
 			auto level = static_cast<model::gradido::TransactionValidationLevel>(
 				model::gradido::TRANSACTION_VALIDATION_SINGLE |
 				model::gradido::TRANSACTION_VALIDATION_DATE_RANGE |
-				model::gradido::TRANSACTION_VALIDATION_SINGLE_PREVIOUS
+				model::gradido::TRANSACTION_VALIDATION_SINGLE_PREVIOUS |
+				model::gradido::TRANSACTION_VALIDATION_CONNECTED_GROUP
 			);
-			if (mTransaction->getTransactionBody()->isRegisterAddress()) {
-				level = (model::gradido::TransactionValidationLevel)(level | model::gradido::TRANSACTION_VALIDATION_CONNECTED_GROUP);
-			}
 			model::TransactionsManagerBlockchain blockchain(mGroupAlias);
 			mTransaction->validate(
 				level,
@@ -73,28 +71,26 @@ namespace task {
 			errorLog.error("error validating transaction %d: %s", (int)mTransactionNr, ex.getFullString());
 			errorLog.error("transaction in json: %s", mTransaction->toJson());
 
-			std::string pubkeyHex;
+			auto mm = MemoryManager::getInstance();
 			auto transactionBody = mTransaction->getTransactionBody();
-			if (transactionBody->isCreation()) {
-				auto pubkey = mTransaction->getTransactionBody()->getCreationTransaction()->getRecipientPublicKeyString();
-				pubkeyHex = DataTypeConverter::binToHex(pubkey).substr(0,64);
-			}
-			else if (transactionBody->isTransfer()) {
-				auto pubkey = mTransaction->getTransactionBody()->getTransferTransaction()->getSenderPublicKeyString();
-				pubkeyHex = DataTypeConverter::binToHex(pubkey).substr(0, 64);
-			}
-			auto userInfos = mLoginServer->getUserInfos(pubkeyHex);
-			try {
-				errorLog.error("user id: %u, email: %s, name: %s %s, created: %s",
-					(unsigned)userInfos.get<0>(), userInfos.get<1>(), userInfos.get<2>(), userInfos.get<3>(),
-					Poco::DateTimeFormatter::format(userInfos.get<4>(), Poco::DateTimeFormat::SORTABLE_FORMAT));
-				errorLog.error("transactions for user: %s", tm->getUserTransactionsDebugString(mGroupAlias, pubkeyHex));
-			}
-			catch (GradidoBlockchainException& ex) {
-				errorLog.error("couldn't create debug string for user: %s", pubkeyHex);
-				ServerConfig::g_WorkerThread->stop();
-				Poco::Util::ServerApplication::terminate();
-			}
+			auto involvedAddresses = transactionBody->getTransactionBase()->getInvolvedAddresses();
+			std::for_each(involvedAddresses.begin(), involvedAddresses.end(), [&](MemoryBin* addressBin) {
+				std::string pubkeyHex = DataTypeConverter::binToHex(addressBin).substr(0,64);
+				mm->releaseMemory(addressBin);
+				auto userInfos = mLoginServer->getUserInfos(pubkeyHex);
+				try {
+					errorLog.error("user id: %u, email: %s, name: %s %s, created: %s",
+						(unsigned)userInfos.get<0>(), userInfos.get<1>(), userInfos.get<2>(), userInfos.get<3>(),
+						Poco::DateTimeFormatter::format(userInfos.get<4>(), Poco::DateTimeFormat::SORTABLE_FORMAT));
+					errorLog.error("transactions for user: %s", tm->getUserTransactionsDebugString(mGroupAlias, pubkeyHex));
+				}
+				catch (GradidoBlockchainException& ex) {
+					errorLog.error("couldn't create debug string for user: %s", pubkeyHex);
+					ServerConfig::g_WorkerThread->stop();
+					Poco::Util::ServerApplication::terminate();
+				}
+			});			
+			
 			ServerConfig::g_WorkerThread->stop();
 			Poco::Util::ServerApplication::terminate();
 			return -3;

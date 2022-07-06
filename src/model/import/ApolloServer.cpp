@@ -162,7 +162,8 @@ namespace model {
 			// id, user_id, type_id, amount, balance_date, memo, creation_date, linked_user_id
 			std::list<TransactionTuple> transactionsList;
 			select << "SELECT id, user_id, type_id, IF(type_id = 2, -amount, amount) as amount, balance_date, memo, creation_date, linked_user_id "
-				<< "FROM transactions_temp "
+				//<< "FROM transactions_temp "
+				<< "FROM transactions "
 				<< "where type_id IN (1,2)", into(transactionsList), now;
 
 			speedLog.information("time for reading: %u transactions from db: %s", (unsigned)transactionsList.size(), readAllTransactionsTime.string());
