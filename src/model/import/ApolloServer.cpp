@@ -2,8 +2,7 @@
 #include "../../ConnectionManager.h"
 #include "../table/BaseTable.h"
 #include "../../task/RecoverLoginKeyPair.h"
-#include "../../task/PrepareApolloCreationTransaction.h"
-#include "../../task/PrepareApolloTransferTransaction.h"
+#include "../../task/PrepareApolloTransaction.h"
 
 #include "gradido_blockchain/lib/Profiler.h"
 #include "gradido_blockchain/crypto/CryptoConfig.h"
@@ -172,14 +171,10 @@ namespace model {
 			std::for_each(transactionsList.begin(), transactionsList.end(), [&](const TransactionTuple& transaction) {
 				auto type_id = transaction.get<2>();
 				task::TaskPtr task;
-				// creation
-				if (type_id == 1) {
-					task = new task::PrepareApolloCreationTransaction(Poco::AutoPtr(this, true), transaction, groupAlias);
-				}
-				// send
-				if (type_id == 2) {
-					task = new task::PrepareApolloTransferTransaction(Poco::AutoPtr(this, true), transaction, groupAlias);
-				}
+				if (type_id != 1 && type_id != 2) return;
+				
+				task = new task::PrepareApolloTransaction(Poco::AutoPtr(this, true), transaction, groupAlias);
+				
 				if (!task.isNull()) {
 					mTransactionTasks.push_back(task);
 					task->scheduleTask(task);
