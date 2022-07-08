@@ -1,5 +1,8 @@
 #include "PendingTransactions.h"
 #include "Poco/DateTimeFormatter.h"
+#include "table/TransactionClientDetail.h"
+#include "../ConnectionManager.h"
+#include "gradido_blockchain/lib/DataTypeConverter.h"
 
 using namespace rapidjson;
 
@@ -52,19 +55,31 @@ namespace model {
 		while (mPendingTransactions.size() > MAX_PENDING_TRANSACTIONS_IN_LIST) {
 			mPendingTransactions.pop_front();
 		}
-
+		model::table::TransactionClientDetail transactionClientDetail(pendingTransaction.apolloTransactionId, pendingTransaction.iotaMessageId);
+		transactionClientDetail.save(ConnectionManager::getInstance()->getConnection());
 	}
 	void PendingTransactions::updateTransaction(const std::string& iotaMessageId, bool confirmend, const std::string& errorMessage /* = ""*/)
 	{
 		std::scoped_lock<std::recursive_mutex> _lock(mWorkMutex);
+		auto newPendingState = confirmend ? PendingTransaction::State::CONFIRMED : PendingTransaction::State::REJECTED;
+
+		auto iotaMessageBin = DataTypeConverter::hexToBinString(iotaMessageId)->substr(0, 32);
+		auto transactionClientDetail = model::table::TransactionClientDetail::findByIotaMessageId(iotaMessageBin);
+		assert(transactionClientDetail.size() <= 1);
+		if (transactionClientDetail.size() == 1) {
+			transactionClientDetail[0]->setPendingState(newPendingState);
+			transactionClientDetail[0]->save(ConnectionManager::getInstance()->getConnection());
+		}
+
 		for (auto it = mPendingTransactions.rbegin(); it != mPendingTransactions.rend(); it++) {
 			if (memcmp(it->iotaMessageId.data(), iotaMessageId.data(), 64) == 0) {
 				if (it->state == PendingTransaction::State::CONFIRMED) return;
-				it->state = confirmend ? PendingTransaction::State::CONFIRMED : PendingTransaction::State::REJECTED;
+				it->state = newPendingState;
 				it->errorMessage = errorMessage;
 				return;
 			}
 		}
+		
 	}
 
 	Value PendingTransactions::listAsJson(Document::AllocatorType& alloc) const

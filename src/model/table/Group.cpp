@@ -75,7 +75,7 @@ namespace model {
 				Poco::Data::Statement insert(dbSession);
 
 				insert << "INSERT INTO `" << getTableName() << "` (name, groupAlias, description) VALUES(?,?,?);",
-					use(mName), use(mAlias), use(mDescription), into(mID), now;
+					use(mName), use(mAlias), use(mDescription), now;
 			}
 		}
 	}

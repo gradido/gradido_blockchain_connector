@@ -9,6 +9,7 @@
 #include "User.h"
 #include "UserBackup.h"
 #include "Group.h"
+#include "TransactionClientDetail.h"
 
 using namespace Poco::Data::Keywords;
 
@@ -34,7 +35,10 @@ namespace model {
 			bool userBackupTable = false;
 			bool groupTable = false;
 			std::unordered_set<std::string> existingTables;
-			std::vector<std::string> requiredTables = { User::getTableName(), Group::getTableName(), UserBackup::getTableName() };
+			std::vector<std::string> requiredTables = { 
+				User::getTableName(), Group::getTableName(), 
+				UserBackup::getTableName(), TransactionClientDetail::getTableName()
+			};
 
 			auto migrations = Migration::loadAll();
 
@@ -74,6 +78,9 @@ namespace model {
 			}
 			else if (tableName == UserBackup::getTableName()) {
 				return std::make_unique<UserBackup>();
+			}
+			else if(tableName == TransactionClientDetail::getTableName()) {
+				return std::make_unique<TransactionClientDetail>(); 
 			}
 			throw UnknownTableNameException("unknown tableName", tableName);
 		}
