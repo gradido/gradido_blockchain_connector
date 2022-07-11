@@ -7,6 +7,14 @@
 
 namespace task
 {
+	/*!
+	@author einhornimmond
+	@brief create key pair from passphrase 
+
+		- create key pair from passphrase 
+		- if original pubkey was set: 
+			- compare calculated public key with stored public key for the user
+	*/ 
 	class RecoverLoginKeyPair : public CPUTask
 	{
 	public:
