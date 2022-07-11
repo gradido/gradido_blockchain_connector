@@ -1,13 +1,16 @@
 #include "SendTransactionToGradidoNode.h"
 #include "../ServerConfig.h"
 #include "../GradidoNodeRPC.h"
+#include "../model/table/TransactionClientDetail.h"
 #include "gradido_blockchain/model/TransactionsManagerBlockchain.h"
 #include "gradido_blockchain/model/TransactionsManager.h"
 #include "gradido_blockchain/model/protobufWrapper/TransactionValidationExceptions.h"
 
+
 #include "Poco/Util/ServerApplication.h"
 #include "Poco/DateTimeFormatter.h"
 #include "Poco/DateTimeFormat.h"
+#include "Poco/Data/MySQL/MySQLException.h"
 
 namespace task {
 	SendTransactionToGradidoNode::SendTransactionToGradidoNode(
@@ -104,6 +107,16 @@ namespace task {
 		auto base64Transaction = DataTypeConverter::binToBase64(std::move(mTransaction->getSerialized()));
 
 		try {
+			auto iotaMessageId = model::table::TransactionClientDetail::calculateMessageId(mTransaction.get());
+			auto transactionClientDetails = model::table::TransactionClientDetail::findByIotaMessageId(iotaMessageId);
+
+			if (transactionClientDetails.size()) {
+				for (auto it = transactionClientDetails.begin(); it != transactionClientDetails.end(); ++it) {
+					(*it)->setTransactionNr(mTransactionNr);
+					(*it)->save();
+				}
+			}
+
 			auto timeMilliSeconds = gradidoNodeRPC::putTransaction(*base64Transaction, mTransactionNr, mGroupAlias);
 			if (mRuntime) {
 				mRuntime->push(timeMilliSeconds);
@@ -116,6 +129,16 @@ namespace task {
 			ServerConfig::g_WorkerThread->stop();
 			Poco::Util::ServerApplication::terminate();
 			return -4;
+		}
+		catch (Poco::Data::MySQL::StatementException& ex)
+		{
+			printf("mysql statement exception: %s\n", ex.displayText().data());
+			Poco::Util::ServerApplication::terminate();
+			return -5;
+		}
+		catch (std::exception& ex) {
+			printf("exception: %s\n", ex.what());
+			throw;
 		}
 		return 0;
 	}

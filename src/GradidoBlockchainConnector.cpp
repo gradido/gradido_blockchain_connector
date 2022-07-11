@@ -34,6 +34,7 @@
 #include "model/import/LoginServer.h"
 #include "model/import/CommunityServer.h"
 #include "model/import/ApolloServer.h"
+#include "model/table/TransactionClientDetail.h"
 #include "model/PendingTransactions.h"
 #include "gradido_blockchain/lib/Decay.h"
 #include "task/SendTransactionToGradidoNode.h"
@@ -310,6 +311,11 @@ void GradidoBlockchainConnector::sendArchivedTransactionsToGradidoNode(const std
 				&blockchain,
 				gradidoBlock
 			);
+			// provisional message id 
+			auto provisional_message_id = model::table::TransactionClientDetail::calculateMessageId(transaction.get());
+			auto transactionClientDetails = model::table::TransactionClientDetail::findByIotaMessageId(provisional_message_id);
+			assert(transactionClientDetails.size());
+
 			// send to iota
 			// finale to hex for iota
 			auto hex_message = DataTypeConverter::binToHex(std::move(serializedTransaction));
@@ -318,6 +324,13 @@ void GradidoBlockchainConnector::sendArchivedTransactionsToGradidoNode(const std
 			Profiler powTime;
 			auto iotaMessageId = ServerConfig::g_IotaRequestHandler->sendMessage(DataTypeConverter::binToHex(index), *hex_message);
 			speedLog.information("pow time: %s", powTime.string());
+
+			auto iotaMessageIdBin = DataTypeConverter::hexToBinString(iotaMessageId)->substr(0, 32);
+			// update message id
+			for (auto it = transactionClientDetails.begin(); it != transactionClientDetails.end(); ++it) {
+				(*it)->setIotaMessageId(iotaMessageIdBin);
+				(*it)->save();
+			}
 
 			pt->pushNewTransaction(std::move(model::PendingTransactions::PendingTransaction(
 				iotaMessageId,

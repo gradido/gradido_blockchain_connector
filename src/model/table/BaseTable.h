@@ -22,6 +22,10 @@ namespace model {
 
 			virtual void save(Poco::Data::Session& dbSession) = 0;
 			uint64_t getLastInsertId(Poco::Data::Session& dbSession);
+
+			void remove();
+			void remove(Poco::Data::Session& dbSession);
+
 		protected:
 			uint64_t mID;
 		};

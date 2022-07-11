@@ -14,6 +14,7 @@
 #include "GradidoNodeRPC.h"
 #include "model/PendingTransactions.h"
 #include "model/table/Group.h"
+#include "model/table/TransactionClientDetail.h"
 
 #include "Poco/DateTimeParser.h"
 #include "Poco/DateTimeFormatter.h"
@@ -111,7 +112,7 @@ std::string JsonTransaction::signAndSendTransaction(std::unique_ptr<model::gradi
 	// send transaction to iota
 	auto raw_message = transaction->getSerialized();
 	std::string iotaMessageId;
-	
+	std::string iotaMessageIdBin;
 	// send archive transactions direct to gradido node
 	if (mArchiveTransaction) {
 		// calculate hash with blake2b
@@ -123,6 +124,7 @@ std::string JsonTransaction::signAndSendTransaction(std::unique_ptr<model::gradi
 			NULL, 0
 		);
 		iotaMessageId = DataTypeConverter::binToHex(hash, sizeof hash);
+		iotaMessageIdBin = std::string((char*)hash, sizeof hash);
 		auto base64Transaction = DataTypeConverter::binToBase64(std::move(raw_message));
 		gradidoNodeRPC::putTransaction(*base64Transaction.get(), mTransactionNr, groupAlias);		
 		
@@ -133,10 +135,14 @@ std::string JsonTransaction::signAndSendTransaction(std::unique_ptr<model::gradi
 
 		std::string index = "GRADIDO." + groupAlias;
 		iotaMessageId = ServerConfig::g_IotaRequestHandler->sendMessage(DataTypeConverter::binToHex(index), *hex_message);
+		iotaMessageIdBin = DataTypeConverter::hexToBinString(iotaMessageId)->substr(0,32);
 	}
 
 	
 	auto pt = model::PendingTransactions::getInstance();
+	model::table::TransactionClientDetail transactionClientDetail(mApolloTransactionId, iotaMessageIdBin);
+	transactionClientDetail.save();
+
 	pt->pushNewTransaction(std::move(model::PendingTransactions::PendingTransaction(
 		iotaMessageId,
 		transaction->getTransactionBody()->getTransactionType(),

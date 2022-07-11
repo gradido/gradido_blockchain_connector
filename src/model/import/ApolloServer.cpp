@@ -90,6 +90,10 @@ namespace model {
 
 			loadTransactions(groupAlias);
 			speedLog.information("sum time for ApolloServer::loadAll: %s", allTime.string());
+
+			while (!isAllTransactionTasksFinished()) {
+				Poco::Thread::sleep(10);
+			}
 		}
 
 		const KeyPairEd25519* ApolloServer::getUserKeyPair(uint64_t userId)
@@ -182,7 +186,7 @@ namespace model {
 						Poco::Thread::sleep(100);
 					}
 					task->run();
-					*/
+				//	*/
 				}
 			});
 			speedLog.information("time for scheduling %u prepare transactions tasks: %s", (unsigned)transactionsList.size(), scheduleAllTransactionsTime.string());

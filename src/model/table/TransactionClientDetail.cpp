@@ -1,5 +1,6 @@
 #include "TransactionClientDetail.h"
 #include "../../ConnectionManager.h"
+#include "sodium.h"
 
 using namespace Poco::Data::Keywords;
 
@@ -21,7 +22,8 @@ namespace model {
 			: BaseTable(tuple.get<0>()), mClientTransactionId(tuple.get<1>()), mTransactionNr(tuple.get<2>()), 
 			mIotaMessageId(tuple.get<3>()), mTxHash(tuple.get<4>()), 
 			mPendingState((PendingTransactions::PendingTransaction::State)tuple.get<5>()), 
-			mCreated(tuple.get<6>()), mUpdated(tuple.get<7>())
+			mError(tuple.get<6>()),
+			mCreated(tuple.get<7>()), mUpdated(tuple.get<8>())
 		{
 
 		}
@@ -82,15 +84,33 @@ namespace model {
 			return result;
 		}
 
+		std::string TransactionClientDetail::calculateMessageId(const model::gradido::GradidoTransaction* transaction)
+		{
+			unsigned char hash[crypto_generichash_BYTES];
+			auto rawMessage = transaction->getSerializedConst();
+			crypto_generichash(
+				hash, sizeof hash,
+				(const unsigned char*)rawMessage->data(),
+				rawMessage->size(),
+				NULL, 0
+			);
+			return std::string((char*)hash, sizeof hash);
+		}
+
+		void TransactionClientDetail::save()
+		{
+			save(ConnectionManager::getInstance()->getConnection());
+		}
+
 		void TransactionClientDetail::save(Poco::Data::Session& dbSession)
 		{
 			char pendingStateChar = static_cast<char>(mPendingState);
 			if (mID) {
 				Poco::Data::Statement update(dbSession);
 				update << "UPDATE `" << getTableName()
-					<< "` SET transaction_nr=?, tx_hash=?, pending_state=? "
+					<< "` SET transaction_nr=?, iota_message_id=?, tx_hash=?, pending_state=?, error=? "
 					<< "WHERE id = ?",
-					use(mTransactionNr), use(mTxHash), use(pendingStateChar), use(mID), now;
+					use(mTransactionNr), use(mIotaMessageId), use(mTxHash), use(pendingStateChar), use(mError), use(mID), now;
 			}
 			else {
 				Poco::Data::Statement insert(dbSession);
@@ -101,10 +121,11 @@ namespace model {
 			}
 		}
 
+
 		void TransactionClientDetail::selectFields(Poco::Data::Statement& select)
 		{
-			select << "SELECT id, client_transaction_id, transaction_nr, iota_message_id, tx_hash, pending_state, created, updated from "
-				<< getTableName();
+			select << "SELECT id, client_transaction_id, transaction_nr, iota_message_id, tx_hash, pending_state, error, created, updated from "
+				<< getTableName() << " ";
 		}
 	}
 }

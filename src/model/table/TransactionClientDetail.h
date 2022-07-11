@@ -3,14 +3,16 @@
 
 #include "BaseTable.h"
 #include "../PendingTransactions.h"
+#include "gradido_blockchain/model/protobufWrapper/GradidoTransaction.h"
 
 #define TRANSACTION_CLIENT_DETAIL_SCHEMA								\
 	"`id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,"						\
-	"`client_transaction_id` UNSIGNED NOT NULL,"						\
-	"`transaction_nr` UNSIGNED NULL,"								    \
+	"`client_transaction_id` bigint UNSIGNED NOT NULL,"						\
+	"`transaction_nr` bigint UNSIGNED NULL,"								    \
 	"`iota_message_id` binary(32) NOT NULL,"							\
     "`tx_hash` binary(32) NULL,"										\
     "`pending_state` tinyint NOT NULL DEFAULT 0,"						\
+    "`error` varchar(255) NULL,"											\
 	"`created` datetime NOT NULL DEFAULT current_timestamp(),"			\
     "`updated` datetime NULL ON UPDATE CURRENT_TIMESTAMP,"				\
 	"PRIMARY KEY(`id`),"												\
@@ -23,7 +25,7 @@
 namespace model {
 	namespace table {
 
-		typedef Poco::Tuple<uint64_t, uint64_t, uint64_t, std::string, std::string, char, Poco::DateTime, Poco::DateTime> TransactionClientDetailTuple;
+		typedef Poco::Tuple < uint64_t, uint64_t, uint64_t, std::string, std::string, char, std::string, Poco::DateTime, Poco::DateTime > TransactionClientDetailTuple;
 
 		class TransactionClientDetail : public BaseTable
 		{
@@ -37,12 +39,14 @@ namespace model {
 			static std::unique_ptr<TransactionClientDetail> findByClientTransactionNr(uint64_t clientTransactionNr);
 			static std::vector<std::unique_ptr<TransactionClientDetail>> findByTransactionNr(uint64_t transactionNr);
 			static std::vector<std::unique_ptr<TransactionClientDetail>> findByIotaMessageId(const std::string& iotaMessageId);
+			static std::string calculateMessageId(const model::gradido::GradidoTransaction* transaction);
 
 			const char* tableName() const { return getTableName(); }
 			static const char* getTableName() { return "transaction_client_details"; }
 			int getLastSchemaVersion() const { return TRANSACTION_CLIENT_DETAIL_TABLE_LAST_SCHEMA_VERSION; }
 			const char* getSchema() const { return TRANSACTION_CLIENT_DETAIL_SCHEMA; }
 
+			void save();
 			void save(Poco::Data::Session& dbSession);
 
 			inline uint64_t getClientTransactionId() const { return mClientTransactionId; }
@@ -57,6 +61,7 @@ namespace model {
 			inline void setIotaMessageId(const std::string& iotaMessageId) { mIotaMessageId = iotaMessageId; }
 			inline void setTxHash(const std::string& txHash) { mTxHash = txHash; }
 			inline void setPendingState(PendingTransactions::PendingTransaction::State pendingState) { mPendingState = pendingState; }
+			inline void setError(const std::string& error) { mError = error; }
 
 		protected:
 			uint64_t mClientTransactionId;
@@ -64,6 +69,7 @@ namespace model {
 			std::string mIotaMessageId;
 			std::string mTxHash;
 			PendingTransactions::PendingTransaction::State mPendingState;
+			std::string mError;
 			Poco::DateTime mCreated;
 			Poco::DateTime mUpdated;
 

@@ -3,6 +3,7 @@
 #include "gradido_blockchain/model/TransactionsManager.h"
 #include "gradido_blockchain/model/TransactionFactory.h"
 #include "JSONInterface/JsonTransaction.h"
+#include "../model/table/TransactionClientDetail.h"
 
 namespace task
 {
@@ -36,7 +37,7 @@ namespace task
 
 		auto amountString = std::to_string(mTransactionTuple.get<3>());
 		auto type_id = mTransactionTuple.get<2>();
-		static std::unique_ptr<model::gradido::GradidoTransaction> gradidoTransaction;
+		std::unique_ptr<model::gradido::GradidoTransaction> gradidoTransaction;
 		// creation
 		if (type_id == 1) {
 			gradidoTransaction = TransactionFactory::createTransactionCreation(
@@ -80,6 +81,12 @@ namespace task
 
 		mm->releaseMemory(signerPubkey);
 		mm->releaseMemory(signature);
+
+		// store into db
+		auto apolloTransactionId = mTransactionTuple.get<0>();
+		auto messageId = model::table::TransactionClientDetail::calculateMessageId(gradidoTransaction.get());
+		model::table::TransactionClientDetail transactionClientDetail(apolloTransactionId, messageId);
+		transactionClientDetail.save();
 
 		tm->pushGradidoTransaction(mGroupAlias, std::move(gradidoTransaction));
 		mm->releaseMemory(recipientPubkeyCopy);

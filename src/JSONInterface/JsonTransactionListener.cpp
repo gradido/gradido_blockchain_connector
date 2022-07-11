@@ -4,7 +4,6 @@
 #include "model/table/TransactionClientDetail.h"
 #include "gradido_blockchain/lib/DataTypeConverter.h"
 #include "gradido_blockchain/model/protobufWrapper/GradidoBlock.h"
-#include "ConnectionManager.h"
 
 using namespace rapidjson;
 
@@ -17,24 +16,37 @@ Document JsonTransactionListener::handle(const Document& params)
 
 	if (transactionBase64.size()) {
 		auto pt = model::PendingTransactions::getInstance();
-		 auto bin = DataTypeConverter::base64ToBinString(transactionBase64);
+		 
+		 std::unique_ptr<model::gradido::GradidoBlock> gradidoBlock;
+		 std::string iotaMessageBin;
 		 if (error.size()) {
 			 pt->updateTransaction(iotaMessageId, false, error);
+			 iotaMessageBin = DataTypeConverter::hexToBinString(iotaMessageId)->substr(0, 32);
 		 }
 		 else {
-			 model::gradido::GradidoBlock gradidoBlock(&bin);
-			 auto transactionBody = gradidoBlock.getGradidoTransaction()->getTransactionBody();
-			 pt->updateTransaction(gradidoBlock.getMessageIdHex(), true);
+			 auto bin = DataTypeConverter::base64ToBinString(transactionBase64);
+			 gradidoBlock = std::make_unique<model::gradido::GradidoBlock>(&bin);
+			 pt->updateTransaction(gradidoBlock->getMessageIdHex(), true);
+			 iotaMessageBin = gradidoBlock->getMessageIdString();
+		 }
+		 auto transactionClientDetails = model::table::TransactionClientDetail::findByIotaMessageId(iotaMessageBin);
 
-			 auto iotaMessageBin = DataTypeConverter::hexToBinString(iotaMessageId)->substr(0, 32);
-			 auto transactionClientDetail = model::table::TransactionClientDetail::findByIotaMessageId(iotaMessageId);
-			 assert(transactionClientDetail.size() <= 1);
-			 if (transactionClientDetail.size() == 1) {
-				transactionClientDetail[0]->setTransactionNr(gradidoBlock.getID());
-				transactionClientDetail[0]->setTxHash(gradidoBlock.getTxHash());
-				transactionClientDetail[0]->save(ConnectionManager::getInstance()->getConnection());
+		 for (auto it = transactionClientDetails.begin(); it != transactionClientDetails.end(); ++it) {
+			 auto t = it->get();
+			 if (error.size()) {
+				 t->setPendingState(model::PendingTransactions::PendingTransaction::State::REJECTED);
 			 }
-		 }		 
+			 else {
+				 t->setPendingState(model::PendingTransactions::PendingTransaction::State::CONFIRMED);
+				 t->setTransactionNr(gradidoBlock->getID());
+				 t->setTxHash(gradidoBlock->getTxHash());
+			 }
+			 t->setError(error);
+			 
+			 t->save();
+		 }
+
+			 
 	}
 
 	return stateSuccess();
