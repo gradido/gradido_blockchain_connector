@@ -9,6 +9,7 @@ namespace task
 {
 	/*!
 	@author einhornimmond
+	
 	@brief create key pair from passphrase 
 
 		- create key pair from passphrase 

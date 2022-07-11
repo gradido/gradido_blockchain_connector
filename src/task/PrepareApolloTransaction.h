@@ -7,6 +7,7 @@
 namespace task {
 	/*!
 	@author einhornimmond
+	
 	@brief create transaction and push it to model::TransactionsManager
 
 	- create protobuf Transaction Object

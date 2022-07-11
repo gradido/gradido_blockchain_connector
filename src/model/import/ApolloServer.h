@@ -8,17 +8,18 @@ namespace model {
 	namespace import {
 
 		/*!
-		@author einhornimmond
-		@brief load transactions and users from apollo db, create gradido transactions from it
+			@author einhornimmond
 
-		load all users from users table and start a task::RecoverLoginKeyPairTask for each
-		load all transactions from transactions table and start a task::PrepareApolloTransaction for each
+			@brief load transactions and users from apollo db, create gradido transactions from it
 
-		@startuml
-		[Apollo] ..-> [Apollo db]: use
-		[Gradido Blockchain Connector] ..-> [Apollo db]: select * from users;\n select * from transactions;
-		[Gradido Blockchain Connector] ..-> [Gradido Node]: puttransaction (jsonRPC)
-		@enduml
+			load all users from users table and start a task::RecoverLoginKeyPair for each
+			load all transactions from transactions table and start a task::PrepareApolloTransaction for each
+
+			@startuml
+			[Apollo] ..-> [Apollo db]: use
+			[Gradido Blockchain Connector] ..-> [Apollo db]: select * from users;\n select * from transactions;
+			[Gradido Blockchain Connector] ..-> [Gradido Node]: puttransaction (jsonRPC)
+			@enduml
 		*/ 
 
 		class ApolloServer: public LoginServer
