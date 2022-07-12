@@ -30,6 +30,7 @@ protected:
 	void handleOption(const std::string& name, const std::string& value);
 	void displayHelp();
 	void checkCommunityServerStateBalances(const std::string& groupAlias);
+	void checkApolloServerDecay(const std::string& groupAlias);
 	void sendArchivedTransactionsToGradidoNode(const std::string& groupAlias, bool iota = false, bool apollo = false);
 
 	int main(const std::vector<std::string>& args);

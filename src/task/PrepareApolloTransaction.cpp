@@ -5,6 +5,8 @@
 #include "JSONInterface/JsonTransaction.h"
 #include "../model/table/TransactionClientDetail.h"
 
+#include "Poco/Data/MySQL/MySQLException.h"
+
 namespace task
 {
 	PrepareApolloTransaction::PrepareApolloTransaction(
@@ -86,7 +88,12 @@ namespace task
 		auto apolloTransactionId = mTransactionTuple.get<0>();
 		auto messageId = model::table::TransactionClientDetail::calculateMessageId(gradidoTransaction.get());
 		model::table::TransactionClientDetail transactionClientDetail(apolloTransactionId, messageId);
-		transactionClientDetail.save();
+		try {
+			transactionClientDetail.save();
+		}
+		catch (Poco::Data::MySQL::MySQLException& ex) {
+			//printf("mysql exception by saving into transaction client detail db: %s\n", ex.displayText().data());
+		}
 
 		tm->pushGradidoTransaction(mGroupAlias, std::move(gradidoTransaction));
 		mm->releaseMemory(recipientPubkeyCopy);

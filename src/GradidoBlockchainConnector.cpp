@@ -39,6 +39,9 @@
 #include "gradido_blockchain/lib/Decay.h"
 #include "task/SendTransactionToGradidoNode.h"
 
+#include "ConnectionManager.h"
+using namespace Poco::Data::Keywords;
+
 GradidoBlockchainConnector::GradidoBlockchainConnector()
 	: _helpRequested(false), mArchivedTransactionsHandling(ArchivedTransactionsHandling::NONE)
 {
@@ -206,6 +209,181 @@ void GradidoBlockchainConnector::checkCommunityServerStateBalances(const std::st
 	mm->releaseMathMemory(calcBalance);
 
 	speedLog.information("calculate user balances time: %s", caluclateBalancesTime.string());
+}
+
+void GradidoBlockchainConnector::checkApolloServerDecay(const std::string& groupAlias)
+{
+	Poco::Logger& speedLog = Poco::Logger::get("speedLog");
+	Poco::Logger& errorLog = Poco::Logger::get("errorLog");
+	// code for loading old transactions from db
+	model::import::ApolloServer apolloServerImport(groupAlias);
+	try {
+		apolloServerImport.loadAll(groupAlias);
+	}
+	catch (GradidoBlockchainException& ex) {
+		printf("error by importing from apollo server: %s\n", ex.getFullString().data());
+	}
+	auto tm = model::TransactionsManager::getInstance();
+	auto mm = MemoryManager::getInstance();
+	Profiler caluclateBalancesTime;
+	Poco::DateTime now;
+	//auto userBalances = tm->calculateFinalUserBalances("gdd1", now);
+	int i = 0;
+	auto dbBalance = mm->getMathMemory();
+	auto dbDecay = mm->getMathMemory();
+	auto calcBalance = mm->getMathMemory();
+	auto amount = mm->getMathMemory();
+	auto decayForDuration = mm->getMathMemory();
+	auto calcDecay = mm->getMathMemory();
+	auto diff = mm->getMathMemory();
+	initDefaultDecayFactors();
+
+	auto users = apolloServerImport.getUserIdPubkeyHexMap();
+	auto dbSession = ConnectionManager::getInstance()->getConnection();
+	Poco::Data::Statement select(dbSession);
+	typedef Poco::Tuple<uint64_t, std::string, Poco::DateTime, std::string, Poco::Nullable<Poco::DateTime>> TransactionTuple;
+	std::vector<TransactionTuple> apolloTransactions;
+	uint64_t userId = 0;
+	select << "select id, CONVERT(balance, varchar(45)), balance_date, CONVERT(decay, varchar(45)), decay_start "
+		   << "from transactions_temp "
+		   << "where user_id = ? "
+		   << "order by balance_date ASC"
+		   , use(userId), into(apolloTransactions);
+
+	for (auto itUser = users->begin(); itUser != users->end(); itUser++) {
+		userId = itUser->first;
+		auto userPublicKeyHex = itUser->second;
+		auto userPublicKey = DataTypeConverter::hexToBinString(userPublicKeyHex);
+		apolloTransactions.clear();
+		auto transactions = tm->getSortedTransactionsForUser(groupAlias, itUser->second);
+		select.execute();
+		if (apolloTransactions.size() + 1 != transactions.size()) {
+			errorLog.error("transactions count for user: %u don't match", (unsigned)userId);
+			return;
+		}
+		i = 0;
+		mpfr_set_ui(calcBalance, 0, gDefaultRound);
+		mpfr_set_ui(dbBalance, 0, gDefaultRound);
+		mpfr_set_ui(dbDecay, 0, gDefaultRound);
+		mpfr_set_ui(calcDecay, 0, gDefaultRound);
+
+		Poco::DateTime lastBalanceDate;
+		for (auto itTransaction = transactions.begin(); itTransaction != transactions.end(); itTransaction++) {
+			auto transactionBody = (*itTransaction)->getTransactionBody();
+			if (itTransaction == transactions.begin() && transactionBody->isRegisterAddress()) {
+				lastBalanceDate = Poco::Timestamp((Poco::UInt64)transactionBody->getCreatedSeconds() * Poco::Timestamp::resolution());
+				continue;
+			}
+			if (transactionBody->isRegisterAddress()) {
+				errorLog.error("more than one register address transaction for user: %u", (unsigned)userId);
+				return;
+			}
+			auto apolloTransaction = apolloTransactions[i];
+			// calculate decay
+			Poco::DateTime localDate = Poco::Timestamp((Poco::UInt64)transactionBody->getCreatedSeconds() * Poco::Timestamp::resolution());
+			if (!apolloTransaction.get<4>().isNull()) {
+				auto decayEnd = apolloTransaction.get<2>();
+				auto decayStart = apolloTransaction.get<4>();
+				if (!mpfr_zero_p(calcBalance)) {
+					mpfr_set(calcDecay, calcBalance, gDefaultRound);
+					calculateDecayFactorForDuration(decayForDuration, gDecayFactorGregorianCalender, lastBalanceDate, localDate);
+					calculateDecayFast(decayForDuration, calcBalance);
+					mpfr_sub(calcDecay, calcBalance, calcDecay, gDefaultRound);
+				}
+			}
+			// calculate balance
+			std::string amountString;
+			bool subtract = false;
+			if (transactionBody->isCreation()) {
+				auto creation = transactionBody->getCreationTransaction();
+				amountString = creation->getAmount();
+			}
+			else if (transactionBody->isTransfer()) {
+				auto transfer = transactionBody->getTransferTransaction();
+				amountString = transfer->getAmount();
+				if (transfer->getRecipientPublicKeyString() == *userPublicKey) {
+
+				}
+				else if (transfer->getSenderPublicKeyString() == *userPublicKey) {
+					subtract = true;
+				}
+				else {
+					assert(true || "transaction don't belong to us");
+				}
+			}
+			else {
+				errorLog.error("not expected transaction type");
+				return;
+			}
+			if (mpfr_set_str(amount, amountString.data(), 10, gDefaultRound)) {
+				throw model::gradido::TransactionValidationInvalidInputException("amount cannot be parsed to a number", "amount", "string");
+			}
+			if (!subtract) {
+				mpfr_add(calcBalance, calcBalance, amount, gDefaultRound);
+			}
+			else {
+				mpfr_sub(calcBalance, calcBalance, amount, gDefaultRound);
+			}
+			// compare with balance and decay from db
+			
+			mpfr_set_str(dbBalance, apolloTransaction.get<1>().data(), 10, gDefaultRound);
+			mpfr_set_str(dbDecay, apolloTransaction.get<3>().data(), 10, gDefaultRound);
+			bool notIdentical = false;
+			mpfr_sub(diff, dbBalance, calcBalance, gDefaultRound);
+			
+			if (mpfr_cmp_d(diff, 0.000000000000001) > 0)  {
+				notIdentical = true;
+			}
+			else {
+				mpfr_sub(diff, dbDecay, calcDecay, gDefaultRound);
+				if (mpfr_cmp_d(diff, 0.000000000000001) > 0) {
+					notIdentical = true;
+				}
+			}
+			
+			if (notIdentical && (mpfr_cmp(dbBalance, calcBalance) || mpfr_cmp(dbDecay, calcDecay))) {
+				auto cmp = mpfr_cmp(dbBalance, calcDecay);
+				std::string dbB, cB, cD, dbD;
+				model::gradido::TransactionBase::amountToString(&dbB, dbBalance);
+				model::gradido::TransactionBase::amountToString(&cB, calcBalance);
+				model::gradido::TransactionBase::amountToString(&cD, calcDecay);
+				model::gradido::TransactionBase::amountToString(&dbD, dbDecay);
+
+				bool notIdentical = false;
+				if (dbB != cB) {
+					errorLog.information("balance (db) %s != %s (calc)", dbB, cB);
+					notIdentical = true;
+				}
+				if (dbD != cD) {
+					errorLog.information("decay (db) %s != %s (calc)", dbD, cD);
+					notIdentical = true;
+				}
+				if (notIdentical) {
+					errorLog.error("balance or decay are not identical for user: %u and transaction nr: %d (%u)",
+						(unsigned)userId, i, (unsigned)apolloTransaction.get<0>()
+					);
+					std::string temp;
+					model::gradido::TransactionBase::amountToString(&temp, diff);
+					errorLog.error("diff: %s", temp);
+					return;
+				}
+			}
+			else {
+				printf("(%d) identical\n", (int)apolloTransaction.get<0>());
+				mpfr_set(calcBalance, dbBalance, gDefaultRound);
+			}
+			lastBalanceDate = localDate;
+			i++;
+		}
+	}
+	mm->releaseMathMemory(dbBalance);
+	mm->releaseMathMemory(dbDecay);
+	mm->releaseMathMemory(calcBalance);
+	mm->releaseMathMemory(amount);
+	mm->releaseMathMemory(decayForDuration);
+	mm->releaseMathMemory(calcDecay);
+	mm->releaseMathMemory(diff);
+	unloadDefaultDecayFactors();
 }
 
 void GradidoBlockchainConnector::sendArchivedTransactionsToGradidoNode(const std::string& groupAlias, bool iota /* = false */, bool apollo /* = false */)
@@ -549,13 +727,14 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 
 		// livetest_1221
 		std::string groupAlias = "gdd1";
-		if(mArchivedTransactionsHandling == (ArchivedTransactionsHandling)(
-			(int)ArchivedTransactionsHandling::CHECK_DATA & (int)ArchivedTransactionsHandling::USE_COMMUNITY_SERVER_DATA
-		)) {
+		if(mArchivedTransactionsHandling == ArchivedTransactionsHandling::USE_COMMUNITY_SERVER_DATA) {
 			checkCommunityServerStateBalances(groupAlias);
 		}
+		if (mArchivedTransactionsHandling == ArchivedTransactionsHandling::USE_APOLLO_SERVER_DATA) {
+			checkApolloServerDecay(groupAlias);
+		}
 		if (ArchivedTransactionsHandling::NONE != (ArchivedTransactionsHandling)(
-			(int)mArchivedTransactionsHandling & (int)ArchivedTransactionsHandling::SEND_DATA_TO_GRADIDO_NODE | (int)ArchivedTransactionsHandling::SEND_DATA_TO_IOTA
+			(int)mArchivedTransactionsHandling & ((int)ArchivedTransactionsHandling::SEND_DATA_TO_GRADIDO_NODE | (int)ArchivedTransactionsHandling::SEND_DATA_TO_IOTA)
 		)){
 			sendArchivedTransactionsToGradidoNode(groupAlias, 
 				((int)mArchivedTransactionsHandling & (int)ArchivedTransactionsHandling::SEND_DATA_TO_IOTA) == (int)ArchivedTransactionsHandling::SEND_DATA_TO_IOTA,

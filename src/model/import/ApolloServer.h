@@ -24,6 +24,8 @@ namespace model {
 			typedef Poco::Tuple<uint64_t, uint64_t, uint32_t, double, Poco::DateTime, std::string, Poco::DateTime, uint64_t> TransactionTuple;
 			virtual UserTuple getUserInfos(const std::string& pubkeyHex);
 
+			inline const std::map<uint64_t, std::string>* getUserIdPubkeyHexMap() { return &mUserIdPubkeyHex; }
+
 		protected:
 			void loadTransactions(const std::string& groupAlias);
 			std::unique_ptr<KeyPairEd25519> mFounderKeyPair;

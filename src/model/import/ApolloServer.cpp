@@ -41,7 +41,7 @@ namespace model {
 
 		ApolloServer::~ApolloServer()
 		{
-
+			printf("[ApolloServer::~ApolloServer] \n");
 		}
 
 		void ApolloServer::loadAll(const std::string& groupAlias)
@@ -166,8 +166,8 @@ namespace model {
 			std::list<TransactionTuple> transactionsList;
 			select << "SELECT id, user_id, type_id, IF(type_id = 2, -amount, amount) as amount, balance_date, memo, creation_date, linked_user_id "
 				//<< "FROM transactions_temp "
-				<< "FROM transactions "
-				<< "where type_id IN (1,2)", into(transactionsList), now;
+				<< "FROM transactions_temp "
+				<< "where type_id IN (1,2) order by balance_date ASC", into(transactionsList), now;
 
 			speedLog.information("time for reading: %u transactions from db: %s", (unsigned)transactionsList.size(), readAllTransactionsTime.string());
 
