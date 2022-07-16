@@ -31,6 +31,7 @@ protected:
 	void displayHelp();
 	void checkCommunityServerStateBalances(const std::string& groupAlias);
 	void checkApolloServerDecay(const std::string& groupAlias);
+	void compareWithGradidoNode(const std::string& groupAlias, bool apollo = true);
 	void sendArchivedTransactionsToGradidoNode(const std::string& groupAlias, bool iota = false, bool apollo = false);
 
 	int main(const std::vector<std::string>& args);
@@ -46,8 +47,9 @@ private:
 		USE_COMMUNITY_SERVER_DATA = 1,
 		USE_APOLLO_SERVER_DATA = 2,
 		CHECK_DATA = 4,
-		SEND_DATA_TO_GRADIDO_NODE = 8,
-		SEND_DATA_TO_IOTA = 16
+		COMPARE_DATA_WITH_GRADIDO_NODE = 8,
+		SEND_DATA_TO_GRADIDO_NODE = 16,
+		SEND_DATA_TO_IOTA = 32
 	};
 
 	ArchivedTransactionsHandling mArchivedTransactionsHandling;

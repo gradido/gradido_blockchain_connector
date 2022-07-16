@@ -89,6 +89,11 @@ void GradidoBlockchainConnector::defineOptions(Poco::Util::OptionSet& options)
 		.repeatable(false)
 		.argument("gradidoNode", true)
 	);
+	options.addOption(
+		Poco::Util::Option("compareWithGradidoNode", "cp", "compare db data with gradido node, type: iota or community")
+		.repeatable(false)
+		.argument("apollo", true)
+	);
 }
 
 void GradidoBlockchainConnector::handleOption(const std::string& name, const std::string& value)
@@ -123,6 +128,21 @@ void GradidoBlockchainConnector::handleOption(const std::string& name, const std
 			);
 		}
 		return;
+	}
+	else if (name == "compareWithGradidoNode") {
+		if (value == "apollo") {
+			mArchivedTransactionsHandling = (ArchivedTransactionsHandling)(
+				(int)mArchivedTransactionsHandling | (int)ArchivedTransactionsHandling::USE_APOLLO_SERVER_DATA
+			);
+		}
+		else if (value == "community") {
+			mArchivedTransactionsHandling = (ArchivedTransactionsHandling)(
+				(int)mArchivedTransactionsHandling | (int)ArchivedTransactionsHandling::USE_COMMUNITY_SERVER_DATA
+			);
+		}
+		mArchivedTransactionsHandling = (ArchivedTransactionsHandling)(
+			(int)mArchivedTransactionsHandling | (int)ArchivedTransactionsHandling::COMPARE_DATA_WITH_GRADIDO_NODE
+		);
 	}
 	ServerApplication::handleOption(name, value);
 	if (name == "help") _helpRequested = true;
@@ -241,12 +261,13 @@ void GradidoBlockchainConnector::checkApolloServerDecay(const std::string& group
 	auto users = apolloServerImport.getUserIdPubkeyHexMap();
 	auto dbSession = ConnectionManager::getInstance()->getConnection();
 	Poco::Data::Statement select(dbSession);
-	typedef Poco::Tuple<uint64_t, std::string, Poco::DateTime, std::string, Poco::Nullable<Poco::DateTime>> TransactionTuple;
+	typedef Poco::Tuple<uint64_t, uint64_t, std::string, Poco::DateTime, std::string, Poco::Nullable<Poco::DateTime>> TransactionTuple;
 	std::vector<TransactionTuple> apolloTransactions;
 	uint64_t userId = 0;
-	select << "select id, CONVERT(balance, varchar(45)), balance_date, CONVERT(decay, varchar(45)), decay_start "
+	select << "select id, previous, CONVERT(balance, varchar(45)), balance_date, CONVERT(decay, varchar(45)), decay_start "
 		   << "from transactions_temp "
 		   << "where user_id = ? "
+		   //<< "AND type_id IN (1,2)"
 		   << "order by balance_date ASC"
 		   , use(userId), into(apolloTransactions);
 
@@ -257,9 +278,25 @@ void GradidoBlockchainConnector::checkApolloServerDecay(const std::string& group
 		apolloTransactions.clear();
 		auto transactions = tm->getSortedTransactionsForUser(groupAlias, itUser->second);
 		select.execute();
+		std::map<uint64_t, int> transactionPreviousIndexMap;
 		if (apolloTransactions.size() + 1 != transactions.size()) {
 			errorLog.error("transactions count for user: %u don't match", (unsigned)userId);
 			return;
+		}
+		for (int i = 0; i < apolloTransactions.size(); i++) {
+			auto transaction = &apolloTransactions[i];
+			transactionPreviousIndexMap.insert({ transaction->get<1>(), i });
+		}
+		std::vector<TransactionTuple*> sortedTransactions;
+		while (sortedTransactions.size() < apolloTransactions.size()) {
+			if (!sortedTransactions.size()) {
+				sortedTransactions.push_back(&apolloTransactions[0]);
+			}
+			else {
+				auto it = transactionPreviousIndexMap.find(sortedTransactions.back()->get<0>());
+				assert(it != transactionPreviousIndexMap.end());
+				sortedTransactions.push_back(&apolloTransactions[it->second]);
+			}
 		}
 		i = 0;
 		mpfr_set_ui(calcBalance, 0, gDefaultRound);
@@ -278,12 +315,12 @@ void GradidoBlockchainConnector::checkApolloServerDecay(const std::string& group
 				errorLog.error("more than one register address transaction for user: %u", (unsigned)userId);
 				return;
 			}
-			auto apolloTransaction = apolloTransactions[i];
+			auto apolloTransaction = sortedTransactions[i];
 			// calculate decay
 			Poco::DateTime localDate = Poco::Timestamp((Poco::UInt64)transactionBody->getCreatedSeconds() * Poco::Timestamp::resolution());
-			if (!apolloTransaction.get<4>().isNull()) {
-				auto decayEnd = apolloTransaction.get<2>();
-				auto decayStart = apolloTransaction.get<4>();
+			if (!apolloTransaction->get<5>().isNull()) {
+				auto decayEnd = apolloTransaction->get<3>();
+				auto decayStart = apolloTransaction->get<5>();
 				if (!mpfr_zero_p(calcBalance)) {
 					mpfr_set(calcDecay, calcBalance, gDefaultRound);
 					calculateDecayFactorForDuration(decayForDuration, gDecayFactorGregorianCalender, lastBalanceDate, localDate);
@@ -326,8 +363,8 @@ void GradidoBlockchainConnector::checkApolloServerDecay(const std::string& group
 			}
 			// compare with balance and decay from db
 			
-			mpfr_set_str(dbBalance, apolloTransaction.get<1>().data(), 10, gDefaultRound);
-			mpfr_set_str(dbDecay, apolloTransaction.get<3>().data(), 10, gDefaultRound);
+			mpfr_set_str(dbBalance, apolloTransaction->get<2>().data(), 10, gDefaultRound);
+			mpfr_set_str(dbDecay, apolloTransaction->get<4>().data(), 10, gDefaultRound);
 			bool notIdentical = false;
 			mpfr_sub(diff, dbBalance, calcBalance, gDefaultRound);
 			
@@ -359,17 +396,21 @@ void GradidoBlockchainConnector::checkApolloServerDecay(const std::string& group
 					notIdentical = true;
 				}
 				if (notIdentical) {
-					errorLog.error("balance or decay are not identical for user: %u and transaction nr: %d (%u)",
-						(unsigned)userId, i, (unsigned)apolloTransaction.get<0>()
+					auto createdTimeString = Poco::DateTimeFormatter::format(transactionBody->getCreated(), Poco::DateTimeFormat::SORTABLE_FORMAT);
+					auto balanceDateString = Poco::DateTimeFormatter::format(apolloTransaction->get<3>(), Poco::DateTimeFormat::SORTABLE_FORMAT);
+					errorLog.error("balance or decay are not identical for user: %u and transaction nr: %d (%u), balance date: %s, created time: %s",
+						(unsigned)userId, i, (unsigned)apolloTransaction->get<0>(), balanceDateString, createdTimeString
 					);
+					
 					std::string temp;
 					model::gradido::TransactionBase::amountToString(&temp, diff);
 					errorLog.error("diff: %s", temp);
+					errorLog.error(tm->getUserTransactionsDebugString(groupAlias, userPublicKeyHex));
 					return;
 				}
 			}
 			else {
-				printf("(%d) identical\n", (int)apolloTransaction.get<0>());
+				//printf("(%d) identical\n", (int)apolloTransaction.get<0>());
 				mpfr_set(calcBalance, dbBalance, gDefaultRound);
 			}
 			lastBalanceDate = localDate;
@@ -384,6 +425,13 @@ void GradidoBlockchainConnector::checkApolloServerDecay(const std::string& group
 	mm->releaseMathMemory(calcDecay);
 	mm->releaseMathMemory(diff);
 	unloadDefaultDecayFactors();
+}
+
+void GradidoBlockchainConnector::compareWithGradidoNode(const std::string& groupAlias, bool apollo/* = true*/)
+{
+	if (apollo) {
+
+	}
 }
 
 void GradidoBlockchainConnector::sendArchivedTransactionsToGradidoNode(const std::string& groupAlias, bool iota /* = false */, bool apollo /* = false */)

@@ -160,11 +160,12 @@ namespace model {
 			auto dbSession = ConnectionManager::getInstance()->getConnection();
 			Poco::Data::Statement select(dbSession);
 			Poco::Logger& speedLog = Poco::Logger::get("speedLog");
+			Poco::Logger& errorLog = Poco::Logger::get("errorLog");
 			Profiler readAllTransactionsTime;
 
 			// id, user_id, type_id, amount, balance_date, memo, creation_date, linked_user_id
 			std::list<TransactionTuple> transactionsList;
-			select << "SELECT id, user_id, type_id, IF(type_id = 2, -amount, amount) as amount, balance_date, memo, creation_date, linked_user_id "
+			select << "SELECT id, user_id, type_id, IF(type_id = 2, -amount, amount) as amount, balance_date, memo, creation_date, linked_user_id, previous "
 				//<< "FROM transactions_temp "
 				<< "FROM transactions_temp "
 				<< "where type_id IN (1,2) order by balance_date ASC", into(transactionsList), now;
@@ -172,12 +173,63 @@ namespace model {
 			speedLog.information("time for reading: %u transactions from db: %s", (unsigned)transactionsList.size(), readAllTransactionsTime.string());
 
 			Profiler scheduleAllTransactionsTime;
+			std::vector<TransactionTuple*> tempTransactions;
+			std::map<uint64_t, Poco::DateTime> updateBalanceDates;
+			Poco::DateTime lastBalanceDate(2010, 1, 1);
+			for (auto it = transactionsList.begin(); it != transactionsList.end(); it++) {
+				auto balance_date = it->get<4>();
+				if (balance_date > lastBalanceDate) {
+					if (tempTransactions.size() > 1) {
+						std::sort(tempTransactions.begin(), tempTransactions.end(), [](const TransactionTuple* a, const TransactionTuple* b) {
+							return a->get<1>() > b->get<1>();
+						});
+						//errorLog.information("temp count: %u", (unsigned)tempTransactions.size());
+						uint64_t last_user_id = 0;
+						int i = 1;
+						for (auto tempIt = tempTransactions.begin(); tempIt != tempTransactions.end(); tempIt++) {
+							if (!last_user_id) {
+								last_user_id = (*tempIt)->get<1>();
+							}
+							else if (last_user_id == (*tempIt)->get<1>()) {
+								auto lastrow = tempIt-1;
+								//(*tempIt)->set<4>(balance_date + Poco::Timespan(1, 0));
+								updateBalanceDates.insert({ (*tempIt)->get<0>(), Poco::DateTime(lastBalanceDate + Poco::Timespan(i, 0)) });
+								errorLog.information("update transaction %u balance_date", (unsigned)(*tempIt)->get<0>());
+								if ((*tempIt)->get<8>() != (*lastrow)->get<0>()) {
+									errorLog.information(
+										"wrong order 1: %u, 2: %u", 
+										(unsigned)(*lastrow)->get<0>(), (unsigned)(*tempIt)->get<0>()
+									);
+								}
+								i++;
+							}
+							else {
+								last_user_id = (*tempIt)->get<1>();
+							}
+						}
+					}
+					// reset
+					tempTransactions.clear();
+					lastBalanceDate = balance_date;
+				}				
+				tempTransactions.push_back(&*it);				
+			}
 			std::for_each(transactionsList.begin(), transactionsList.end(), [&](const TransactionTuple& transaction) {
 				auto type_id = transaction.get<2>();
+				auto transactionCopy = transaction;
+				auto changeBalanceIt = updateBalanceDates.find(transaction.get<0>());
+				if (changeBalanceIt != updateBalanceDates.end()) {
+					transactionCopy.set<4>(changeBalanceIt->second);
+					errorLog.information("update transaction: %u to balance date: %s (%s)",
+						(unsigned)transaction.get<0>(), 
+						Poco::DateTimeFormatter::format(changeBalanceIt->second, Poco::DateTimeFormat::SORTABLE_FORMAT),
+						Poco::DateTimeFormatter::format(transactionCopy.get<4>(), Poco::DateTimeFormat::SORTABLE_FORMAT)
+					);
+				}
 				task::TaskPtr task;
 				if (type_id != 1 && type_id != 2) return;
 				
-				task = new task::PrepareApolloTransaction(Poco::AutoPtr(this, true), transaction, groupAlias);
+				task = new task::PrepareApolloTransaction(Poco::AutoPtr(this, true), transactionCopy, groupAlias);
 				
 				if (!task.isNull()) {
 					mTransactionTasks.push_back(task);

@@ -37,7 +37,7 @@ namespace model {
 			void cleanTransactions();
 
 			// id, user_id, type_id, amount, balance_date, memo, creation_date, linked_user_id
-			typedef Poco::Tuple<uint64_t, uint64_t, uint32_t, double, Poco::DateTime, std::string, Poco::DateTime, uint64_t> TransactionTuple;
+			typedef Poco::Tuple<uint64_t, uint64_t, uint32_t, double, Poco::DateTime, std::string, Poco::DateTime, uint64_t, uint64_t> TransactionTuple;
 			virtual UserTuple getUserInfos(const std::string& pubkeyHex);
 
 			inline const std::map<uint64_t, std::string>* getUserIdPubkeyHexMap() { return &mUserIdPubkeyHex; }
