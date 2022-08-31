@@ -31,8 +31,8 @@ namespace task {
 	{
 		assert(mScheduler);
 		if(!isTaskSheduled()) {
-			mScheduler->sheduleTask(own);
 			taskScheduled();
+			mScheduler->sheduleTask(own);			
 		}
 	}
 }

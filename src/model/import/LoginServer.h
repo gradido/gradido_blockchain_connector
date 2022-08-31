@@ -50,6 +50,7 @@ namespace model {
 			//! map key is user public key hex
 			std::unordered_map<std::string, std::unique_ptr<KeyPairEd25519>> mUserKeys;
 			Poco::AtomicCounter mLoadState;
+			bool mClosed;
 			std::list<task::TaskPtr> mRecoverKeyPairTasks;
 			mutable std::shared_mutex mWorkMutex;
 		};

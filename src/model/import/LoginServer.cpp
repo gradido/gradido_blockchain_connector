@@ -16,6 +16,7 @@ namespace model {
 		
 
 		LoginServer::LoginServer()
+			: mClosed(false)
 		{
 
 		}
@@ -23,6 +24,8 @@ namespace model {
 		LoginServer::~LoginServer()
 		{
 			printf("[LoginServer::~LoginServer] \n");
+			std::unique_lock _lock(mWorkMutex);
+			mClosed = true;
 		}
 
 		void LoginServer::loadAll(const std::string& groupAlias)
@@ -112,17 +115,20 @@ namespace model {
 		}
 		bool LoginServer::addUserKey(std::unique_ptr<KeyPairEd25519> keyPair)
 		{
-			std::scoped_lock _lock(mWorkMutex);
-			auto it = mUserKeys.insert({ std::move(keyPair->getPublicKeyHex().substr(0,64)), std::move(keyPair) });
-			if (!it.second) {
-				int zahl = 1;
+			std::unique_lock _lock(mWorkMutex);
+			if (mClosed) {
+				throw std::runtime_error("LoginServer already closed!");
 			}
+			auto it = mUserKeys.insert({ keyPair->getPublicKeyHex().substr(0, 64), std::move(keyPair) });
 			return it.second;
 		}
 
 		const KeyPairEd25519* LoginServer::findUserKey(const std::string& pubkeyHex)
 		{
 			std::shared_lock _lock(mWorkMutex);
+			if (mClosed) {
+				throw std::runtime_error("LoginServer already closed!");
+			}
 			auto it = mUserKeys.find(pubkeyHex.substr(0, 64));
 			if (it == mUserKeys.end()) {
 				return nullptr;
@@ -132,6 +138,10 @@ namespace model {
 
 		KeyPairEd25519* LoginServer::findReserveKeyPair(const unsigned char* pubkey)
 		{
+			std::shared_lock _lock(mWorkMutex);
+			if (mClosed) {
+				throw std::runtime_error("LoginServer already closed!");
+			}
 			for (auto it = mReserveKeyPairs.begin(); it != mReserveKeyPairs.end(); it++)
 			{
 				if (it->second->isTheSame(pubkey)) {

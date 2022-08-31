@@ -28,7 +28,12 @@ namespace gradidoNodeRPC
 		const std::string& startDateString,
 		const std::string& groupAlias
 	);
-
+	std::vector<std::string> getTransactionsForUser(
+		const std::string& pubkeyHex,
+		const std::string& groupAlias,
+		uint32_t maxResultCount,
+		uint64_t firstTransactionNr = 1
+	);
 	double putTransaction(const std::string& base64Transaction, uint64_t transactionNr, const std::string& groupAlias);
 
 	class GradidoNodeRPCException : public GradidoBlockchainException

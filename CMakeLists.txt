@@ -50,11 +50,15 @@ FILE(GLOB MODEL_TABLE "src/model/table/*.cpp" "src/model/table/*.h")
 FILE(GLOB MODEL_IMPORT "src/model/import/*.cpp" "src/model/import/*.h")
 FILE(GLOB MAIN "src/*.cpp" "src/*.c"  "src/*.h")
 FILE(GLOB TASK "src/task/*.cpp" "src/task/*.h")
+FILE(GLOB PLUGINS "src/plugins/*.cpp" "src/plugins/*.h")
+FILE(GLOB PLUGINS_APOLLO "src/plugins/apollo/*.cpp" "src/plugins/apollo/*.h")
+
 
 SET(LOCAL_SRCS 
 	${MAIN} 
 	${MODEL} ${MODEL_TABLE} ${MODEL_IMPORT}
 	${JSONInterface} ${TASK}
+	${PLUGINS_APOLLO}
 )
 
 aux_source_directory("src" LOCAL_SRCS)
@@ -66,6 +70,8 @@ if(MSVC)
 	source_group("model\\import" FILES ${MODEL_IMPORT})
 	source_group("model" FILES ${MODEL})
 	source_group("task" FILES ${TASK})
+	source_group("plugins\\apollo" FILES ${PLUGINS_APOLLO})
+	source_group("plugins" FILES ${PLUGINS})
 endif()
 
 
@@ -94,7 +100,7 @@ ENDIF()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # prevent problems with two libs including googletest 
-option(protobuf_BUILD_TESTS "Build tests" OFF)
+option(protobuf_BUILD_TESTS "Build tests" ON)
 
 #message("binary dir: ${CMAKE_BINARY_DIR}")
 add_subdirectory(dependencies/gradido_blockchain/dependencies/protobuf/cmake)

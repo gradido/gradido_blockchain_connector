@@ -1,0 +1,44 @@
+#include "DecayDecimal.h"
+
+#include "gradido_blockchain/MemoryManager.h"
+#include <mpfr.h>
+
+namespace plugin {
+	namespace apollo {
+		
+		Decimal DecayDecimal::calculateDecayFactor(Poco::Timespan duration)
+		{
+			auto durationSeconds = duration.totalSeconds();
+			if (!durationSeconds) {
+				return 1;
+			}
+			else {
+				Decimal decayForDuration;
+				mpfr_pow_ui(decayForDuration, Decimal(MAGIC_NUMBER_APOLLO_DECAY_FACTOR), durationSeconds, gDefaultRound);
+
+				return std::move(decayForDuration);
+			}
+		}
+
+		void DecayDecimal::applyDecay(Poco::Timespan duration)
+		{
+			Decimal durationSeconds(duration.totalSeconds());
+			Decimal secondsPerYear(MAGIC_NUMBER_GREGORIAN_CALENDER_SECONDS_PER_YEAR);
+			Decimal timeFactor = durationSeconds / secondsPerYear;
+
+			
+			auto decay = calculateDecayFactor(duration);
+			(*this) *= decay;
+		}
+
+		bool DecayDecimal::isSimilarEnough(const Decimal& b)
+		{
+			Decimal diff = (*this) - b;
+			mpfr_abs(diff, diff, gDefaultRound);
+			if (mpfr_cmp_d(diff, MAGIC_NUMBER_DIFF_TO_NODE_DECAY_CALCULATION_THRESHOLD) > 0) {
+				return false;
+			}
+			return true;
+		}
+	}
+}

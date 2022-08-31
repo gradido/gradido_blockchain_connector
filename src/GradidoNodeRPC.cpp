@@ -217,6 +217,49 @@ namespace gradidoNodeRPC {
 		}
 	}
 
+	std::vector<std::string> getTransactionsForUser(
+		const std::string& pubkeyHex,
+		const std::string& groupAlias,
+		uint32_t maxResultCount,
+		uint64_t firstTransactionNr/* = 1*/
+	)
+	{
+		try {
+			Value rpcParams(kObjectType);
+			JsonRPCRequest askForAddressTxids(ServerConfig::g_GradidoNodeUri);
+			auto alloc = askForAddressTxids.getJsonAllocator();
+			rpcParams.AddMember("pubkey", Value(pubkeyHex.data(), alloc), alloc);
+			rpcParams.AddMember("groupAlias", Value(groupAlias.data(), alloc), alloc);
+			rpcParams.AddMember("maxResultCount", maxResultCount, alloc);
+			rpcParams.AddMember("firstTransactionNr", firstTransactionNr, alloc);
+
+			auto result = askForAddressTxids.request("listtransactionsforaddress", rpcParams);
+
+			if (!result.HasMember("result")) {
+				throw RapidjsonMissingMemberException("missing result from listtransactionsforaddress", "result", "object");
+			}
+			if (!result["result"].HasMember("transactions")) {
+				StringBuffer buffer;
+				PrettyWriter<StringBuffer> writer(buffer);
+				result.Accept(writer);
+
+				const char* output = buffer.GetString();
+				printf("result from Gradido Node: %s\n", output);
+				throw RapidjsonMissingMemberException("missing in result from listtransactionsforaddress", "transactions", "array<std::string>");
+			}
+			std::vector<std::string> transactions;
+			auto transactionsJson = result["result"]["transactions"].GetArray();
+			transactions.reserve(transactionsJson.Size());
+			for (auto it = transactionsJson.Begin(); it != transactionsJson.End(); it++) {
+				transactions.push_back(std::string(it->GetString(), it->GetStringLength()));
+			}
+			return std::move(transactions);
+		}
+		catch (...) {
+			handleGradidoNodeRpcException();
+		}
+	}
+
 	double putTransaction(const std::string& base64Transaction, uint64_t transactionNr, const std::string& groupAlias)
 	{
 		try {
