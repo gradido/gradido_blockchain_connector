@@ -41,6 +41,7 @@
 #include "task/SendTransactionToGradidoNode.h"
 #include "task/CompareApolloWithGradidoNode.h"
 #include "task/CPUTaskGroup.h"
+#include "plugins/apollo/DecayDecimal.h"
 
 #include "Poco/FileStream.h"
 
@@ -259,7 +260,7 @@ void GradidoBlockchainConnector::checkApolloServerDecay(const std::string& group
 	Decimal dbDecay;
 	Decimal calcBalance;
 	Poco::FileOutputStream csvFile("diff.csv");
-	csvFile << "id, balance, decay, seconds, diff, cutDiff, cutDiff2, fDiff1, fDiff2" << std::endl;
+	csvFile << "id, balance, decay, seconds, diff, cutDiff, cutDiff2, fDiff1, fDiff2, aDiff1" << std::endl;
 	auto amount = mm->getMathMemory();
 	auto decayForDuration = mm->getMathMemory();
 	Decimal calcDecay;
@@ -439,26 +440,32 @@ void GradidoBlockchainConnector::checkApolloServerDecay(const std::string& group
 					Decimal dbAmount(apolloTransaction->get<6>());
 					// checked
 					Decimal prevDBBalance = dbBalance - dbAmount - dbDecay;
-					prevDBBalance = prevDBBalance.toString().substr(0, roundStrings);
+					prevDBBalance = prevDBBalance.toString(roundStrings);
 					Decimal decayBalance = dbBalance - dbAmount;
-					decayBalance = decayBalance.toString().substr(0, roundStrings);
+					decayBalance = decayBalance.toString(roundStrings);
 					Decimal dbF = decayBalance / prevDBBalance;
 					Decimal decaySeconds((apolloTransaction->get<3>() - dbDecayStartTime).totalSeconds());
 					Decimal nodeF1, nodeF2;
 					mpfr_pow(nodeF1, apolloDecayFactor1, decaySeconds, gDefaultRound);
 					mpfr_pow(nodeF2, apolloDecayFactor2, decaySeconds, gDefaultRound);
-					nodeF1 = nodeF1.toString().substr(0, roundStrings);
-					nodeF2 = nodeF2.toString().substr(0, roundStrings);
+					nodeF1 = nodeF1.toString(roundStrings);
+					nodeF2 = nodeF2.toString(roundStrings);
 					Decimal cDecayBalance1 = prevDBBalance * nodeF1;
 					Decimal cDecayBalance2 = prevDBBalance * nodeF2;
-					cDecayBalance1 = cDecayBalance1.toString().substr(0, roundStrings);
-					cDecayBalance2 = cDecayBalance2.toString().substr(0, roundStrings);
+					auto prevBalanceString = prevDBBalance.toString(45);
+					plugin::apollo::DecayDecimal prevDBBalanceApollo(prevDBBalance.toString(45));
+					prevDBBalanceApollo.applyDecay((apolloTransaction->get<3>() - dbDecayStartTime));
+					auto hajsa = prevDBBalanceApollo.toString(40);
+					cDecayBalance1 = cDecayBalance1.toString(roundStrings);
+					cDecayBalance2 = cDecayBalance2.toString(roundStrings);
 					Decimal ccBalance1 = cDecayBalance1 + dbAmount;
 					Decimal ccBalance2 = cDecayBalance2 + dbAmount;
-					ccBalance1 = ccBalance1.toString().substr(0, roundStrings);
-					ccBalance2 = ccBalance2.toString().substr(0, roundStrings);
+					Decimal aBalance1 = prevDBBalanceApollo + dbAmount;
+					ccBalance1 = ccBalance1.toString(roundStrings);
+					ccBalance2 = ccBalance2.toString(roundStrings);
 					Decimal ccDiff1 = ccBalance1 - dbBalance;
 					Decimal ccDiff2 = ccBalance2 - dbBalance;
+					Decimal aDiff1 = aBalance1 - dbBalance;
 					Decimal fDiff1 = nodeF1 - dbF;
 					Decimal fDiff2 = nodeF2 - dbF;
 					Decimal powF(1);
@@ -471,18 +478,20 @@ void GradidoBlockchainConnector::checkApolloServerDecay(const std::string& group
 					Decimal diffPerSecond(fDiff1);
 					diffPerSecond /= decaySeconds;
 					errorLog.error("  diff: %s, seconds: %s, fDiff: %s, fDiff2: %s", 
-						diff.toString(), decaySeconds.toString(), fDiff1.toString(), fDiff2.toString());
-					errorLog.error("ccdiff1: %s, ccdiff2: %s", ccDiff1.toString(), ccDiff2.toString());
+						diff.toString(40), decaySeconds.toString(40), fDiff1.toString(40), fDiff2.toString(40));
+					errorLog.error("ccdiff1: %s, ccdiff2: %s, adiff1: %s", ccDiff1.toString(40), ccDiff2.toString(40), aDiff1.toString(40));
+					
 					//id, balance, decay, seconds, diff, cutDiff
 					csvFile << apolloTransaction->get<0>() << ","
-						<< calcBalance.toString() << ","
-						<< calcDecay.toString() << ","
-						<< decaySeconds.toString() << ","
-						<< diff.toString() << ","
-						<< ccDiff1.toString() << ","
-						<< ccDiff2.toString() << "," 
-						<< fDiff1.toString() << ","
-						<< fDiff2.toString()
+						<< calcBalance.toString(30) << ","
+						<< calcDecay.toString(30) << ","
+						<< decaySeconds.toString(30) << ","
+						<< diff.toString(30) << ","
+						<< ccDiff1.toString(30) << ","
+						<< ccDiff2.toString(30) << ","
+						<< fDiff1.toString(30) << ","
+						<< fDiff2.toString(30) << ","
+						<< aDiff1.toString(30)
 						<< std::endl;
 					//errorLog.error(tm->getUserTransactionsDebugString(groupAlias, userPublicKeyHex));
 					//return;

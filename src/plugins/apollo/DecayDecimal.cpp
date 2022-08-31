@@ -22,13 +22,16 @@ namespace plugin {
 
 		void DecayDecimal::applyDecay(Poco::Timespan duration)
 		{
-			Decimal durationSeconds(duration.totalSeconds());
-			Decimal secondsPerYear(MAGIC_NUMBER_GREGORIAN_CALENDER_SECONDS_PER_YEAR);
-			Decimal timeFactor = durationSeconds / secondsPerYear;
 
-			
-			auto decay = calculateDecayFactor(duration);
-			(*this) *= decay;
+			Decimal durationSeconds(duration.totalSeconds());
+			Decimal secondsPerYear(MAGIC_NUMBER_GREGORIAN_CALENDER_SECONDS_PER_YEAR);		
+			Decimal timeFactor = (durationSeconds / secondsPerYear).toString(MAGIC_NUMBER_APOLLO_PRECISION);
+			timeFactor = (2 ^ timeFactor).toString(MAGIC_NUMBER_APOLLO_PRECISION);
+			(*this) /= timeFactor;
+			mpfr_set_str(mDecimal, toString(MAGIC_NUMBER_APOLLO_PRECISION).data(), 10, gDefaultRound);
+
+			//auto decay = calculateDecayFactor(duration);
+			//(*this) *= decay;
 		}
 
 		bool DecayDecimal::isSimilarEnough(const Decimal& b)
