@@ -4,7 +4,6 @@
 #include "gradido_blockchain/lib/DecayDecimal.h"
 
 #define MAGIC_NUMBER_DIFF_TO_NODE_DECAY_CALCULATION_THRESHOLD 0.0005
-#define MAGIC_NUMBER_GREGORIAN_CALENDER_SECONDS_PER_YEAR 31556952
 #define MAGIC_NUMBER_APOLLO_PRECISION 25
 
 namespace plugin {
@@ -21,7 +20,16 @@ namespace plugin {
 		     */
 			void applyDecay(Poco::Timespan duration);
 
+			inline void applyDecay(Poco::Timestamp startTime, Poco::Timestamp endTime) {
+				applyDecay(calculateDecayDurationSeconds(startTime, endTime));
+			}
+			inline void applyDecay(Poco::DateTime startTime, Poco::DateTime endTime) {
+				applyDecay(calculateDecayDurationSeconds(startTime.timestamp(), endTime.timestamp()));
+			}
+
 			bool isSimilarEnough(const Decimal& b);
+
+			inline DecayDecimal& operator=(const Decimal& b) { mpfr_set(mDecimal, (mpfr_srcptr)b, gDefaultRound); return *this; }
 		};
 	}
 }

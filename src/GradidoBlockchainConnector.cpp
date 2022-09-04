@@ -30,7 +30,6 @@
 #include "gradido_blockchain/model/TransactionFactory.h"
 #include "gradido_blockchain/model/protobufWrapper/TransactionValidationExceptions.h"
 #include "gradido_blockchain/lib/MultithreadQueue.h"
-#include "gradido_blockchain/lib/Decimal.h"
 #include "JSONInterface/JsonTransaction.h"
 #include "model/import/LoginServer.h"
 #include "model/import/CommunityServer.h"
@@ -248,7 +247,8 @@ void GradidoBlockchainConnector::checkApolloServerDecay(const std::string& group
 		apolloServerImport.loadAll(groupAlias);
 	}
 	catch (GradidoBlockchainException& ex) {
-		printf("error by importing from apollo server: %s\n", ex.getFullString().data());
+		errorLog.error("error by importing from apollo server: %s\n", ex.getFullString());
+		return;
 	}
 	auto tm = model::TransactionsManager::getInstance();
 	auto mm = MemoryManager::getInstance();
@@ -258,19 +258,11 @@ void GradidoBlockchainConnector::checkApolloServerDecay(const std::string& group
 	int i = 0;
 	Decimal dbBalance;
 	Decimal dbDecay;
-	Decimal calcBalance;
-	Poco::FileOutputStream csvFile("diff.csv");
-	csvFile << "id, balance, decay, seconds, diff, cutDiff, cutDiff2, fDiff1, fDiff2, aDiff1" << std::endl;
-	auto amount = mm->getMathMemory();
-	auto decayForDuration = mm->getMathMemory();
+	plugin::apollo::DecayDecimal calcBalance;
+	Decimal amount;
 	Decimal calcDecay;
 	Decimal diff;
-	initDefaultDecayFactors();
-
-	Decimal apolloDecayFactor1("0.99999997803504048973201202316767079413460520837376");
-	Decimal apolloDecayFactor2("0.9999999780350404897320120");
-	
-	//mpfr_set_str(gDecayFactorGregorianCalender, apolloDecayValueString.data(), 10, MPFR_RNDZ);
+	int countIdentical = 0, countNotIdentical = 0;
 
 	auto users = apolloServerImport.getUserIdPubkeyHexMap();
 	auto dbSession = ConnectionManager::getInstance()->getConnection();
@@ -343,12 +335,9 @@ void GradidoBlockchainConnector::checkApolloServerDecay(const std::string& group
 				auto decayEnd = apolloTransaction->get<3>();
 				auto decayStart = apolloTransaction->get<5>();
 				if (!mpfr_zero_p((mpfr_ptr)calcBalance)) {
-					//mpfr_set(calcDecay, (mpfr_ptr)calcBalance, gDefaultRound);
 					calcDecay = calcBalance;
-					calculateDecayFactorForDuration(decayForDuration, gDecayFactorGregorianCalender, lastBalanceDate, localDate);
-					calculateDecayFast(decayForDuration, calcBalance);
-					calcDecay = calcBalance - calcDecay;
-					//mpfr_sub(calcDecay, calcBalance, calcDecay, gDefaultRound);
+					calcBalance.applyDecay(lastBalanceDate, localDate);
+					calcDecay = calcBalance - calcDecay;					
 				}
 			}
 			// calculate balance
@@ -375,159 +364,62 @@ void GradidoBlockchainConnector::checkApolloServerDecay(const std::string& group
 				errorLog.error("not expected transaction type");
 				return;
 			}
-			if (mpfr_set_str(amount, amountString.data(), 10, gDefaultRound)) {
-				throw model::gradido::TransactionValidationInvalidInputException("amount cannot be parsed to a number", "amount", "string");
-			}
+			amount = amountString;
+			
 			if (!subtract) {
-				mpfr_add(calcBalance, calcBalance, amount, gDefaultRound);
+				calcBalance += amount;
 			}
 			else {
-				mpfr_sub(calcBalance, calcBalance, amount, gDefaultRound);
+				calcBalance -= amount;
 			}
 			// compare with balance and decay from db
 			dbBalance = apolloTransaction->get<2>();
 			dbDecay = apolloTransaction->get<4>();
 
-			bool notIdentical = false;
+			bool identical = calcBalance.isSimilarEnough(dbBalance);
 			diff = dbBalance - calcBalance;
 			//mpfr_sub(diff, dbBalance, calcBalance, gDefaultRound);
 			mpfr_abs(diff, diff, gDefaultRound);
 			//0.0001
-			if (mpfr_cmp_d(diff, 0.0002) > 0) {
-			//if (mpfr_cmp_d(diff, 0.000000000000001) > 0)  {
-				notIdentical = true;
-			}
-			else {
-				diff = dbDecay - calcDecay;
-				//mpfr_sub(diff, dbDecay, calcDecay, gDefaultRound);
-				mpfr_abs(diff, diff, gDefaultRound);
-				if (mpfr_cmp_d(diff, 0.0002) > 0) {
-				//if (mpfr_cmp_d(diff, 0.000000000000001) > 0) {
-					notIdentical = true;
-				}
-			}
-			if (notIdentical && (dbBalance != calcBalance || dbDecay != calcDecay)) {
+			
+			if (!identical) 
+			{
+				countNotIdentical++;
 				std::string dbD;
 				
-				bool notIdentical = false;
 				if (dbBalance != calcBalance) {
 					errorLog.information("balance:\nnode: %s\ndb  : %s",
 						calcBalance.toString(),
 						dbBalance.toString()
 					);
-					notIdentical = true;
 				}
 				if (dbDecay != calcDecay) {
 					errorLog.information("decay:\nnode: %s\ndb  : %s",
 						calcDecay.toString(),
 						dbDecay.toString()
 					);
-					notIdentical = true;
 				}
-				if (notIdentical) {
-					auto createdTimeString = Poco::DateTimeFormatter::format(transactionBody->getCreated(), Poco::DateTimeFormat::SORTABLE_FORMAT);
-					auto balanceDateString = Poco::DateTimeFormatter::format(apolloTransaction->get<3>(), Poco::DateTimeFormat::SORTABLE_FORMAT);
-					errorLog.error("balance or decay are not identical for user: %u and transaction nr: %d (%u), balance date: %s, created time: %s",
-						(unsigned)userId, i, (unsigned)apolloTransaction->get<0>(), balanceDateString, createdTimeString
-					);
+				
+				auto createdTimeString = Poco::DateTimeFormatter::format(transactionBody->getCreated(), Poco::DateTimeFormat::SORTABLE_FORMAT);
+				auto balanceDateString = Poco::DateTimeFormatter::format(apolloTransaction->get<3>(), Poco::DateTimeFormat::SORTABLE_FORMAT);
+				errorLog.error("balance or decay are not identical for user: %u and transaction nr: %d (%u), balance date: %s, created time: %s",
+					(unsigned)userId, i, (unsigned)apolloTransaction->get<0>(), balanceDateString, createdTimeString
+				);
 					
-					std::string temp;
-					const int roundStrings = 25;
-					auto dbDecayStartTime = apolloTransaction->get<5>();
-					// decayedBalance = balance * f ^ s
-					// decayedBalance / balance = f ^ s
-					// (decayedBalance / balance) ^(1.0 / s) = f
-					Decimal dbAmount(apolloTransaction->get<6>());
-					// checked
-					Decimal prevDBBalance = dbBalance - dbAmount - dbDecay;
-					prevDBBalance = prevDBBalance.toString(roundStrings);
-					Decimal decayBalance = dbBalance - dbAmount;
-					decayBalance = decayBalance.toString(roundStrings);
-					Decimal dbF = decayBalance / prevDBBalance;
-					Decimal decaySeconds((apolloTransaction->get<3>() - dbDecayStartTime).totalSeconds());
-					Decimal nodeF1, nodeF2;
-					mpfr_pow(nodeF1, apolloDecayFactor1, decaySeconds, gDefaultRound);
-					mpfr_pow(nodeF2, apolloDecayFactor2, decaySeconds, gDefaultRound);
-					nodeF1 = nodeF1.toString(roundStrings);
-					nodeF2 = nodeF2.toString(roundStrings);
-					Decimal cDecayBalance1 = prevDBBalance * nodeF1;
-					Decimal cDecayBalance2 = prevDBBalance * nodeF2;
-					auto prevBalanceString = prevDBBalance.toString(45);
-					plugin::apollo::DecayDecimal prevDBBalanceApollo(prevDBBalance.toString(45));
-					prevDBBalanceApollo.applyDecay((apolloTransaction->get<3>() - dbDecayStartTime));
-					auto hajsa = prevDBBalanceApollo.toString(40);
-					cDecayBalance1 = cDecayBalance1.toString(roundStrings);
-					cDecayBalance2 = cDecayBalance2.toString(roundStrings);
-					Decimal ccBalance1 = cDecayBalance1 + dbAmount;
-					Decimal ccBalance2 = cDecayBalance2 + dbAmount;
-					Decimal aBalance1 = prevDBBalanceApollo + dbAmount;
-					ccBalance1 = ccBalance1.toString(roundStrings);
-					ccBalance2 = ccBalance2.toString(roundStrings);
-					Decimal ccDiff1 = ccBalance1 - dbBalance;
-					Decimal ccDiff2 = ccBalance2 - dbBalance;
-					Decimal aDiff1 = aBalance1 - dbBalance;
-					Decimal fDiff1 = nodeF1 - dbF;
-					Decimal fDiff2 = nodeF2 - dbF;
-					Decimal powF(1);
-					powF /= decaySeconds;
-					// x = pow(y, 5)
-					// y = pow(x, 1.0 / 5);
-					// Y = Math.Log(x) / Math.Log(5)
-					//mpfr_pow(f, f, powF, gDefaultRound);
-
-					Decimal diffPerSecond(fDiff1);
-					diffPerSecond /= decaySeconds;
-					errorLog.error("  diff: %s, seconds: %s, fDiff: %s, fDiff2: %s", 
-						diff.toString(40), decaySeconds.toString(40), fDiff1.toString(40), fDiff2.toString(40));
-					errorLog.error("ccdiff1: %s, ccdiff2: %s, adiff1: %s", ccDiff1.toString(40), ccDiff2.toString(40), aDiff1.toString(40));
-					
-					//id, balance, decay, seconds, diff, cutDiff
-					csvFile << apolloTransaction->get<0>() << ","
-						<< calcBalance.toString(30) << ","
-						<< calcDecay.toString(30) << ","
-						<< decaySeconds.toString(30) << ","
-						<< diff.toString(30) << ","
-						<< ccDiff1.toString(30) << ","
-						<< ccDiff2.toString(30) << ","
-						<< fDiff1.toString(30) << ","
-						<< fDiff2.toString(30) << ","
-						<< aDiff1.toString(30)
-						<< std::endl;
-					//errorLog.error(tm->getUserTransactionsDebugString(groupAlias, userPublicKeyHex));
-					//return;
-				}
+				errorLog.error("diff: %s, seconds: %s", diff.toString(40));					
 			}
 			else {
-				//printf("(%d) identical\n", (int)apolloTransaction.get<0>());
-				mpfr_set(calcBalance, (mpfr_ptr)dbBalance, gDefaultRound);
+				countIdentical++;
+				calcBalance = dbBalance;
 			}
 			lastBalanceDate = localDate;
 			i++;
 		}
 	}
-	/*
-	int f = 1;
-	for (int i = 0; i < 9; i++)
-	{
-		Decimal nodeF;
-		mpfr_pow_si(nodeF, gDecayFactorGregorianCalender, f, gDefaultRound);
-		errorLog.error("(%d): %s (%d)", i, nodeF.toString().substr(0,27), f);
-		int f2 = 3;
-		for (int j = 0; j < 10; j++) {
-			Decimal decayed;
-			mpfr_mul_si(decayed, nodeF, f2, gDefaultRound);
-			errorLog.error("(%d.%d): %s", i, j, decayed.toString());
-			f2 *= 7;
-		}
-		f *= 10;
-	}
-
-	*/
 	speedLog.information("checkApolloServerDecay in %s", timeUsed.string());
-	csvFile.close();
-	mm->releaseMathMemory(amount);
-	mm->releaseMathMemory(decayForDuration);
-	unloadDefaultDecayFactors();
+	errorLog.information("%d/%d identical",
+		countIdentical, countIdentical + countNotIdentical
+	);
 }
 
 void GradidoBlockchainConnector::compareWithGradidoNode(const std::string& groupAlias, bool apollo/* = true*/)
