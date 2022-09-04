@@ -20,7 +20,6 @@ include_directories(
 	"dependencies/rapidjson/include"
 	"dependencies/gradido_blockchain/include"
 	"dependencies/gradido_blockchain/build"
-	"dependencies/gradido_blockchain/dependencies/protobuf/third_party/googletest/googletest/include"
 	"dependencies/gradido_blockchain/dependencies/protobuf/src"
 	"build"
 	"build/dependencies/gradido_blockchain/include"
@@ -38,6 +37,9 @@ IF(UNIX)
 		"dependencies/poco/NetSSL_OpenSSL/include"
 	)
 ELSE()
+	include_directories(
+		"dependencies/gradido_blockchain/dependencies/protobuf/third_party/googletest/googletest/include"
+	)
 	include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 	conan_basic_setup()
 ENDIF()
@@ -127,10 +129,19 @@ if(WIN32)
 		"build/dependencies/gradido_blockchain/iota_rust_clib/x86_64-pc-windows-msvc/debug" 
 		"build/dependencies/gradido_blockchain/iota_rust_clib/x86_64-pc-windows-msvc/release" 
 		REQUIRED)
-	target_link_libraries(GradidoBlockchainConnector ${CONAN_LIBS} libprotobuf ${IOTA_RUST_C_LIB} ws2_32 userenv)
+
+	find_library(ED25519_BIP32_RUST_C_LIB ed25519_bip32_c_interface.dll.lib PATHS 
+		"build/dependencies/gradido_blockchain/dependencies/ed25519_bip32_c_interface/x86_64-pc-windows-msvc/${CMAKE_BUILD_TYPE}"
+		"build/dependencies/gradido_blockchain/dependencies/ed25519_bip32_c_interface/x86_64-pc-windows-msvc/debug"
+		"build/dependencies/gradido_blockchain/dependencies/ed25519_bip32_c_interface/x86_64-pc-windows-msvc/release"
+		REQUIRED
+	)	
+	target_link_libraries(GradidoBlockchainConnector ${CONAN_LIBS} ${IOTA_RUST_C_LIB} ${ED25519_BIP32_RUST_C_LIB} ws2_32 userenv)
+else() 
+	target_link_libraries(GradidoBlockchainConnector iota_rust_clib ed25519_bip32_c_interface )
 endif()
 
-target_link_libraries(GradidoBlockchainConnector GradidoBlockchain)
+target_link_libraries(GradidoBlockchainConnector GradidoBlockchain libprotobuf)
 
 
 ############################## build gradido blockchain connector ###################################

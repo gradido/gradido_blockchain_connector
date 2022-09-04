@@ -39,12 +39,12 @@ Document JsonSendTransactionIota::handle(const Document& params)
 	if (!signaturePairsIt->value.IsArray()) {
 		return stateError("signaturePairs isn't a array");
 	}
-	
-	auto transactionBody = model::gradido::TransactionBody::load(DataTypeConverter::base64ToBinString(bodyBytesBase64String));
+
+	auto transactionBody = model::gradido::TransactionBody::load(DataTypeConverter::base64ToBinString(bodyBytesBase64String), ProtobufArenaMemory::create());
 	std::unique_ptr<model::gradido::GradidoTransaction> transaction(new model::gradido::GradidoTransaction(transactionBody));
 	auto mm = MemoryManager::getInstance();
 
-	
+
 	for (auto it = signaturePairsIt->value.Begin(); it != signaturePairsIt->value.End(); it++) {
 		std::string pubkeyHexString, signatureHexString;
 		paramError = getStringParameter(*it, "pubkey", pubkeyHexString);
@@ -65,14 +65,14 @@ Document JsonSendTransactionIota::handle(const Document& params)
 		}
 		mm->releaseMemory(pubkeyBin);
 		mm->releaseMemory(signatureBin);
-	
+
 	}
 
 	transaction->validate(model::gradido::TRANSACTION_VALIDATION_SINGLE);
 	if (transaction->getSignCount() < transactionBody->getTransactionBase()->getMinSignatureCount()) {
 		return stateError("missing signatures");
 	}
-	
+
 	if (!model::gradido::TransactionBase::isValidGroupAlias(groupAlias)) {
 		return stateError("invalid group alias");
 	}
@@ -85,7 +85,7 @@ Document JsonSendTransactionIota::handle(const Document& params)
 	std::string index = "GRADIDO." + groupAlias;
 
 	//auto message_id = ServerConfig::g_IotaRequestHandler->sendMessage(DataTypeConverter::binToHex(index), *hex_message);
-	
+
 	auto response = stateSuccess();
 	auto alloc = response.GetAllocator();
 	//response.AddMember("iotaMessageId", Value(message_id.data(), message_id.size(), alloc), alloc);

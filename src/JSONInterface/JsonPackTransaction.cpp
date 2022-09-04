@@ -8,12 +8,12 @@
 using namespace rapidjson;
 
 Document JsonPackTransaction::handle(const Document& params)
-{	
+{
 	std::string transactionType;
 	auto paramError = getStringParameter(params, "transactionType", transactionType);
 	if (paramError.IsObject()) { return paramError; }
 
-	getStringParameter(params, "memo", mMemo);	
+	getStringParameter(params, "memo", mMemo);
 
 	std::string created_string;
 	paramError = getStringParameter(params, "created", created_string);
@@ -26,7 +26,7 @@ Document JsonPackTransaction::handle(const Document& params)
 	catch (Poco::Exception& ex) {
 		return stateError("cannot parse created", ex.what());
 	}
-	
+
 	if (transactionType == "transfer") {
 		return transfer(params);
 	}
@@ -35,8 +35,8 @@ Document JsonPackTransaction::handle(const Document& params)
 	}
 	else if (transactionType == "registerAddress") {
 		return registerAddress(params);
-	} 
-	
+	}
+
 	return stateError("transaction_type unknown");
 
 }
@@ -44,7 +44,7 @@ Document JsonPackTransaction::handle(const Document& params)
 Document JsonPackTransaction::transfer(const Document& params)
 {
 	/*
-	* 
+	*
 	{
 		"created":"2021-01-10 10:00:00",
 		"senderPubkey":"131c7f68dd94b2be4c913400ff7ff4cdc03ac2bda99c2d29edcacb3b065c67e6",
@@ -94,7 +94,7 @@ Document JsonPackTransaction::transfer(const Document& params)
 
 	mm->releaseMemory(senderPubkeyBin);
 	mm->releaseMemory(recipientPubkeyBin);
-	
+
 	return resultBase64Transactions(transactions);
 }
 
@@ -131,14 +131,14 @@ Document JsonPackTransaction::creation(const Document& params)
 	}
 	catch (Poco::Exception& ex) {
 		return stateError("cannot parse targetDate", ex.what());
-	}	
+	}
 
 	auto mm = MemoryManager::getInstance();
 	auto recipientPubkeyBin = DataTypeConverter::hexToBin(recipientPubkey);
 
 	std::vector<TransactionGroupAlias> transactions;
 	try {
-		auto creation = TransactionFactory::createTransactionCreation(recipientPubkeyBin, amount, readCoinGroupId(params), targetDate);
+		auto creation = TransactionFactory::createTransactionCreation(recipientPubkeyBin, amount, targetDate);
 		transactions.push_back({ creation.release(), "" });
 	}
 	catch (...) {
@@ -151,7 +151,7 @@ Document JsonPackTransaction::creation(const Document& params)
 }
 Document JsonPackTransaction::registerAddress(const Document& params)
 {
-	
+
 	/*
 	* addressType: human | project | subaccount
 	* nameHash: optional, for finding on blockchain by name without need for asking community server
@@ -161,7 +161,7 @@ Document JsonPackTransaction::registerAddress(const Document& params)
 		"transactionType": "registerAddress",
 		"created":"2021-01-10 10:00:00",
 		"userRootPubkey":"eff7a4a440eb10fa6d5ae5ee47d63240c55ea3e1972e9815c09411e25ab09fdd",
-		"addressType":"human",			
+		"addressType":"human",
 		"nameHash":"",
 		"subaccountPubkey":"",
 		"currentGroupAlias": "gdd1",
@@ -177,7 +177,7 @@ Document JsonPackTransaction::registerAddress(const Document& params)
 	auto addressType = model::gradido::RegisterAddress::getAddressTypeFromString(addressTypeString);
 	getStringParameter(params, "nameHash", nameHashHex);
 	getStringParameter(params, "subaccountPubkey", subaccountPubkeyHex);
-		
+
 	if (!userRootPubkeyHex.size() && !subaccountPubkeyHex.size()) {
 		return stateError("userRootPubkey or subaccountPubkey must be given");
 	}
@@ -197,7 +197,7 @@ Document JsonPackTransaction::registerAddress(const Document& params)
 		if (nameHashHex.size()) { nameHash = DataTypeConverter::hexToBin(nameHashHex); }
 		if (subaccountPubkeyHex.size()) { subaccountPubkey = DataTypeConverter::hexToBin(subaccountPubkeyHex); }
 
-		auto baseTransaction = TransactionFactory::createRegisterAddress(userRootPubkey, addressType, nameHash, subaccountPubkey);		
+		auto baseTransaction = TransactionFactory::createRegisterAddress(userRootPubkey, addressType, nameHash, subaccountPubkey);
 
 		if (currentGroupAlias.size() && newGroupAlias.size()) {
 			CrossGroupTransactionBuilder builder(std::move(baseTransaction));
@@ -216,14 +216,14 @@ Document JsonPackTransaction::registerAddress(const Document& params)
 		throw;
 	}
 
-	
+
 	return resultBase64Transactions(transactions);
 
 }
 
 
 Document JsonPackTransaction::resultBase64Transactions(std::vector<TransactionGroupAlias> transactions)
-{	
+{
 	Value transactionsJsonArray(kArrayType);
 	auto result = stateSuccess();
 	auto alloc = result.GetAllocator();
@@ -236,22 +236,22 @@ Document JsonPackTransaction::resultBase64Transactions(std::vector<TransactionGr
 			return stateError("invalid transaction", it->first->toJson());
 		}
 		Value entry(kObjectType);
-		
+
 		if (it->second.size()) {
 			entry.AddMember("groupAlias", Value(it->second.data(), alloc), alloc);
 		}
 		try {
-			
+
 			auto base64 = DataTypeConverter::binToBase64(transactionBody->getBodyBytes());
 			entry.AddMember("bodyBytesBase64", Value(base64->data(), base64->size(), alloc), alloc);
-			
+
 			transactionsJsonArray.PushBack(entry, alloc);
 		}
 		catch (Poco::Exception& ex) {
 			return stateError("exception in serializing", ex.what());
 		}
 	}
-	
+
 	result.AddMember("transactions", transactionsJsonArray, alloc);
 	return result;
 }

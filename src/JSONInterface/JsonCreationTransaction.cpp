@@ -67,7 +67,7 @@ Document JsonCreationTransaction::handle(const rapidjson::Document& params)
 	mMemo = encryptMemo(mMemo, publicKeyBin->data(), mSession->getKeyPair()->getPrivateKey());
 
 	try {
-		if (!mArchiveTransaction) 
+		if (!mArchiveTransaction)
 		{
 			auto addressType = gradidoNodeRPC::getAddressType(pubkeyHex, mSession->getGroupAlias());
 			if (addressType != model::gradido::RegisterAddress::getAddressStringFromType(proto::gradido::RegisterAddress_AddressType_HUMAN)) {
@@ -77,7 +77,7 @@ Document JsonCreationTransaction::handle(const rapidjson::Document& params)
 				}
 				return stateError("address has the wrong type for creation");
 			}
-		
+
 			auto sumString = gradidoNodeRPC::getCreationSumForMonth(
 				pubkeyHex, targetDate.month(), targetDate.year(),
 				Poco::DateTimeFormatter::format(mCreated, Poco::DateTimeFormat::ISO8601_FRAC_FORMAT),
@@ -106,7 +106,7 @@ Document JsonCreationTransaction::handle(const rapidjson::Document& params)
 			}
 		}
 
-		auto creation = TransactionFactory::createTransactionCreation(publicKeyBin, amountString, coinGroupId, targetDate);
+		auto creation = TransactionFactory::createTransactionCreation(publicKeyBin, amountString, targetDate);
 		mm->releaseMemory(publicKeyBin);
 		publicKeyBin = nullptr;
 
