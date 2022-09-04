@@ -6,20 +6,6 @@
 namespace plugin {
 	namespace apollo {
 		
-		Decimal DecayDecimal::calculateDecayFactor(Poco::Timespan duration)
-		{
-			auto durationSeconds = duration.totalSeconds();
-			if (!durationSeconds) {
-				return 1;
-			}
-			else {
-				Decimal decayForDuration;
-				mpfr_pow_ui(decayForDuration, Decimal(MAGIC_NUMBER_APOLLO_DECAY_FACTOR), durationSeconds, gDefaultRound);
-
-				return std::move(decayForDuration);
-			}
-		}
-
 		void DecayDecimal::applyDecay(Poco::Timespan duration)
 		{
 

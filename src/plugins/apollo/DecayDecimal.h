@@ -13,8 +13,7 @@ namespace plugin {
 		{
 		public: 
 			using ::DecayDecimal::DecayDecimal;
-			static Decimal calculateDecayFactor(Poco::Timespan duration);
-
+			
 			/*!
 			 *  use alternative algorithms and round after each step down to MAGIC_NUMBER_APOLLO_PRECISION to mimic apollo calculation as closely as possible
 			 *  gradido/(2^(duration.totalSeconds()/MAGIC_NUMBER_GREGORIAN_CALENDER_SECONDS_PER_YEAR))
