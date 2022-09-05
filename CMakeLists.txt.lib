@@ -17,10 +17,11 @@ endif()
 
 include_directories(
 	"dependencies" 
-	"dependencies/rapidjson/include"
+	"dependencies/gradido_blockchain/dependencies/rapidjson/include"
+	"dependencies/gradido_blockchain/include"
 	"build"
-	"build/proto"
-	"src/cpp"
+	"dependencies/gradido_blockchain/build"
+	"src"
 )
 
 ############################## config and add grpc ###################################
@@ -64,30 +65,22 @@ ENDFOREACH(proto)
 
 ############################## include src files  ###################################
 
-FILE(GLOB JSONInterface "src/cpp/JSONInterface/*.h" "src/cpp/JSONInterface/*.cpp")
-FILE(GLOB SINGLETON_MANAGER "src/cpp/SingletonManager/*.h" "src/cpp/SingletonManager/*.cpp")
-FILE(GLOB LIB_SRC "src/cpp/lib/*.h" "src/cpp/lib/*.cpp")
-FILE(GLOB MODEL "src/cpp/model/*.h" "src/cpp/model/*.cpp")
-FILE(GLOB MODEL_GRADIDO "src/cpp/model/gradido/*.h" "src/cpp/model/gradido/*.cpp")
-FILE(GLOB MAIN "src/cpp/*.cpp" "src/cpp/*.c"  "src/cpp/*.h")
-FILE(GLOB PROTO_GRADIDO "${PROTOBINDING_PATH}/gradido/*.cc" "${PROTOBINDING_PATH}/gradido/*.h")
-
-# used only for test project 
-FILE(GLOB TEST "src/cpp/test/*.cpp" "src/cpp/test/*.h")
-FILE(GLOB TEST_LIB "src/cpp/test/lib/*.cpp" "src/cpp/test/lib/*.h")
-FILE(GLOB TEST_JSON_INTERFACE "src/cpp/test/JSONInterface/*.cpp" "src/cpp/test/JSONInterface/*.h")
+FILE(GLOB JSONInterface "src/JSONInterface/*.h" "src/JSONInterface/*.cpp")
+FILE(GLOB MODEL "src/model/*.h" "src/model/*.cpp")
+FILE(GLOB MODEL_TABLE "src/model/table/*.cpp" "src/model/table/*.h")
+FILE(GLOB MODEL_IMPORT "src/model/import/*.cpp" "src/model/import/*.h")
+FILE(GLOB MAIN "src/*.cpp" "src/*.c"  "src/*.h")
+FILE(GLOB TASK "src/task/*.cpp" "src/task/*.h")
+FILE(GLOB PLUGINS "src/plugins/*.cpp" "src/plugins/*.h")
+FILE(GLOB PLUGINS_APOLLO "src/plugins/apollo/*.cpp" "src/plugins/apollo/*.h")
 
 SET(LOCAL_SRCS 
 	${MAIN} 
-	${JSONInterface}
-	${MODEL} ${MODEL_GRADIDO}
-	${SINGLETON_MANAGER} ${LIB_SRC} 
-	${PROTO_GRADIDO} 
+	${MODEL} ${MODEL_TABLE} ${MODEL_IMPORT}
+	${JSONInterface} ${TASK}
+	${PLUGINS_APOLLO}
 )
-SET(LOCAL_TEST_SRC
-	${TEST} ${TEST_LIB} ${TEST_JSON_INTERFACE}
-)
-aux_source_directory("src/cpp" LOCAL_SRCS)
+aux_source_directory("src" LOCAL_SRCS)
 
 add_executable(GradidoBlockchainConnector ${LOCAL_SRCS})
 
@@ -99,24 +92,43 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug)
 	find_library(POCO_UTIL_LIB PocoUtild PATHS ${BUILD_LIB_PATH} REQUIRED)
 	find_library(POCO_NET_SSL_LIB PocoNetSSLd PATHS ${BUILD_LIB_PATH} REQUIRED)
 	find_library(POCO_NET_LIB PocoNetd PATHS ${BUILD_LIB_PATH} REQUIRED)
+	find_library(POCO_JWT PocoJWTd PATHS ${BUILD_LIB_PATH} REQUIRED)
+	find_library(POCO_JSON PocoJSONd PATHS ${BUILD_LIB_PATH} REQUIRED)	
+	find_library(POCO_DATA PocoDatad PATHS ${BUILD_LIB_PATH} REQUIRED)
+	find_library(POCO_DATA_MYSQL PocoDataMySQLd PATHS ${BUILD_LIB_PATH} REQUIRED)
 	message("use Poco Debug libs")
 ELSE()
 	find_library(POCO_FOUNDATION_LIB PocoFoundation PATHS ${BUILD_LIB_PATH} REQUIRED)
 	find_library(POCO_UTIL_LIB PocoUtil PATHS ${BUILD_LIB_PATH} REQUIRED)
 	find_library(POCO_NET_SSL_LIB PocoNetSSL PATHS ${BUILD_LIB_PATH} REQUIRED)
 	find_library(POCO_NET_LIB PocoNet PATHS ${BUILD_LIB_PATH} REQUIRED)
+	find_library(POCO_JWT PocoJWT PATHS ${BUILD_LIB_PATH} REQUIRED)
+	find_library(POCO_JSON PocoJSON PATHS ${BUILD_LIB_PATH} REQUIRED)
+	find_library(POCO_DATA PocoData PATHS ${BUILD_LIB_PATH} REQUIRED)	
+	find_library(POCO_DATA_MYSQL PocoDataMySQL PATHS ${BUILD_LIB_PATH} REQUIRED)
 	message("use Poco Release libs")
 ENDIF()
 
-set(POCO_LIBS ${POCO_FOUNDATION_LIB} ${POCO_UTIL_LIB} ${POCO_NET_SSL_LIB} ${POCO_NET_LIB})
+set(POCO_LIBS 
+	${POCO_FOUNDATION_LIB} 
+	${POCO_UTIL_LIB} 
+	${POCO_NET_LIB} ${POCO_NET_SSL_LIB} 
+	${POCO_JSON} ${POCO_JWT} 
+	${POCO_DATA} ${POCO_DATA_MYSQL}
+)
 
+add_subdirectory("dependencies/gradido_blockchain")
 
 ############################## build gradido blockchain connector ###################################
 
-target_link_libraries(GradidoBlockchainConnector ${PROTOBUF_LIBS} ${POCO_LIBS} sodium pthread)
+target_link_libraries(GradidoBlockchainConnector 
+	${PROTOBUF_LIBS} GradidoBlockchain ${POCO_LIBS} 
+	sodium pthread mpfr dl
+	iota_rust_clib ed25519_bip32_c_interface
+)
 
 ############################## build gradido blockchain connector test ###################################
-IF(CMAKE_BUILD_TYPE STREQUAL "Debug") 
+IF(CMAKE_BUILD_TYPE STREQUAL "Debug_placeholder") 
 	project(GradidoBlockchainConnectorTest C CXX)
 
 	enable_testing()

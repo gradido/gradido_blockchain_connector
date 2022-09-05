@@ -2,7 +2,7 @@
 #########################################################################################################
 # Prepare debug 
 #########################################################################################################
-FROM gradido/login_dependencies:gcc9-debug-3.1 as prepare_debug
+FROM gradido/cpp_dependencies:gcc9-debug-1.0 as prepare_debug
 
 ENV DOCKER_WORKDIR="/code"
 WORKDIR ${DOCKER_WORKDIR}
@@ -10,7 +10,9 @@ WORKDIR ${DOCKER_WORKDIR}
 RUN echo '/usr/local/lib' >> /etc/ld.so.conf && ldconfig
 
 COPY ./CMakeLists.txt.lib ./CMakeLists.txt
-COPY ./dependencies/rapidjson ./dependencies/rapidjson
+COPY ./dependencies/gradido_blockchain ./dependencies/gradido_blockchain
+COPY ./dependencies/gradido_blockchain/CMakeLists.txt.lib ./dependencies/gradido_blockchain/CMakeLists.txt
+RUN rm -rf ./dependencies/gradido_blockchain/build
 RUN ln -s /usr/local/googletest ./googletest
 COPY ./src ./src
 
