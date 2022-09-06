@@ -2,7 +2,7 @@
 #########################################################################################################
 # Build release 
 #########################################################################################################
-FROM gradido/login_dependencies:gcc9-release-3.1 as release
+FROM gradido/cpp_dependencies:gcc9-release-1.0 as release
 
 ENV DOCKER_WORKDIR="/code"
 WORKDIR ${DOCKER_WORKDIR}
@@ -10,24 +10,25 @@ WORKDIR ${DOCKER_WORKDIR}
 RUN echo '/usr/local/lib' >> /etc/ld.so.conf && ldconfig
 
 COPY ./CMakeLists.txt.lib ./CMakeLists.txt
-COPY ./src ./src
-COPY ./dependencies/rapidjson ./dependencies/rapidjson
+COPY ./dependencies/gradido_blockchain ./dependencies/gradido_blockchain
+COPY ./dependencies/gradido_blockchain/CMakeLists.txt.lib ./dependencies/gradido_blockchain/CMakeLists.txt
+RUN rm -rf ./dependencies/gradido_blockchain/build
 RUN ln -s /usr/local/googletest ./googletest
+COPY ./src ./src
 
 RUN mkdir build && \
 	cd build && \
 	cmake -DCMAKE_BUILD_TYPE=Release .. && \
 	make -j$(nproc) GradidoBlockchainConnector
 
-RUN ls -la /usr/lib
-RUN ls -la /usr/local/lib
-
+#RUN ls -la /usr/lib
+#RUN ls -la /usr/local/lib
 	
 #########################################################################################################
 # run release 
 #########################################################################################################
 #From alpine:latest as login_server
-FROM ubuntu:latest as blockchain_connector
+FROM debian:11 as blockchain_connector
 
 USER root
 
@@ -44,9 +45,9 @@ COPY --from=release /code/build/bin/GradidoBlockchainConnector /usr/bin/
 
 COPY --from=release /usr/local/lib/libPoco* /usr/local/lib/ 
 COPY --from=release /usr/local/lib/libproto* /usr/local/lib/
-#COPY --from=release /usr/lib/libsodium.so.23 /usr/lib/ 
-#COPY --from=release /usr/lib/libstdc++.so.6 /usr/lib/ 
-#COPY --from=release /usr/lib/libgcc_s.so.1 /usr/lib/ 
+COPY --from=release /usr/local/lib/libmpfr* /usr/local/lib/
+COPY --from=release /usr/local/lib/mariadb /usr/local/lib/mariadb
+RUN ln -s /usr/local/lib/mariadb/libmariadb.so.3 /usr/local/lib/libmariadb.so.3 
 
 RUN echo '/usr/local/lib' >> /etc/ld.so.conf && ldconfig
 
@@ -54,4 +55,4 @@ RUN mkdir ~/.gradido && cd ~/.gradido && wget --no-check-certificate https://cur
 
 RUN chmod +x /usr/bin/GradidoBlockchainConnector
 ENTRYPOINT ["/usr/bin/GradidoBlockchainConnector"]
-#CMD GradidoBlockchainConnector
+
