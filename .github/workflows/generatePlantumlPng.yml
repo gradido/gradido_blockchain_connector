@@ -35,3 +35,4 @@ jobs:
       with: 
         default_author: github_actions
         add: 'doc/html/*.png'
+        fetch: --no-recurse-submodules
