@@ -2,6 +2,7 @@
 #define __GRADIDO_BLOCKCHAIN_CONNECTOR_MODEL_TABLE_GROUP_H
 
 #include "BaseTable.h"
+#include "../../ConnectionManager.h"
 
 
 #define GROUP_TABLE_SCHEMA												\
@@ -12,6 +13,13 @@
 	"`created` datetime NOT NULL DEFAULT current_timestamp(),"			\
 	"PRIMARY KEY(`id`),"												\
 	"UNIQUE KEY `groupAlias` (`groupAlias`)"
+
+#define GROUP_TABLE_SCHEMA_SQLITE										\
+	"`id` INTEGER PRIMARY KEY,"						\
+	"`name` TEXT NOT NULL,"										\
+	"`groupAlias` TEXT NOT NULL UNIQUE,"								    \
+	"`description` TEXT DEFAULT NULL,"							\
+	"`created` integer(4) not null default (strftime('%s','now'))"			
 
 #define GROUP_TABLE_LAST_SCHEMA_VERSION 1
 
@@ -36,7 +44,7 @@ namespace model {
 			const char* tableName() const { return getTableName(); }
 			static const char* getTableName() { return "group"; }
 			int getLastSchemaVersion() const { return GROUP_TABLE_LAST_SCHEMA_VERSION; }
-			const char* getSchema() const { return GROUP_TABLE_SCHEMA; }
+			const char* getSchema() const { return ConnectionManager::getInstance()->isSqlite() ? GROUP_TABLE_SCHEMA_SQLITE : GROUP_TABLE_SCHEMA; }
 
 			const std::string& getName() const { return mName; }
 			const std::string& getDescription() const { return mDescription; }

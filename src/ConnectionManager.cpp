@@ -9,6 +9,7 @@ ConnectionManager* ConnectionManager::getInstance()
 
 
 ConnectionManager::ConnectionManager()
+	: mMySqlite(false)
 {
 
 }
@@ -18,7 +19,7 @@ ConnectionManager::~ConnectionManager()
 
 }
 
-bool ConnectionManager::setConnectionsFromConfig(const Poco::Util::LayeredConfiguration& config)
+bool ConnectionManager::setConnectionsFromConfig(const MapEnvironmentToConfig& config)
 {
 	/*
 	phpServer.url = 127.0.0.1:80/gradido_php
@@ -40,9 +41,6 @@ bool ConnectionManager::setConnectionsFromConfig(const Poco::Util::LayeredConfig
 	connectionString example: host=localhost;port=3306;db=mydb;user=alice;password=s3cr3t;compress=true;auto-reconnect=true
 	*/
 	std::string sqlLite = config.getString("db.sqlite", "");
-	if(sqlLite != "") {
-		sqlLite = config.getString("system.env.DB_SQLITE", "");
-	}
 	if(sqlLite != "") {
 		Poco::Data::SQLite::Connector::registerConnector();
 		setConnectionSqlite(sqlLite);

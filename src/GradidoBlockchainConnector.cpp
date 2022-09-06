@@ -4,6 +4,7 @@
 #include "model/table/VersionsManager.h"
 
 #include "gradido_blockchain/lib/Profiler.h"
+#include "gradido_blockchain/lib/MapEnvironmentToConfig.h"
 #include "gradido_blockchain/crypto/CryptoConfig.h"
 #include "gradido_blockchain/http/ServerConfig.h"
 
@@ -21,49 +22,7 @@
 #include "Poco/SplitterChannel.h"
 
 #include <sodium.h>
-#include <algorithm>
 #include <google/protobuf/stubs/common.h>
-
-// ********* Config mapper *************
-MapEnvironmentToConfig::MapEnvironmentToConfig(Poco::Util::LayeredConfiguration& parent)
-: mParent(parent)
-{
-
-}
-
-std::string MapEnvironmentToConfig::getString(const std::string& key, const std::string& defaultValue) const
-{
-	auto result = mParent.getString(key, defaultValue);
-	std::clog << "tried to load key: " << key << ", and found: " << result << std::endl;
-	if(result == defaultValue)
-	{
-		std::clog << "couldn't load key: " << key << std::endl;
-		std::clog << "try with mapped key: "  << mapKey(key) << std::endl;
-		result = mParent.getString(mapKey(key), defaultValue);
-		if(result != defaultValue) {
-			std::clog << "found something:"  << result << std::endl;
-		}
-	}
-	return result;
-}
-
-int MapEnvironmentToConfig::getInt(const std::string& key, int defaultValue) const
-{
-	auto result = mParent.getInt(key, defaultValue);
-	if(result == defaultValue)
-	{
-		result = mParent.getInt(mapKey(key), defaultValue);
-	}
-	return result;
-}
-
-std::string MapEnvironmentToConfig::mapKey(const std::string& key) const
-{
-	std::string result = key;
-  	std::replace( result.begin(), result.end(), '.', '_'); // replace all '.' to '_'
-	std::transform(result.begin(), result.end(),result.begin(), ::toupper);
-	return "system.env." + result;
-}
 
 GradidoBlockchainConnector::GradidoBlockchainConnector()
 	: _helpRequested(false)

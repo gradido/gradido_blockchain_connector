@@ -26,9 +26,11 @@ namespace model {
 		}
 
 		void VersionsManager::migrate()
-		{			
-			auto dbSession = ConnectionManager::getInstance()->getConnection();
-			createTableIfNotExist(dbSession, Migration::getTableName(), MIGRATION_TABLE_SCHEMA);
+		{	
+			auto cm = ConnectionManager::getInstance();
+			auto dbSession = cm->getConnection();
+
+			createTableIfNotExist(dbSession, Migration::getTableName(), cm->isSqlite() ? MIGRATION_TABLE_SCHEMA_SQLITE : MIGRATION_TABLE_SCHEMA);
 			
 			bool userTable = false;
 			bool userBackupTable = false;
@@ -61,7 +63,11 @@ namespace model {
 		void VersionsManager::createTableIfNotExist(Poco::Data::Session& dbSession, const std::string& tablename, const std::string& tableDefinition)
 		{
 			Poco::Data::Statement createTable(dbSession);
-			createTable << "CREATE TABLE IF NOT EXISTS `" + tablename + "` (" + tableDefinition + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;", now;
+			createTable << "CREATE TABLE IF NOT EXISTS `" + tablename + "` (" + tableDefinition + ")";
+			if (!ConnectionManager::getInstance()->isSqlite()) {
+				createTable << "ENGINE = InnoDB DEFAULT CHARSET = utf8mb4";
+			}
+			createTable << ";", now;
 		}
 
 		std::unique_ptr<BaseTable> VersionsManager::factoryTable(const std::string& tableName)

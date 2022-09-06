@@ -55,7 +55,7 @@ namespace ServerConfig {
 	}
 
 
-	bool initServerCrypto(const Poco::Util::LayeredConfiguration& cfg)
+	bool initServerCrypto(const MapEnvironmentToConfig& cfg)
 	{
 		auto serverKey = cfg.getString("crypto.server_key", "a51ef8ac7ef1abf162fb7a65261acd7a");
 		unsigned char key[crypto_shorthash_KEYBYTES];
@@ -131,7 +131,7 @@ namespace ServerConfig {
 		return true;
 	}
 
-	bool initMysql(const Poco::Util::LayeredConfiguration& cfg)
+	bool initMysql(const MapEnvironmentToConfig& cfg)
 	{
 		/*
 		db.host = 192.168.178.225

@@ -4,7 +4,7 @@
 #include "BaseTable.h"
 #include "gradido_blockchain/MemoryManager.h"
 #include "gradido_blockchain/crypto/KeyPairEd25519.h"
-
+#include "../../ConnectionManager.h"
 
 #define USER_TABLE_SCHEMA												\
 	"`id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,"						\
@@ -16,6 +16,16 @@
 	"`created` datetime NOT NULL DEFAULT current_timestamp(),"			\
 	"PRIMARY KEY(`id`),"												\
 	"UNIQUE KEY `group_name` (`name`, `group_id`)"
+
+
+#define USER_TABLE_SCHEMA_SQLITE										\
+	"`id` INTEGER PRIMARY KEY,"											\
+	"`name` TEXT NOT NULL,"												\
+    "`group_id` INTEGER  NOT NULL UNIQUE,"								\
+	"`password` INTEGER NOT NULL,"										\
+	"`public_key` BLOB DEFAULT NULL,"									\
+	"`encrypted_private_key` BLOB DEFAULT NULL,"						\
+	"`created` integer(4) not null default (strftime('%s','now'))"			
 
 #define USER_TABLE_LAST_SCHEMA_VERSION 1
 
@@ -50,7 +60,7 @@ namespace model {
 			const char* tableName() const { return getTableName(); }
 			static const char* getTableName() { return "user"; }
 			int getLastSchemaVersion() const { return USER_TABLE_LAST_SCHEMA_VERSION; }
-			const char* getSchema() const { return USER_TABLE_SCHEMA; }
+			const char* getSchema() const { return ConnectionManager::getInstance()->isSqlite() ? USER_TABLE_SCHEMA_SQLITE : USER_TABLE_SCHEMA; }
 
 		protected:
 			std::string mName;

@@ -25,6 +25,8 @@ FROM prepare_debug as debug
 ENV DOCKER_WORKDIR="/code"
 WORKDIR ${DOCKER_WORKDIR}
 
+ENV DB_SQLITE="db.qlite"
+
 RUN mkdir build && \
 	cd build && \
 	cmake -DCMAKE_BUILD_TYPE=Debug ..

@@ -22,7 +22,7 @@ services:
      - internal-net
      - external-net
     environment:
-      - DB_SQLITE=':memory:'
+      - DB_SQLITE=db.sqlite
     volumes: 
       - build:/code/build
 

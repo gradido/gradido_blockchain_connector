@@ -33,6 +33,8 @@ namespace gradidoNodeRPC {
 		}
 		
 	}
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreturn-type"
 
 	std::string getAddressBalance(
 		const std::string& pubkeyHex,
@@ -187,6 +189,8 @@ namespace gradidoNodeRPC {
 			handleGradidoNodeRpcException();
 		}
 	}
+
+#pragma GCC diagnostic pop
 
 	// Exceptions
 	GradidoNodeRPCException::GradidoNodeRPCException(const char* what, const std::string& details) noexcept 

@@ -8,7 +8,7 @@ mpfr/4.1.0
 Poco:enable_data=True
 Poco:enable_data_mysql=True
 Poco:enable_data_postgresql=False
-Poco:enable_data_sqlite=False
+Poco:enable_data_sqlite=True
 Poco:enable_active_record=False
 Poco:enable_encodings=False
 Poco:enable_redis=False

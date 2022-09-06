@@ -3,18 +3,6 @@
 
 #include "Poco/Util/ServerApplication.h"
 
-class MapEnvironmentToConfig: public Poco::Util::LayeredConfiguration
-{
-public: 
-	MapEnvironmentToConfig(Poco::Util::LayeredConfiguration& parent);
-	std::string getString(const std::string& key, const std::string& defaultValue) const;	
-	int getInt(const std::string& key, int defaultValue) const;
-
-	std::string mapKey(const std::string& key) const;
-
-protected:
-	Poco::Util::LayeredConfiguration& mParent;
-};
 
 class GradidoBlockchainConnector : public Poco::Util::ServerApplication
 {
