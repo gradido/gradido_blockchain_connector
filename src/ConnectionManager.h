@@ -6,6 +6,7 @@
 #include "Poco/Util/LayeredConfiguration.h"
 #include "Poco/Data/SessionPoolContainer.h"
 #include "Poco/Data/MySQL/Connector.h"
+#include "Poco/Data/SQLite/Connector.h"
 #include "Poco/Exception.h"
 
 
@@ -23,6 +24,10 @@ public:
 	inline void setConnection(std::string connectionString) {
 		mSessionPoolNames = Poco::Data::Session::uri(Poco::Data::MySQL::Connector::KEY, connectionString);
 		mSessionPools.add(Poco::Data::MySQL::Connector::KEY, connectionString, 1, 16);
+	}
+	inline void setConnectionSqlite(std::string fileName) {
+		mSessionPoolNames = Poco::Data::Session::uri(Poco::Data::SQLite::Connector::KEY, fileName);
+		mSessionPools.add(Poco::Data::SQLite::Connector::KEY, fileName, 1, 2);
 	}
 
 	//! \brief return connection from pool, check if connected in if not, call reconnect on it

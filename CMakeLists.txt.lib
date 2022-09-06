@@ -95,6 +95,7 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug)
 	find_library(POCO_JWT PocoJWTd PATHS ${BUILD_LIB_PATH} REQUIRED)
 	find_library(POCO_JSON PocoJSONd PATHS ${BUILD_LIB_PATH} REQUIRED)	
 	find_library(POCO_DATA PocoDatad PATHS ${BUILD_LIB_PATH} REQUIRED)
+	find_library(POCO_DATA_SQLITE PocoDataSQLited PATHS ${BUILD_LIB_PATH} REQUIRED)
 	find_library(POCO_DATA_MYSQL PocoDataMySQLd PATHS ${BUILD_LIB_PATH} REQUIRED)
 	message("use Poco Debug libs")
 ELSE()
@@ -105,7 +106,9 @@ ELSE()
 	find_library(POCO_JWT PocoJWT PATHS ${BUILD_LIB_PATH} REQUIRED)
 	find_library(POCO_JSON PocoJSON PATHS ${BUILD_LIB_PATH} REQUIRED)
 	find_library(POCO_DATA PocoData PATHS ${BUILD_LIB_PATH} REQUIRED)	
+	find_library(POCO_DATA_SQLITE PocoDataSQLite PATHS ${BUILD_LIB_PATH} REQUIRED)
 	find_library(POCO_DATA_MYSQL PocoDataMySQL PATHS ${BUILD_LIB_PATH} REQUIRED)
+	
 	message("use Poco Release libs")
 ENDIF()
 
@@ -114,7 +117,7 @@ set(POCO_LIBS
 	${POCO_UTIL_LIB} 
 	${POCO_NET_LIB} ${POCO_NET_SSL_LIB} 
 	${POCO_JSON} ${POCO_JWT} 
-	${POCO_DATA} ${POCO_DATA_MYSQL}
+	${POCO_DATA} ${POCO_DATA_MYSQL} ${POCO_DATA_SQLITE}
 )
 
 add_subdirectory("dependencies/gradido_blockchain")

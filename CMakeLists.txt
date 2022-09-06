@@ -78,13 +78,13 @@ endif()
 #SET(SOME_EXPAT_OPTION OFF CACHE BOOL "Use some expat option")
 IF(UNIX)
 	SET(ENABLE_MONGODB OFF CACHE BOOL "" FORCE) 
-	SET(ENABLE_DATA_SQLITE OFF CACHE BOOL "" FORCE) 
+	SET(ENABLE_DATA_SQLITE ON CACHE BOOL "" FORCE) 
 	SET(ENABLE_DATA_MYSQL ON CACHE BOOL "" FORCE)
 	SET(ENABLE_REDIS OFF CACHE BOOL "" FORCE)
 	SET(ENABLE_PAGECOMPILER_FILE2PAGE OFF CACHE BOOL "" FORCE)
 	add_subdirectory("dependencies/poco")
 
-	set(POCO_LIBS Poco::Foundation Poco::Data Poco::Util Poco::Net Poco::NetSSL Poco::JWT Poco::DataMySQL)
+	set(POCO_LIBS Poco::Foundation Poco::Data Poco::Util Poco::Net Poco::NetSSL Poco::JWT Poco::DataMySQL Poco::DataSQLite )
 ENDIF()
 
 ############################## find protobuf  #########################################
