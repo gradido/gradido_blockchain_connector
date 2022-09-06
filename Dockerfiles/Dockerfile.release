@@ -28,7 +28,7 @@ RUN mkdir build && \
 # run release 
 #########################################################################################################
 #From alpine:latest as login_server
-FROM debian:11 as blockchain_connector
+FROM debian:11.4-slim as blockchain_connector
 
 USER root
 
