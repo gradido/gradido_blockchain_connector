@@ -41,6 +41,9 @@ bool ConnectionManager::setConnectionsFromConfig(const Poco::Util::LayeredConfig
 	*/
 	std::string sqlLite = config.getString("db.sqlite", "");
 	if(sqlLite != "") {
+		sqlLite = config.getString("system.env.DB_SQLITE", "");
+	}
+	if(sqlLite != "") {
 		Poco::Data::SQLite::Connector::registerConnector();
 		setConnectionSqlite(sqlLite);
 	} else {

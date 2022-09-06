@@ -1,0 +1,45 @@
+# This file defines the production settings. It is overwritten by docker-compose.override.yml,
+# which defines the development settings. The override.yml is loaded by default. Therefore it
+# is required to explicitly define if you want an production build:
+# > docker-compose -f docker-compose.yml up 
+
+version: "3.4"
+
+services:
+  #########################################################
+  ## MARIADB ##############################################
+  #########################################################
+  mariadb:
+    image: mariadb/server:10.5
+    environment:
+      - MARIADB_ALLOW_EMPTY_PASSWORD=1
+      - MARIADB_USER=root
+      - MARIADB_DATABASE=blockchain_connector
+    networks: 
+      - internal-net
+    ports: 
+      - 3306:3306
+    volumes: 
+      - db_vol:/var/lib/mysql
+      
+  #########################################################
+  ## BLOCKCHAIN CONNECTOR #################################
+  #########################################################
+  blockchain-connector:
+    build: 
+      context: .
+      dockerfile: ./Dockerfiles/Dockerfile.release
+
+    networks: 
+     - internal-net
+    environment:
+      - DB_SQLITE=':memory:'
+
+networks:
+  external-net:
+  internal-net:
+    internal: true
+
+volumes:
+  db_vol: 
+  

@@ -21,7 +21,49 @@
 #include "Poco/SplitterChannel.h"
 
 #include <sodium.h>
+#include <algorithm>
 #include <google/protobuf/stubs/common.h>
+
+// ********* Config mapper *************
+MapEnvironmentToConfig::MapEnvironmentToConfig(Poco::Util::LayeredConfiguration& parent)
+: mParent(parent)
+{
+
+}
+
+std::string MapEnvironmentToConfig::getString(const std::string& key, const std::string& defaultValue) const
+{
+	auto result = mParent.getString(key, defaultValue);
+	std::clog << "tried to load key: " << key << ", and found: " << result << std::endl;
+	if(result == defaultValue)
+	{
+		std::clog << "couldn't load key: " << key << std::endl;
+		std::clog << "try with mapped key: "  << mapKey(key) << std::endl;
+		result = mParent.getString(mapKey(key), defaultValue);
+		if(result != defaultValue) {
+			std::clog << "found something:"  << result << std::endl;
+		}
+	}
+	return result;
+}
+
+int MapEnvironmentToConfig::getInt(const std::string& key, int defaultValue) const
+{
+	auto result = mParent.getInt(key, defaultValue);
+	if(result == defaultValue)
+	{
+		result = mParent.getInt(mapKey(key), defaultValue);
+	}
+	return result;
+}
+
+std::string MapEnvironmentToConfig::mapKey(const std::string& key) const
+{
+	std::string result = key;
+  	std::replace( result.begin(), result.end(), '.', '_'); // replace all '.' to '_'
+	std::transform(result.begin(), result.end(),result.begin(), ::toupper);
+	return "system.env." + result;
+}
 
 GradidoBlockchainConnector::GradidoBlockchainConnector()
 	: _helpRequested(false)
@@ -158,12 +200,12 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 		catch (Poco::Exception& ex) {
 			errorLog.error("error loading config: %s", ex.displayText());
 		}
-
-		unsigned short json_port = (unsigned short)config().getInt("JSONServer.port", 1271);
+		MapEnvironmentToConfig configMapped(config());
+		unsigned short json_port = (unsigned short)configMapped.getInt("JSONServer.port", 1271);
 
 		//printf("show mnemonic list: \n");
 		//printf(ServerConfig::g_Mnemonic_WordLists[ServerConfig::MNEMONIC_BIP0039_SORTED_ORDER].getCompleteWordList().data());
-		if (!ServerConfig::initServerCrypto(config())) {
+		if (!ServerConfig::initServerCrypto(configMapped)) {
 			//printf("[Gradido_LoginServer::%s] error init server crypto\n", __FUNCTION__);
 			errorLog.error("[Gradido_LoginServer::main] error init server crypto");
 			return Application::EXIT_CONFIG;
@@ -173,9 +215,7 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 			errorLog.error("[Gradido_LoginServer::main] error calling loadMnemonicWordLists");
 			return Application::EXIT_CONFIG;
 		}
-		CryptoConfig::loadCryptoKeys(config());
-
-		
+		CryptoConfig::loadCryptoKeys(configMapped);		
 
 		Poco::Net::initializeSSL();
 		if(!ServerConfig::initSSLClientContext()) {
@@ -184,10 +224,10 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 			return Application::EXIT_CONFIG;
 		}
 
-		ServerConfig::initMysql(config());
-		ServerConfig::initIota(config());
-		ServerConfig::g_GradidoNodeUri = Poco::URI(config().getString("gradidoNode", "http://127.0.0.1:8340"));
-		ServerConfig::readUnsecureFlags(config());
+		ServerConfig::initMysql(configMapped);
+		ServerConfig::initIota(configMapped);
+		ServerConfig::g_GradidoNodeUri = Poco::URI(configMapped.getString("gradidoNode", "http://127.0.0.1:8340"));
+		ServerConfig::readUnsecureFlags(configMapped);
 
 		model::table::VersionsManager::getInstance()->migrate();
 		
