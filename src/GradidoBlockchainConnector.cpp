@@ -160,7 +160,7 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 			errorLog.error("error loading config: %s", ex.displayText());
 		}
 		MapEnvironmentToConfig configMapped(config());
-		unsigned short json_port = (unsigned short)configMapped.getInt("JSONServer.port", 1271);
+		unsigned short json_port = (unsigned short)configMapped.getInt("json_server.port", 1271);
 
 		//printf("show mnemonic list: \n");
 		//printf(ServerConfig::g_Mnemonic_WordLists[ServerConfig::MNEMONIC_BIP0039_SORTED_ORDER].getCompleteWordList().data());
@@ -185,7 +185,7 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 
 		ServerConfig::initMysql(configMapped);
 		ServerConfig::initIota(configMapped);
-		ServerConfig::g_GradidoNodeUri = Poco::URI(configMapped.getString("gradidoNode", "http://127.0.0.1:8340"));
+		ServerConfig::g_GradidoNodeUri = Poco::URI(configMapped.getString("gradido_node", "http://127.0.0.1:8340"));
 		ServerConfig::readUnsecureFlags(configMapped);
 
 		model::table::VersionsManager::getInstance()->migrate();

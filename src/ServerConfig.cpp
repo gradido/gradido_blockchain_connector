@@ -70,7 +70,7 @@ namespace ServerConfig {
 			return false;
 		}
 		
-		auto serverSetupTypeString = cfg.getString("ServerSetupType", "");
+		auto serverSetupTypeString = cfg.getString("server_setup_type", "");
 		g_ServerSetupType = getServerSetupTypeFromString(serverSetupTypeString);
 
 		
