@@ -74,6 +74,26 @@ Poco::SharedPtr<model::Session> SessionManager::getSession(const std::string& se
 	}
 }
 
+Poco::SharedPtr<model::Session> SessionManager::getSession(const std::string& serializedJwtToken, const std::string& username, const std::string& clientIp)
+{
+	try {
+		Poco::JWT::Signer signer(ServerConfig::g_JwtVerifySecret);
+		Poco::JWT::Token token = signer.verify(serializedJwtToken);
+
+		auto session = mActiveSessions.get(username);
+		if (session.isNull()) {
+			throw SessionException("no session found", username);
+		}
+		if (session->getClientIp() != clientIp) {
+			throw LoginException("invalid ip", username, clientIp);
+		}
+		return session;
+	}
+	catch (Poco::JWT::SignatureVerificationException& ex) {
+		throw JwtTokenException("invalid jwtToken", serializedJwtToken);
+	}
+}
+
 
 // ++++++++++++++++++++++++++ Login Exception ++++++++++++++++++++++++++++++++++++
 LoginException::LoginException(const char* what, const std::string& username, const std::string& clientIp) noexcept
