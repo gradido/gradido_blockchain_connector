@@ -9,7 +9,7 @@
 #include "Poco/Data/SQLite/Connector.h"
 #include "Poco/Exception.h"
 
-
+#include "gradido_blockchain/lib/MapEnvironmentToConfig.h"
 
 class ConnectionManager
 {
@@ -18,7 +18,7 @@ public:
 
 	static ConnectionManager* getInstance();
 
-	bool setConnectionsFromConfig(const Poco::Util::LayeredConfiguration& config);
+	bool setConnectionsFromConfig(const MapEnvironmentToConfig& config);
 
 	//!  \param connectionString example: host=localhost;port=3306;db=mydb;user=alice;password=s3cr3t;compress=true;auto-reconnect=true
 	inline void setConnection(std::string connectionString) {
@@ -28,7 +28,10 @@ public:
 	inline void setConnectionSqlite(std::string fileName) {
 		mSessionPoolNames = Poco::Data::Session::uri(Poco::Data::SQLite::Connector::KEY, fileName);
 		mSessionPools.add(Poco::Data::SQLite::Connector::KEY, fileName, 1, 2);
+		mMySqlite = true;
 	}
+
+	inline bool isSqlite() const { return mMySqlite; }
 
 	//! \brief return connection from pool, check if connected in if not, call reconnect on it
 	//! 
@@ -42,6 +45,7 @@ private:
 	std::string mSessionPoolNames;
 	Poco::Data::SessionPoolContainer mSessionPools;
 	Poco::FastMutex  mWorkingMutex;
+	bool mMySqlite;
 
 };
 

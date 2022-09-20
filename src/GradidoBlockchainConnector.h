@@ -3,6 +3,7 @@
 
 #include "Poco/Util/ServerApplication.h"
 
+
 class GradidoBlockchainConnector : public Poco::Util::ServerApplication
 {
 

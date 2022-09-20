@@ -55,7 +55,7 @@ namespace ServerConfig {
 	}
 
 
-	bool initServerCrypto(const Poco::Util::LayeredConfiguration& cfg)
+	bool initServerCrypto(const MapEnvironmentToConfig& cfg)
 	{
 		auto serverKey = cfg.getString("crypto.server_key", "a51ef8ac7ef1abf162fb7a65261acd7a");
 		unsigned char key[crypto_shorthash_KEYBYTES];
@@ -70,7 +70,7 @@ namespace ServerConfig {
 			return false;
 		}
 		
-		auto serverSetupTypeString = cfg.getString("ServerSetupType", "");
+		auto serverSetupTypeString = cfg.getString("server_setup_type", "");
 		g_ServerSetupType = getServerSetupTypeFromString(serverSetupTypeString);
 
 		
@@ -90,6 +90,17 @@ namespace ServerConfig {
 		auto privateKeyString = cfg.getString("crypto.jwt.private", "");
 		if (privateKeyString.size()) {
 			g_JwtPrivateKey = DataTypeConverter::hexToBin(privateKeyString);
+		}
+		if(!g_JwtPrivateKey || g_JwtPrivateKey->size() != crypto_sign_SECRETKEYBYTES) {
+			std::clog << "jwt private key size don't match: " 
+					  << std::to_string(crypto_sign_SECRETKEYBYTES) << " != ";
+			if(g_JwtPrivateKey) {		  
+				std::clog << std::to_string(g_JwtPrivateKey->size());
+			} else {
+				std::clog << "0";
+			}
+			std::clog << std::endl;
+			return false;
 		}
 		g_JwtVerifySecret = cfg.getString("verify.jwt", "");
 
@@ -131,7 +142,7 @@ namespace ServerConfig {
 		return true;
 	}
 
-	bool initMysql(const Poco::Util::LayeredConfiguration& cfg)
+	bool initMysql(const MapEnvironmentToConfig& cfg)
 	{
 		/*
 		db.host = 192.168.178.225

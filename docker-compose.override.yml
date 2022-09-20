@@ -1,0 +1,46 @@
+version: "3.4"
+
+services:
+
+  
+  #########################################################
+  ## MARIADB ##############################################
+  #########################################################
+  mariadb:
+    networks: 
+      - internal-net
+      - external-net
+
+  #########################################################
+  ## BLOCKCHAIN CONNECTOR #################################
+  #########################################################
+  blockchain-connector:
+    build: 
+      context: .
+      dockerfile: ./Dockerfiles/Dockerfile.debug
+    networks: 
+     - internal-net
+     - external-net
+    environment:
+      - DB_SQLITE=db.sqlite
+    volumes: 
+      - build:/code/build
+
+  #########################################################
+  ## PHPMYADMIN ###########################################
+  #########################################################
+  phpmyadmin:
+    image: phpmyadmin
+    environment:
+     - PMA_ARBITRARY=1
+    #restart: always
+    ports:
+     - 8074:80
+    networks: 
+     - internal-net
+     - external-net
+    volumes:
+     - /sessions
+
+volumes:
+  build:

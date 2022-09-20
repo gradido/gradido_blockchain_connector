@@ -9,6 +9,7 @@ ConnectionManager* ConnectionManager::getInstance()
 
 
 ConnectionManager::ConnectionManager()
+	: mMySqlite(false)
 {
 
 }
@@ -18,7 +19,7 @@ ConnectionManager::~ConnectionManager()
 
 }
 
-bool ConnectionManager::setConnectionsFromConfig(const Poco::Util::LayeredConfiguration& config)
+bool ConnectionManager::setConnectionsFromConfig(const MapEnvironmentToConfig& config)
 {
 	/*
 	phpServer.url = 127.0.0.1:80/gradido_php

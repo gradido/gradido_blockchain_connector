@@ -25,6 +25,70 @@ FROM prepare_debug as debug
 ENV DOCKER_WORKDIR="/code"
 WORKDIR ${DOCKER_WORKDIR}
 
+# Iota Entry Node, host and port
+ENV IOTA_HOST="api.lb-0.h.chrysalis-devnet.iota.cafe"
+# use https for port 443, else use http
+ENV IOTA_PORT=443
+
+# calculate pow for iota local 
+# if set to false, try to let iota node calculate pow but this can also fail if it isn't supported on the iota node
+ENV IOTA_LOCAL_POW=true
+
+# gradido node for asking for already registered groups
+ENV GRADIDO_NODE="http://127.0.0.1:8340"
+
+# GradidoBlockchainConnector Port 
+# Port for listening on json http requests
+ENV JSON_SERVER_PORT=1271
+
+# it is possible to choose between sqlite and mysql for the db
+# if DB_SQLITE isn't empty sqlite will be used
+# use sqlite filename as parameter for example: 
+# db.sqlite = db.sqlite
+ENV DB_SQLITE=""
+
+# db config for mysql or mariadb
+ENV DB_HOST="localhost"
+ENV DB_PORT=3306
+ENV DB_NAME="blockchain_connector"
+ENV DB_USER="root"
+# make sure not to use special characters in mysql/mariadb password!
+# sadly the C-Connector cannot handle special charactes in mysql/mariadb passwords
+ENV DB_PASSWORD=""
+
+
+# x25519 public key for encryption of passphrases for new users 
+# public and private key of user can be recovered with passphrase in case of user forgott password
+# you should store the corresponding private key savely and not on the server
+# can be created for example with: crypto_box_keypair from libsodium https://libsodium.gitbook.io/doc/public-key_cryptography/authenticated_encryption
+# (please change for your app)
+ENV CRYPTO_SERVER_ADMIN_PUBLIC=688c31a1750c26c38f8f78eb921b015a88db0ff61392d65416982d059b14de4b
+
+# random binary, used for hashing passwords
+# should be at least 16 bytes long (32 character in hex)
+# (please change for your app)
+ENV CRYPTO_SERVER_KEY=a51ef8ac7ef1abf162fb7a65261acd7a
+
+# random binary, used as additional salt for generating secret key for encryption of user private key
+# (please change for your app)
+ENV CRYPTO_APP_SECRET=21ffbbc616fe
+
+# x25519 private key for decrypt user password from login requests
+# can be created for example with: crypto_box_keypair from libsodium https://libsodium.gitbook.io/doc/public-key_cryptography/authenticated_encryption
+# (please change for your app)
+ENV CRYPTO_JWT_PRIVATE=2acd42ec14e12eecded40e300d420eabbf58f01d3cb3cf1eaf522af49ec92193
+
+# random string for jwt sign and verify (please change for your app)
+# (please change for your app)
+ENV VERIFY_JWT="sjhrj7jDU38ikrlaksi092%6$2ujkas92l"
+
+# duration in seconds in which a session is valid
+# jwt token duration time and how long a session and therefor an unencrypted private key will be stored in memory
+ENV SESSION_DURATION_SECONDS=600
+
+# allow request from another server, for example from js frontend
+ENV UNSECURE_ALLOW_CORS_ALL=1
+
 RUN mkdir build && \
 	cd build && \
 	cmake -DCMAKE_BUILD_TYPE=Debug ..

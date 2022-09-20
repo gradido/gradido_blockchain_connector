@@ -4,6 +4,7 @@
 #include "model/table/VersionsManager.h"
 
 #include "gradido_blockchain/lib/Profiler.h"
+#include "gradido_blockchain/lib/MapEnvironmentToConfig.h"
 #include "gradido_blockchain/crypto/CryptoConfig.h"
 #include "gradido_blockchain/http/ServerConfig.h"
 
@@ -158,12 +159,12 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 		catch (Poco::Exception& ex) {
 			errorLog.error("error loading config: %s", ex.displayText());
 		}
-
-		unsigned short json_port = (unsigned short)config().getInt("JSONServer.port", 1271);
+		MapEnvironmentToConfig configMapped(config());
+		unsigned short json_port = (unsigned short)configMapped.getInt("json_server.port", 1271);
 
 		//printf("show mnemonic list: \n");
 		//printf(ServerConfig::g_Mnemonic_WordLists[ServerConfig::MNEMONIC_BIP0039_SORTED_ORDER].getCompleteWordList().data());
-		if (!ServerConfig::initServerCrypto(config())) {
+		if (!ServerConfig::initServerCrypto(configMapped)) {
 			//printf("[Gradido_LoginServer::%s] error init server crypto\n", __FUNCTION__);
 			errorLog.error("[Gradido_LoginServer::main] error init server crypto");
 			return Application::EXIT_CONFIG;
@@ -173,9 +174,7 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 			errorLog.error("[Gradido_LoginServer::main] error calling loadMnemonicWordLists");
 			return Application::EXIT_CONFIG;
 		}
-		CryptoConfig::loadCryptoKeys(config());
-
-		
+		CryptoConfig::loadCryptoKeys(configMapped);		
 
 		Poco::Net::initializeSSL();
 		if(!ServerConfig::initSSLClientContext()) {
@@ -184,10 +183,10 @@ int GradidoBlockchainConnector::main(const std::vector<std::string>& args)
 			return Application::EXIT_CONFIG;
 		}
 
-		ServerConfig::initMysql(config());
-		ServerConfig::initIota(config());
-		ServerConfig::g_GradidoNodeUri = Poco::URI(config().getString("gradidoNode", "http://127.0.0.1:8340"));
-		ServerConfig::readUnsecureFlags(config());
+		ServerConfig::initMysql(configMapped);
+		ServerConfig::initIota(configMapped);
+		ServerConfig::g_GradidoNodeUri = Poco::URI(configMapped.getString("gradido_node", "http://127.0.0.1:8340"));
+		ServerConfig::readUnsecureFlags(configMapped);
 
 		model::table::VersionsManager::getInstance()->migrate();
 		

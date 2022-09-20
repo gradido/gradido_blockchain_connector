@@ -13,7 +13,6 @@
 */
 //#include "lithium_mysql.hh"
 
-#include "Poco/Util/LayeredConfiguration.h"
 #include "Poco/Net/Context.h"
 #include "Poco/Types.h"
 #include "Poco/Timespan.h"
@@ -22,6 +21,7 @@
 
 #include "gradido_blockchain/MemoryManager.h"
 #include "gradido_blockchain/http/IotaRequest.h"
+#include "gradido_blockchain/lib/MapEnvironmentToConfig.h"
 
 #define DISABLE_EMAIL
 
@@ -46,9 +46,9 @@ namespace ServerConfig {
 	
 	//extern li::mysql_database* g_Mysql;
 
-	bool initServerCrypto(const Poco::Util::LayeredConfiguration& cfg);
+	bool initServerCrypto(const MapEnvironmentToConfig& cfg);
 	bool initSSLClientContext();
-	bool initMysql(const Poco::Util::LayeredConfiguration& cfg);
+	bool initMysql(const MapEnvironmentToConfig& cfg);
 
 	void writeToFile(std::istream& datas, std::string fileName);
 

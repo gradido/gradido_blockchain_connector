@@ -3,12 +3,17 @@
 
 #include "BaseTable.h"
 
-#define MIGRATION_TABLE_SCHEMA												\
-	"`id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,"						\
-	"`table_name` varchar(150) NOT NULL,"										\
-    "`version` int UNSIGNED NOT NULL,"								\
-	"PRIMARY KEY(`id`),"												\
+#define MIGRATION_TABLE_SCHEMA						\
+	"`id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,"	\
+	"`table_name` varchar(150) NOT NULL,"			\
+    "`version` int UNSIGNED NOT NULL,"				\
+	"PRIMARY KEY(`id`),"							\
 	"UNIQUE KEY `table_name` (`table_name`)"
+
+#define MIGRATION_TABLE_SCHEMA_SQLITE				\
+	"`id` bigint INTEGER PRIMARY KEY,"				\
+	"`table_name` TEXT NOT NULL UNIQUE,"			\
+	"`version` INTEGER NOT NULL"								
 
 #define MIGRATION_TABLE_LAST_SCHEMA_VERSION 1
 

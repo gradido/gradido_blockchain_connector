@@ -2,7 +2,7 @@
 #define __GRADIDO_BLOCKCHAIN_CONNECTOR_MODEL_TABLE_USER_BACKUP_H
 
 #include "BaseTable.h"
-
+#include "../../ConnectionManager.h"
 
 #define USER_BACKUP_TABLE_SCHEMA												\
 	"`id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,"						\
@@ -10,7 +10,14 @@
 	"`key_user_id` bigint UNSIGNED NOT NULL,"							\
 	"`encrypted_passphrase` varbinary(255) DEFAULT NULL,"				\
 	"`created` datetime NOT NULL DEFAULT current_timestamp(),"			\
-	"PRIMARY KEY(`id`)"												
+	"PRIMARY KEY(`id`)"		
+
+#define USER_BACKUP_TABLE_SCHEMA_SQLITE									\
+	"`id` INTEGER PRIMARY KEY,"											\
+	"`user_id` INTEGER NOT NULL,"										\
+	"`key_user_id` INTEGER NOT NULL,"									\
+	"`encrypted_passphrase` BLOB DEFAULT NULL,"							\
+	"`created` integer(4) not null default (strftime('%s','now'))"			
 
 
 #define USER_BACKUP_TABLE_LAST_SCHEMA_VERSION 1
@@ -31,7 +38,7 @@ namespace model {
 			const char* tableName() const { return getTableName(); }
 			static const char* getTableName() { return "user_backup"; }
 			int getLastSchemaVersion() const { return USER_BACKUP_TABLE_LAST_SCHEMA_VERSION; }
-			const char* getSchema() const { return USER_BACKUP_TABLE_SCHEMA; }
+			const char* getSchema() const { return ConnectionManager::getInstance()->isSqlite() ? USER_BACKUP_TABLE_SCHEMA_SQLITE : USER_BACKUP_TABLE_SCHEMA; }
 
 			inline uint64_t getUserId() const { return mUserId; }
 			inline uint64_t getKeyUserId() const { return mKeyUserId; }
