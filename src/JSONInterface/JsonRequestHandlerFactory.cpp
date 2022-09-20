@@ -8,6 +8,7 @@
 #include "JsonGetPendingTransactions.h"
 #include "JsonListTransactions.h"
 #include "JsonLogin.h"
+#include "JsonOpenConnection.h"
 #include "JsonPackTransaction.h"
 #include "JsonRegisterAddressTransaction.h"
 #include "JsonSendTransactionIota.h"
@@ -72,6 +73,9 @@ Poco::Net::HTTPRequestHandler* JsonRequestHandlerFactory::createRequestHandler(c
 	}
 	else if (url_first_part == "/login") {
 		return new JsonLogin;
+	}
+	else if(url_first_part == "/openCommunication") {
+		return new JsonOpenConnection;
 	}
 	else if (url_first_part == "/notify") {
 		return new JsonTransactionListener;

@@ -88,8 +88,20 @@ namespace ServerConfig {
 		}
 		
 		auto privateKeyString = cfg.getString("crypto.jwt.private", "");
+		printf("loaded private string: %s\n", privateKeyString.data());
 		if (privateKeyString.size()) {
 			g_JwtPrivateKey = DataTypeConverter::hexToBin(privateKeyString);
+		}
+		if(!g_JwtPrivateKey || g_JwtPrivateKey->size() != crypto_sign_SECRETKEYBYTES) {
+			std::clog << "jwt private key size don't match: " 
+					  << std::to_string(crypto_sign_SECRETKEYBYTES) << " != ";
+			if(g_JwtPrivateKey) {		  
+				std::clog << std::to_string(g_JwtPrivateKey->size());
+			} else {
+				std::clog << "0";
+			}
+			std::clog << std::endl;
+			return false;
 		}
 		g_JwtVerifySecret = cfg.getString("verify.jwt", "");
 

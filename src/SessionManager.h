@@ -16,6 +16,7 @@ public:
 	std::string login(const std::string& username, const std::string& password, const std::string& groupAlias, const std::string& clientIp);
 	Poco::SharedPtr<model::Session> getSession(const std::string& serializedJwtToken, const std::string& clientIp);
 	Poco::SharedPtr<model::Session> getSession(const std::string& serializedJwtToken, const std::string& username, const std::string& clientIp);
+
 protected:
 	SessionManager();
 	

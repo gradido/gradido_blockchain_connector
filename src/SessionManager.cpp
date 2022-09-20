@@ -79,6 +79,9 @@ Poco::SharedPtr<model::Session> SessionManager::getSession(const std::string& se
 	try {
 		Poco::JWT::Signer signer(ServerConfig::g_JwtVerifySecret);
 		Poco::JWT::Token token = signer.verify(serializedJwtToken);
+		if(token.getSubject() != "openConnection") {
+			throw SessionException("wrong token", token.getSubject());
+		}
 
 		auto session = mActiveSessions.get(username);
 		if (session.isNull()) {
