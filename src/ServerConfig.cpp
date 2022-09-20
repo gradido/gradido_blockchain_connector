@@ -88,7 +88,6 @@ namespace ServerConfig {
 		}
 		
 		auto privateKeyString = cfg.getString("crypto.jwt.private", "");
-		printf("loaded private string: %s\n", privateKeyString.data());
 		if (privateKeyString.size()) {
 			g_JwtPrivateKey = DataTypeConverter::hexToBin(privateKeyString);
 		}
