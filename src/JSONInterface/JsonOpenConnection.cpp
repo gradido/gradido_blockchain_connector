@@ -27,9 +27,6 @@ void JsonOpenConnection::handleRequest(Poco::Net::HTTPServerRequest& request, Po
     std::string communityPubkeyHex; //community-key-A
     std::string signatureHex;
 
-    printf("JsonOpenConnection start\n");
-    printf("method: %s\n", method.data());
-
     if(method == "POST") {
         try {
 			// extract parameter from request
@@ -39,19 +36,16 @@ void JsonOpenConnection::handleRequest(Poco::Net::HTTPServerRequest& request, Po
             if (!communityPubkeyHex.size() || !signatureHex.size()) {
 				throw HandleRequestException("parameter error");
 			}
-            printf("communityPubkeyHex: %s\n", communityPubkeyHex.data());
-            printf("signature: %s\n", signatureHex.data());
+
             auto communityPubkey = DataTypeConverter::hexToBin(communityPubkeyHex);
             auto signature = DataTypeConverter::hexToBin(signatureHex);
 
             KeyPairEd25519 callerKeyPair(communityPubkey->data());
             KeyPairEd25519 ownKeyPair(ServerConfig::g_JwtPrivateKey);
             auto serverPubkey = ownKeyPair.getPublicKeyCopy();
-            printf("message as hex: %s\n", ownKeyPair.getPublicKeyHex().data());
             if(!callerKeyPair.verify(serverPubkey, signature)) {
                 throw HandleRequestException("cannot verify signature");
             }
-            printf("signature is valid\n");
 
             mm->releaseMemory(communityPubkey);
             mm->releaseMemory(signature);
@@ -67,7 +61,6 @@ void JsonOpenConnection::handleRequest(Poco::Net::HTTPServerRequest& request, Po
 
 	        Poco::JWT::Signer signer(ServerConfig::g_JwtVerifySecret);
             auto serializedJWTToken = std::move(signer.sign(token, Poco::JWT::Signer::ALGO_HS256));
-            printf("serialized jwt token: %s\n", serializedJWTToken.data());
             rapid_json_result = stateSuccess();
 			rapid_json_result.AddMember("token", Value(serializedJWTToken.data(), alloc), alloc);
 
