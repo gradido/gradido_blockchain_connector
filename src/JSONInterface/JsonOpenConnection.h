@@ -8,8 +8,14 @@
  @date 21.09.2022
  @brief Open Connection Call from Apollo Cross Group Communication Protocol
 
-@startuml
-	
+
+@startuml Example of communication between Apollo and Blockchain-Connector
+Apollo -> BlockchainConnector: openCommunication(community-key-A, signature) )
+BlockchainConnector --> Apollo: JWT
+Apollo -> BlockchainConnector: login(name, password) (JWT in header)
+BlockchainConnector --> Apollo: JWT (contain username)
+Apollo -> BlockchainConnector: transfer (JWT with sender user in header)
+BlockchainConnector --> Apollo: iotaMessageId on success
 @enduml
 */
 
