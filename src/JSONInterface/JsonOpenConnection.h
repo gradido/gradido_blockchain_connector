@@ -3,6 +3,14 @@
 
 #include "gradido_blockchain/http/JsonRequestHandler.h"
 
+/*!
+ @author einhornimmond
+ @date 21.09.2022
+ @brief Open Connection Call from Apollo Cross Group Communication Protocol
+@startuml
+
+*/
+
 class JsonOpenConnection : public JsonRequestHandler
 {
 public:

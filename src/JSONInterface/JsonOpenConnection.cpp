@@ -41,11 +41,12 @@ void JsonOpenConnection::handleRequest(Poco::Net::HTTPServerRequest& request, Po
             auto signature = DataTypeConverter::hexToBin(signatureHex);
 
             KeyPairEd25519 callerKeyPair(communityPubkey->data());
-            KeyPairEd25519 ownKeyPair(ServerConfig::g_JwtPrivateKey);
-            auto serverPubkey = ownKeyPair.getPublicKeyCopy();
+            auto serverPubkey = mm->getMemory(crypto_sign_PUBLICKEYBYTES);
+            crypto_sign_ed25519_sk_to_pk(*serverPubkey, *ServerConfig::g_JwtPrivateKey);
+            auto serverPubkeyHex = serverPubkey->convertToHexString();
             if(!callerKeyPair.verify(serverPubkey, signature)) {
-                throw HandleRequestException("cannot verify signature");
-            }
+                throw Ed25519VerifyException("cannot verify signature", serverPubkeyHex, signatureHex);
+            } 
 
             mm->releaseMemory(communityPubkey);
             mm->releaseMemory(signature);
@@ -64,6 +65,9 @@ void JsonOpenConnection::handleRequest(Poco::Net::HTTPServerRequest& request, Po
             rapid_json_result = stateSuccess();
 			rapid_json_result.AddMember("token", Value(serializedJWTToken.data(), alloc), alloc);
 
+        } catch(Ed25519VerifyException& ex) {
+            rapid_json_result = stateError(ex.what(), ex);
+            Poco::Logger::get("errorLog").debug("Ed25519VerifyException in JsonOpenConnection: %s", ex.getFullString());   
         } catch (GradidoBlockchainException& ex) {
             printf("GradidoBlockchainException: %s\n", ex.what());
             rapid_json_result = stateError(ex.what());
