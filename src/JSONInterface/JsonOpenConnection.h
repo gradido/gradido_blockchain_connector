@@ -9,14 +9,14 @@
  @brief Open Connection Call from Apollo Cross Group Communication Protocol
 
 
-@startuml Example of communication between Apollo and Blockchain-Connector
-Apollo -> BlockchainConnector: openCommunication(community-key-A, signature) )
-BlockchainConnector --> Apollo: JWT
-Apollo -> BlockchainConnector: login(name, password) (JWT in header)
-BlockchainConnector --> Apollo: JWT (contain username)
-Apollo -> BlockchainConnector: transfer (JWT with sender user in header)
-BlockchainConnector --> Apollo: iotaMessageId on success
-@enduml
+ @startuml{uml_open_connection_communication1.png} "Example of communication between Apollo and Blockchain-Connector"
+   	Apollo -> BlockchainConnector: openCommunication(community-key-A, signature) )
+   	BlockchainConnector --> Apollo: JWT
+	Apollo -> BlockchainConnector: login(name, password) (JWT in header)
+	BlockchainConnector --> Apollo: JWT (contain username)
+	Apollo -> BlockchainConnector: transfer (JWT with sender user in header)
+	BlockchainConnector --> Apollo: iotaMessageId on success
+  @enduml
 */
 
 class JsonOpenConnection : public JsonRequestHandler
