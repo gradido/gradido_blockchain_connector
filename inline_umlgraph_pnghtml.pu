@@ -1,5 +1,10 @@
 @startuml inline_umlgraph_1.png
-
+Apollo -> BlockchainConnector: openCommunication(community-key-A, signature) )
+BlockchainConnector --> Apollo: JWT
+Apollo -> BlockchainConnector: login(name, password) (JWT in header)
+BlockchainConnector --> Apollo: JWT (contain username)
+Apollo -> BlockchainConnector: transfer (JWT with sender user in header)
+BlockchainConnector --> Apollo: iotaMessageId on success
 @enduml
 @startuml uml_pending_transaction.png
 participant GradidoBlockchainConnector as connector
