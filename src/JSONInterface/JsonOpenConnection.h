@@ -7,8 +7,10 @@
  @author einhornimmond
  @date 21.09.2022
  @brief Open Connection Call from Apollo Cross Group Communication Protocol
-@startuml
 
+@startuml
+	
+@enduml
 */
 
 class JsonOpenConnection : public JsonRequestHandler
