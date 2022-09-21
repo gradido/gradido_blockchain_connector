@@ -1,3 +1,6 @@
+@startuml inline_umlgraph_1.png
+
+@enduml
 @startuml uml_pending_transaction.png
 participant GradidoBlockchainConnector as connector
 database iota
