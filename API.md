@@ -91,7 +91,8 @@ a jwt Token returned from a Login Request transfered as Authorization Header is 
 	"created":"2022-04-21T19:13:01.506Z",
 	"addressType":"HUMAN",
 	"currentGroupAlias": "testgroup1",
-	"newGroupAlias": ""
+	"newGroupAlias": "",
+	"transactionNr": 1
 }
 ```
 - `addressType`: decide type of address 
@@ -100,6 +101,7 @@ a jwt Token returned from a Login Request transfered as Authorization Header is 
 - `created`: The current date and time on creating this transaction
 - `currentGroupAlias`: optional, only used for moving address, group alias from group where address is currently
 - `newGroupAlias`: optional, only used for moving address, group alias where address should move
+- `transactionNr`: optional, only for already sorted transactions from the past
 
 ### Response
 
@@ -183,7 +185,8 @@ a jwt Token returned from a Login Request transfered as Authorization Header is 
 	"created":"2022-04-21T20:08:53.406Z",
 	"apolloTransactionId":"1",
 	"apolloCreatedDecay": "0",
-	"apolloDecayStart": "2022-04-21T19:13:01.506Z"
+	"apolloDecayStart": "2022-04-21T19:13:01.506Z",
+	"transactionNr: 2
 }
 ```
 - `memo`: comment for transaction, will be encrypted on blockchain, at least 5 character long , maximal 334 character long
@@ -194,6 +197,7 @@ a jwt Token returned from a Login Request transfered as Authorization Header is 
 - `apolloTransactionId`: (optional) transaction identifier from apollo
 - `apolloCreatedDecay`: (optional) decay from balance at apolloDecayStart to created 
 - `apolloDecayStart`: (optional) date from last transaction, starting point for decay calculation
+- `transactionNr`: optional, only for already sorted transactions from the past
 
 ### Response
 
@@ -315,7 +319,8 @@ a jwt Token returned from a Login Request transfered as Authorization Header is 
 	"created":"2022-04-21T20:08:53.406Z",
 	"apolloTransactionId":"1",
 	"apolloCreatedDecay": "0",
-	"apolloDecayStart": "2022-04-21T19:13:01.506Z"
+	"apolloDecayStart": "2022-04-21T19:13:01.506Z",
+	"transactionNr": 3
 }
 ```
 - `memo`: comment for transaction, will be encrypted on blockchain, at least 5 character long , maximal 334 character long
@@ -325,6 +330,7 @@ a jwt Token returned from a Login Request transfered as Authorization Header is 
 - `apolloTransactionId`: (optional) transaction identifier from apollo
 - `apolloCreatedDecay`: (optional) decay from balance at apolloDecayStart to created 
 - `apolloDecayStart`: (optional) date from last transaction, starting point for decay calculation
+- `transactionNr`: optional, only for already sorted transactions from the past
 
 ### Response
 If transaction was successfully send via Iota the result should be something like that:
